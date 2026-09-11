@@ -1,0 +1,99 @@
+.auth-controls { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1.5rem; }
+.auth-controls .language-select { width:5rem; flex-shrink:0; }
+/* A final mobile guard layer for small phones, zoomed browsers and compact tablets. */
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+.landing,
+.shell,
+.work,
+.content,
+.section,
+.features article {
+  min-width: 0;
+}
+
+/*
+ * Some Android in-app browsers expose a desktop-sized CSS viewport even on a
+ * phone. Touch-first devices still need the compact layout in that case.
+ */
+@media (max-width: 820px), (hover: none) and (pointer: coarse) {
+  .land-nav {
+    height: 66px;
+    padding-inline: 18px;
+  }
+
+  .land-nav nav {
+    display: none;
+    position: absolute;
+    z-index: 30;
+    top: 66px;
+    left: 12px;
+    right: 12px;
+    padding: 16px;
+    background: white;
+    border: 1px solid #e2e5ee;
+    border-radius: 15px;
+    box-shadow: 0 20px 50px #16213b22;
+  }
+
+  .land-nav nav.open { display: grid; }
+  .hamb { display: block; }
+  .mobile-language { display: block; margin-left: auto; margin-right: 8px; }
+
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 62px clamp(1rem, 5vw, 1.5rem) 90px;
+  }
+
+  .hero h1 { font-size: clamp(2.25rem, 9vw, 3.1rem); }
+  .section { padding-inline: clamp(1rem, 5vw, 1.5rem); }
+
+  .features,
+  .how > div,
+  .prices,
+  .faq,
+  .stats,
+  .dash,
+  .card-grid,
+  .goal-grid,
+  .analytics,
+  .family-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .features .wide,
+  .insight { grid-column: auto; }
+
+  .sidebar { display: none; }
+  .work { margin-left: 0; }
+  .work > header { height: 76px; padding-inline: 15px; }
+  .content { padding: 17px 13px 92px; }
+
+  .bottom {
+    position: fixed;
+    z-index: 30;
+    inset: auto 0 0;
+    height: 70px;
+    display: flex;
+    justify-content: space-around;
+    background: white;
+    border-top: 1px solid #e0e3eb;
+  }
+
+  .bottom button {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .content,
+  .section,
+  .hero,
+  .land-nav {
+    width: 100%;
+    max-width: 100%;
+  }
+}
