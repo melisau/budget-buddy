@@ -56,7 +56,7 @@ export function FamilyScreen() {
     void reload();
   };
 
-  if (loading) return <section className="family-page"><p>{tr ? "Aile grupları yükleniyor…" : "Loading family groups…"}</p></section>;
+  if (loading && !groups.length) return null;
   if (!group) return <EmptyFamily invitations={invitations} onRespond={respond} onCreated={reload} tr={tr} />;
   const writable = group.role !== "viewer";
   const accepted = group.members.filter((member) => member.invitationStatus === "accepted");
