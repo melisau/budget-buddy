@@ -5,7 +5,7 @@ import { createFamilyGroup, listFamilyGroups } from "@/lib/finance/family-data";
 function errorResponse(error: unknown) {
   if (error instanceof AccessError) return NextResponse.json({ error: error.message }, { status: error.status });
   console.error("[family] request failed", error);
-  return NextResponse.json({ error: "Unable to process the family request." }, { status: 500 });
+  return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to process the family request." }, { status: 500 });
 }
 
 export async function GET() {
