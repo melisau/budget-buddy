@@ -1,4 +1,4 @@
-import { getAcceptedFamilyRole, requireFamilyWriteAccess, type AppUser } from "@/lib/auth/authorization";
+import { AccessError, requireFamilyWriteAccess, type AppUser } from "@/lib/auth/authorization";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export type TransactionPayload = {
@@ -70,17 +70,14 @@ export async function createTransaction(user: AppUser, payload: TransactionPaylo
 
   if (payload.familyGroupId) {
     await requireFamilyWriteAccess(user.id, payload.familyGroupId);
-    if (payload.ownerUserId && payload.ownerUserId !== user.id) {
-      const role = await getAcceptedFamilyRole(payload.ownerUserId, payload.familyGroupId);
-      if (!role) throw new Error("The selected family member is unavailable.");
-    }
+    if (payload.ownerUserId && payload.ownerUserId !== user.id) throw new AccessError("Family transactions can only be created in your own name.");
   }
 
   const { data, error } = await supabase
     .from("transactions")
     .insert({
       user_id: user.id,
-      owner_user_id: payload.ownerUserId ?? user.id,
+      owner_user_id: user.id,
       created_by_user_id: user.id,
       family_group_id: payload.familyGroupId ?? null,
       account_id: payload.accountId,

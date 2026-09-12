@@ -79,7 +79,7 @@ export async function requireTransactionWriteAccess(userId: string, transactionI
   const supabase = getSupabaseServerClient();
   const { data: transaction, error } = await supabase
     .from("transactions")
-    .select("user_id, family_group_id")
+    .select("user_id, owner_user_id, family_group_id")
     .eq("id", transactionId)
     .maybeSingle();
 
@@ -88,6 +88,9 @@ export async function requireTransactionWriteAccess(userId: string, transactionI
   if (transaction.user_id === userId && !transaction.family_group_id) return;
   if (transaction.family_group_id) {
     await requireFamilyWriteAccess(userId, transaction.family_group_id);
+    if (transaction.owner_user_id !== userId) {
+      throw new AccessError("You can only change family transactions created in your own name.");
+    }
     return;
   }
   throw new AccessError("You do not have permission to change this transaction.");
