@@ -196,13 +196,23 @@ function Pricing() {
   const t = useT();
   const plans = [
     { name: "Free", price: "₺0", features: ["Manual tracking", "Basic dashboard", "Core categories", "Basic budgets"] },
-    { name: "Core", price: "₺149", features: ["Multiple accounts", "Reviewed CSV import", "Goals", "Advanced reports"], featured: true },
-    { name: "Pro", price: "₺299", features: ["AI Assistant", "AI insights", "Voice coach UI", "Advanced reports"] },
+    { name: "Core", price: "₺149", features: ["Everything in Free", "Accounts and receipt uploads", "CSV import and export", "Goals and family groups"], featured: true },
+    { name: "Pro", price: "₺299", features: ["Everything in Core", "AI Assistant", "Voice questions", "Advanced reports"] },
   ];
+  const comparisons = [
+    ["Income and expense tracking", true, true, true],
+    ["Basic dashboard and budgets", true, true, true],
+    ["Accounts and receipt uploads", false, true, true],
+    ["Savings goals and family groups", false, true, true],
+    ["CSV import and data export", false, true, true],
+    ["Advanced reports and filters", false, true, true],
+    ["AI Assistant and insights", false, false, true],
+    ["Voice questions", false, false, true],
+  ] as const;
 
   return (
     <section id="pricing" className="section">
-      <header><span className="eyebrow">{t("Simple plans")}</span><h2>{t("Start free. Grow when you need to.")}</h2><p>{t("Preview only—no payment system is connected.")}</p></header>
+      <header><span className="eyebrow">{t("Simple plans")}</span><h2>{t("Start free. Grow when you need to.")}</h2><p>{t("Compare each plan before choosing the features that fit your needs.")}</p></header>
       <div className="prices">
         {plans.map((plan) => <article className={plan.featured ? "hot" : ""} key={plan.name}>
           {plan.featured && <em>{t("Most popular")}</em>}
@@ -210,6 +220,21 @@ function Pricing() {
           <Button variant={plan.featured ? "default" : "outline"} asChild><a href="/sign-up">{plan.name === "Free" ? t("Start for free") : `${t("Choose")} ${t(plan.name)}`}</a></Button>
           <ul>{plan.features.map((feature) => <li key={feature}><Check />{t(feature)}</li>)}</ul>
         </article>)}
+      </div>
+      <div className="plan-comparison" role="region" aria-label={t("Plan feature comparison")} tabIndex={0}>
+        <table>
+          <thead>
+            <tr><th scope="col">{t("Feature")}</th>{plans.map((plan) => <th scope="col" key={plan.name}>{t(plan.name)}</th>)}</tr>
+          </thead>
+          <tbody>
+            {comparisons.map(([feature, ...availability]) => (
+              <tr key={feature}>
+                <th scope="row">{t(feature)}</th>
+                {availability.map((included, index) => <td key={plans[index].name} aria-label={`${t(plans[index].name)}: ${included ? t("Included") : t("Not included")}`}>{included ? <Check aria-hidden="true" /> : <span aria-hidden="true">—</span>}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </section>
   );
