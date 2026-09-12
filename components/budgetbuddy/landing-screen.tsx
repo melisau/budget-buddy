@@ -195,33 +195,35 @@ export function LandingScreen({ go }: { go: Navigate }) {
 function Pricing() {
   const t = useT();
   const plans = [
-    { name: "Free", price: "₺0", features: ["Manual tracking", "Basic dashboard", "Core categories", "Basic budgets"] },
-    { name: "Core", price: "₺149", features: ["Everything in Free", "Accounts and receipt uploads", "CSV import and export", "Goals and family groups"], featured: true },
-    { name: "Pro", price: "₺299", features: ["Everything in Core", "AI Assistant", "Voice questions", "Advanced reports"] },
+    { name: "Free", price: "₺0", description: "Start with your full trial access.", features: ["Manual tracking", "Basic dashboard", "Core categories", "Basic budgets"] },
+    { name: "Core", price: "₺149", description: "For connected money management.", features: ["Everything in Free", "Accounts and receipt uploads", "CSV import and export", "Goals and family groups"], featured: true },
+    { name: "Pro", price: "₺299", description: "For deeper analysis and guidance.", features: ["Everything in Core", "AI Assistant", "Voice questions", "Advanced reports"] },
   ];
   const comparisons = [
-    ["Income and expense tracking", true, true, true],
-    ["Basic dashboard and budgets", true, true, true],
-    ["Accounts and receipt uploads", false, true, true],
-    ["Savings goals and family groups", false, true, true],
-    ["CSV import and data export", false, true, true],
-    ["Advanced reports and filters", false, true, true],
-    ["AI Assistant and insights", false, false, true],
-    ["Voice questions", false, false, true],
+    ["Income and expense tracking", "included", "included", "included"],
+    ["Basic dashboard and budgets", "included", "included", "included"],
+    ["Accounts and receipt uploads", "trial", "included", "included"],
+    ["Savings goals and family groups", "trial", "included", "included"],
+    ["CSV import and data export", "trial", "included", "included"],
+    ["Advanced reports and filters", "trial", "included", "included"],
+    ["AI Assistant and insights", "trial", "trial", "included"],
+    ["Voice questions", "trial", "trial", "included"],
   ] as const;
 
   return (
     <section id="pricing" className="section">
       <header><span className="eyebrow">{t("Simple plans")}</span><h2>{t("Start free. Grow when you need to.")}</h2><p>{t("Compare each plan before choosing the features that fit your needs.")}</p></header>
+      <div className="trial-access" role="status"><span><Sparkles aria-hidden="true" />{t("Full access during your trial")}</span><p>{t("Every new account can use all Budget Buddy features during the trial, including AI, voice, family groups and CSV tools.")}</p></div>
       <div className="prices">
-        {plans.map((plan) => <article className={plan.featured ? "hot" : ""} key={plan.name}>
-          {plan.featured && <em>{t("Most popular")}</em>}
-          <h3>{t(plan.name)}</h3><strong>{plan.price}<small>{t("/month")}</small></strong><p>{t("Clear money management for your next step.")}</p>
-          <Button variant={plan.featured ? "default" : "outline"} asChild><a href="/sign-up">{plan.name === "Free" ? t("Start for free") : `${t("Choose")} ${t(plan.name)}`}</a></Button>
+        {plans.map((plan) => <article className={`plan-card ${plan.featured ? "hot" : ""}`} key={plan.name}>
+          <div className="plan-card-top"><span>{t(plan.name)}</span>{plan.featured && <em>{t("Most popular")}</em>}</div>
+          <strong>{plan.price}<small>{t("/month")}</small></strong><p>{t(plan.description)}</p>
+          <Button variant={plan.featured ? "default" : "outline"} asChild><a href="/sign-up">{t("Start full trial")}</a></Button>
           <ul>{plan.features.map((feature) => <li key={feature}><Check />{t(feature)}</li>)}</ul>
         </article>)}
       </div>
       <div className="plan-comparison" role="region" aria-label={t("Plan feature comparison")} tabIndex={0}>
+        <div className="plan-comparison-heading"><div><span>{t("Compare plans")}</span><h3>{t("Choose the plan that fits your routine")}</h3></div><small><Sparkles aria-hidden="true" />{t("Trial access is active")}</small></div>
         <table>
           <thead>
             <tr><th scope="col">{t("Feature")}</th>{plans.map((plan) => <th scope="col" key={plan.name}>{t(plan.name)}</th>)}</tr>
@@ -230,7 +232,11 @@ function Pricing() {
             {comparisons.map(([feature, ...availability]) => (
               <tr key={feature}>
                 <th scope="row">{t(feature)}</th>
-                {availability.map((included, index) => <td key={plans[index].name} aria-label={`${t(plans[index].name)}: ${included ? t("Included") : t("Not included")}`}>{included ? <Check aria-hidden="true" /> : <span aria-hidden="true">—</span>}</td>)}
+                {availability.map((access, index) => {
+                  const isTrialAccess = access === "trial";
+                  const status = isTrialAccess ? t("Included in trial") : t("Included");
+                  return <td key={plans[index].name} data-plan={t(plans[index].name)} aria-label={`${t(plans[index].name)}: ${status}`}><span className={isTrialAccess ? "trial-status" : "included-status"}>{isTrialAccess ? <Sparkles aria-hidden="true" /> : <Check aria-hidden="true" />}{status}</span></td>;
+                })}
               </tr>
             ))}
           </tbody>
