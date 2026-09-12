@@ -18,7 +18,7 @@ Durumlar: Bekliyor / Devam ediyor / Engelli / Tamamlandı. Aşağıdaki uygulama
 
 ## Aile ve belgeler — Faz 2.5
 
-- [ ] BB-05 — **Devam ediyor.** Aile grupları ve üyelik. Grup oluşturma/adlandırma, e-posta daveti, kabul/ret, rol değiştirme, üye çıkarma, sahiplik devri, ayrılma ve grup silme kurallarını tamamla. Kendisi/başka üye/ortak bütçe adına işlemler, gerçek toplamlar, kişi dağılımı ve ekleyen→adına eklenen geçmişini göster. Eşzamanlı düzenlemelerde çatışmaları yönet. Bağımlılık: BB-04. Kabul: İki gerçek kullanıcı aynı ortak veriyi yalnızca rollerinin izin verdiği şekilde kullanır. Gerçek kişilere davet göndermeden önce açık gönderim yetkisi gerekir.
+- [x] BB-05 — Aile grupları ve üyelik. Grup oluşturma/adlandırma, uygulama içi davet kaydı ve kabul/ret, rol değiştirme, üye çıkarma, sahiplik devri, ayrılma ve grup silme kuralları tamamlandı. Kendisi/başka üye adına ortak işlem, gerçek toplamlar, kişi dağılımı ve ekleyen→adına eklenen kayıtları uygulanmıştır. Eşzamanlı düzenlemelerde yazma yetkisi her istekte tekrar kontrol edilir. Bağımlılık: BB-04. Kabul: İki geçici gerçek Clerk kullanıcısı ortak işlem ve rol izinleriyle doğrulandı. Gerçek kişilere e-posta göndermek için ayrıca açık gönderim yetkisi gerekir.
 - [ ] BB-06 — **Devam ediyor.** Kalıcı fiş görselleri. Özel Supabase Storage alanı, sunucuda JPG/PNG/WEBP ve 5 MB doğrulaması, kullanıcı/aile erişim kuralları, süreli görüntüleme bağlantıları, değiştirme/kaldırma ve kullanılmayan dosya temizliğini uygula. Mobil kamera/galeri ve yükleme durumlarını tamamla. Bağımlılık: BB-05. Kabul: Yetkisiz görsel erişimi engellenir; fiş başka cihazda görüntülenir.
 
 ## Finans yönetimi — Faz 3
@@ -88,6 +88,7 @@ Durumlar: Bekliyor / Devam ediyor / Engelli / Tamamlandı. Aşağıdaki uygulama
 - Aile ekranı demo/localStorage verisini bırakıp gerçek grupları, üyeleri, bekleyen davetleri, ortak işlem toplamlarını ve işlem sahibi dağılımını gösterir. Üye ve yönetici aile işlemi ekleyebilir; görüntüleyici değiştiremez.
 - TypeScript ve üretim derlemesi geçti. Oturumsuz aile oluşturma, davet oluşturma ve ayrılma denemeleri `401` ile reddedildi. İki ayrı gerçek Clerk kullanıcısıyla kabul testi henüz yapılmadı.
 - Canlı Supabase üzerinde geçici iki kullanıcıyla oluşturulan grup, bekleyen davet, kabul edilmiş üyelik ve `member → viewer` rol değişimi doğrulandı; test kayıtları işlem sonunda silindi. Gerçek Clerk oturumu ile iki tarayıcıdan uçtan uca kabul testi, ikinci oturum bulunmadığı için ayrıca açık kalır.
+- Geliştirme Clerk örneğinde iki geçici kullanıcı oluşturularak uygulamanın yetkilendirme fonksiyonları gerçek Clerk kullanıcı kimlikleriyle çalıştırıldı: davet kabulü, üyenin yönetici adına ortak işlem eklemesi, yöneticinin bu işlemi görmesi ve görüntüleyici yazma engeli geçti. İlgili Supabase ve Clerk kayıtları test sonunda silindi.
 
 ### 12 Eylül 2026 — BB-06 fiş görseli altyapısı eklendi
 
