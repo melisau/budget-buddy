@@ -1,7 +1,7 @@
-import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./mobile.css";
+import {ClerkClientProvider} from "@/components/providers/clerk-client-provider";
 import {LanguageProvider} from "@/components/providers/language-provider";
 import {Toaster} from "@/components/ui/sonner";
 
@@ -31,9 +31,9 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </head>
       <body className="antialiased">
-        <ClerkProvider>
+        <ClerkClientProvider publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}>
           <LanguageProvider>{children}<Toaster richColors/></LanguageProvider>
-        </ClerkProvider>
+        </ClerkClientProvider>
       </body>
     </html>
   );

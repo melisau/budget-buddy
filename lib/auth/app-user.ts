@@ -1,6 +1,4 @@
-import "server-only";
-
-import type { User } from "@clerk/nextjs/server";
+import type { User } from "@clerk/backend";
 import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
 export type AppUserIdentity = {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useClerk, useUser } from "@clerk/nextjs";
+import { useClerk, useUser } from "@clerk/react";
 import { Download } from "lucide-react";
 import { ConfirmDelete } from "@/components/budgetbuddy/shared";
 import { useT } from "@/components/providers/language-provider";
