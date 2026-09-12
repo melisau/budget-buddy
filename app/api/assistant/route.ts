@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { AccessError, requireAppUser } from "@/lib/auth/authorization";
 import { listTransactionData } from "@/lib/finance/transaction-data";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { checkRateLimit } from "@/lib/security/rate-limit";
 
 type OllamaResponse = { message?: { content?: string } };
 type ExchangeRateResponse = { base?: string; quote?: string; rate?: number; date?: string };
@@ -65,6 +66,8 @@ async function getCurrentEurTryAnswer(language: "tr" | "en") {
 export async function POST(request: Request) {
   try {
     const user = await requireAppUser();
+    const limit = checkRateLimit(`assistant:${user.id}`, 12, 60_000);
+    if (!limit.allowed) return NextResponse.json({ error: "Too many assistant requests. Please try again shortly." }, { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } });
     const { question, language } = (await request.json()) as { question?: unknown; language?: unknown };
     if (typeof question !== "string" || question.trim().length < 2 || question.length > 800) {
       throw new AccessError("Enter a valid question.", 404);
