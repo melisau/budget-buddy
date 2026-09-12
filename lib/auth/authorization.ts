@@ -14,9 +14,11 @@ export class AccessError extends Error {
 export type AppUser = {
   id: string;
   clerkUserId: string;
+  email: string | null;
+  name: string | null;
 };
 
-type FamilyRole = "owner" | "member" | "viewer";
+export type FamilyRole = "owner" | "member" | "viewer";
 
 export async function requireAppUser(): Promise<AppUser> {
   const { isAuthenticated, userId } = await getClerkAuth();
@@ -27,7 +29,7 @@ export async function requireAppUser(): Promise<AppUser> {
   const supabase = getSupabaseServerClient();
   const lookup = await supabase
     .from("users")
-    .select("id, clerk_user_id")
+    .select("id, clerk_user_id, email, name")
     .eq("clerk_user_id", userId)
     .maybeSingle();
 
@@ -40,7 +42,7 @@ export async function requireAppUser(): Promise<AppUser> {
     await syncAppUser(toAppUserIdentity(clerkUser));
     const retry = await supabase
       .from("users")
-      .select("id, clerk_user_id")
+      .select("id, clerk_user_id, email, name")
       .eq("clerk_user_id", userId)
       .single();
 
@@ -48,7 +50,7 @@ export async function requireAppUser(): Promise<AppUser> {
     appUser = retry.data;
   }
 
-  return { id: appUser.id, clerkUserId: appUser.clerk_user_id };
+  return { id: appUser.id, clerkUserId: appUser.clerk_user_id, email: appUser.email, name: appUser.name };
 }
 
 export async function getAcceptedFamilyRole(userId: string, familyGroupId: string): Promise<FamilyRole | null> {

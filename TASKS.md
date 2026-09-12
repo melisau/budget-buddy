@@ -18,7 +18,7 @@ Durumlar: Bekliyor / Devam ediyor / Engelli / Tamamlandı. Aşağıdaki uygulama
 
 ## Aile ve belgeler — Faz 2.5
 
-- [ ] BB-05 — Aile grupları ve üyelik. Grup oluşturma/adlandırma, e-posta daveti, kabul/ret, rol değiştirme, üye çıkarma, sahiplik devri, ayrılma ve grup silme kurallarını tamamla. Kendisi/başka üye/ortak bütçe adına işlemler, gerçek toplamlar, kişi dağılımı ve ekleyen→adına eklenen geçmişini göster. Eşzamanlı düzenlemelerde çatışmaları yönet. Bağımlılık: BB-04. Kabul: İki gerçek kullanıcı aynı ortak veriyi yalnızca rollerinin izin verdiği şekilde kullanır. Gerçek kişilere davet göndermeden önce açık gönderim yetkisi gerekir.
+- [ ] BB-05 — **Devam ediyor.** Aile grupları ve üyelik. Grup oluşturma/adlandırma, e-posta daveti, kabul/ret, rol değiştirme, üye çıkarma, sahiplik devri, ayrılma ve grup silme kurallarını tamamla. Kendisi/başka üye/ortak bütçe adına işlemler, gerçek toplamlar, kişi dağılımı ve ekleyen→adına eklenen geçmişini göster. Eşzamanlı düzenlemelerde çatışmaları yönet. Bağımlılık: BB-04. Kabul: İki gerçek kullanıcı aynı ortak veriyi yalnızca rollerinin izin verdiği şekilde kullanır. Gerçek kişilere davet göndermeden önce açık gönderim yetkisi gerekir.
 - [ ] BB-06 — Kalıcı fiş görselleri. Özel Supabase Storage alanı, sunucuda JPG/PNG/WEBP ve 5 MB doğrulaması, kullanıcı/aile erişim kuralları, süreli görüntüleme bağlantıları, değiştirme/kaldırma ve kullanılmayan dosya temizliğini uygula. Mobil kamera/galeri ve yükleme durumlarını tamamla. Bağımlılık: BB-05. Kabul: Yetkisiz görsel erişimi engellenir; fiş başka cihazda görüntülenir.
 
 ## Finans yönetimi — Faz 3
@@ -80,3 +80,10 @@ Durumlar: Bekliyor / Devam ediyor / Engelli / Tamamlandı. Aşağıdaki uygulama
 - Kişisel işlem oluşturma sırasında hesap ve kategori, oturumdaki kullanıcıya ait değilse istek reddedilir. Düzenleme ve silme, işlem sahibini; aile işlemlerinde ise kabul edilmiş aile rolünü denetler. Görüntüleyici rolü değişiklik yapamaz.
 - İşlem ekranı Supabase verilerini listeler; ekleme, düzenleme, silme, arama ve tür/hesap/kategori/tarih filtreleri gerçek API üzerinden çalışır. Form, gönderim sürerken devre dışı kalır.
 - Oturumsuz GET, POST ve DELETE istekleri yerel doğrulamada `401` ile reddedildi. Çok kullanıcılı aile rolü kabul testi BB-05 aile davet akışı ile birlikte tamamlanacak.
+
+### 12 Eylül 2026 — BB-05 aile grubu akışı eklendi
+
+- Aile grubu oluşturma, üyelik daveti kaydetme, e-posta eşleşmesiyle uygulama içinden kabul/ret, rol değiştirme, üye çıkarma, sahiplik devri, gruptan ayrılma ve grup silme için sunucu tarafı uçlar eklendi. Bu uçlar Clerk oturumunu ve grup rolünü her istekte doğrular.
+- E-posta gönderimi kasten etkinleştirilmedi: davet, ilgili e-posta ile giriş yapan kullanıcının Aile Grubu sayfasında görünür. Gerçek kişilere dış e-posta göndermek için ayrıca açık gönderim yetkisi gerekir.
+- Aile ekranı demo/localStorage verisini bırakıp gerçek grupları, üyeleri, bekleyen davetleri, ortak işlem toplamlarını ve işlem sahibi dağılımını gösterir. Üye ve yönetici aile işlemi ekleyebilir; görüntüleyici değiştiremez.
+- TypeScript ve üretim derlemesi geçti. Oturumsuz aile oluşturma, davet oluşturma ve ayrılma denemeleri `401` ile reddedildi. İki ayrı gerçek Clerk kullanıcısıyla kabul testi henüz yapılmadı.

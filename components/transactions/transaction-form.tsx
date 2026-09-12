@@ -14,9 +14,11 @@ import type { StoredTransaction, TransactionOption } from "@/types/finance";
 interface TransactionFormProps {
   transaction?: StoredTransaction;
   onSuccess?: () => void;
+  familyGroupId?: string;
+  familyMembers?: { userId: string; name: string }[];
 }
 
-export function TransactionForm({ transaction, onSuccess }: TransactionFormProps) {
+export function TransactionForm({ transaction, onSuccess, familyGroupId, familyMembers = [] }: TransactionFormProps) {
   const { language } = useContext(LanguageContext);
   const tr = language === "tr";
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -26,6 +28,7 @@ export function TransactionForm({ transaction, onSuccess }: TransactionFormProps
   const [accounts, setAccounts] = useState<TransactionOption[]>([]);
   const [categories, setCategories] = useState<TransactionOption[]>([]);
   const [optionsError, setOptionsError] = useState<string>();
+  const [ownerUserId, setOwnerUserId] = useState(familyMembers[0]?.userId ?? "");
   const form = useForm<TransactionInput>({
     resolver: zodResolver(transactionSchema),
     defaultValues: {
@@ -65,7 +68,7 @@ export function TransactionForm({ transaction, onSuccess }: TransactionFormProps
       const response = await fetch(transaction ? `/api/transactions/${transaction.id}` : "/api/transactions", {
         method: transaction ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify({ ...values, familyGroupId, ownerUserId: familyGroupId && ownerUserId ? ownerUserId : undefined }),
       });
       const payload = await response.json().catch(() => ({})) as { error?: string };
       if (!response.ok) throw new Error(payload.error);
@@ -110,6 +113,13 @@ export function TransactionForm({ transaction, onSuccess }: TransactionFormProps
         <Input inputMode="decimal" placeholder="₺0.00" {...form.register("amount")} aria-invalid={!!form.formState.errors.amount} />
         {form.formState.errors.amount && <small className="field-error">{form.formState.errors.amount.message}</small>}
       </label>
+      {familyGroupId && <label>
+        {tr ? "İşlem sahibi" : "Transaction owner"}
+        <Select onValueChange={setOwnerUserId} value={ownerUserId}>
+          <SelectTrigger><SelectValue placeholder={tr ? "Aile bireyi seç" : "Select a family member"} /></SelectTrigger>
+          <SelectContent>{familyMembers.map((member) => <SelectItem value={member.userId} key={member.userId}>{member.name}</SelectItem>)}</SelectContent>
+        </Select>
+      </label>}
       <label>
         {tr ? "Açıklama" : "Description"}
         <Input placeholder={tr ? "Haftalık market alışverişi" : "Weekly groceries"} {...form.register("title")} aria-invalid={!!form.formState.errors.title} />

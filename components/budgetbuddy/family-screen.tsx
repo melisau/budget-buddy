@@ -1,244 +1,87 @@
 "use client";
 
-import { useContext, useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import { Check, Crown, ImagePlus, MoreHorizontal, Plus, ReceiptText, ShieldCheck, UserPlus, Users } from "lucide-react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { Check, Crown, Plus, ShieldCheck, Trash2, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 import { LanguageContext } from "@/components/providers/language-provider";
 import { PanelHead } from "@/components/budgetbuddy/shared";
+import { TransactionForm } from "@/components/transactions/transaction-form";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { FamilyReceiptDraft } from "@/types/finance";
 
-const members = [
-  ["Melisa", "Owner · You", "MU", "#5267df"],
-  ["Berk", "Member", "BC", "#2c9b7b"],
-  ["Birdal", "Member", "BU", "#d47a62"],
-  ["Nevin", "Viewer", "NM", "#9b72cf"],
-] as const;
+type FamilyMember = { id: string; userId: string | null; name: string; email: string | null; role: "owner" | "member" | "viewer"; invitationStatus: "pending" | "accepted" | "declined" };
+type FamilyGroup = { id: string; name: string; currency: string; ownerUserId: string; role: "owner" | "member" | "viewer"; members: FamilyMember[] };
+type Invitation = { id: string; familyGroupId: string; groupName: string; role: "member" | "viewer" };
+type Transaction = { id: string; title: string; amount: number; type: "income" | "expense"; familyGroupId: string | null; ownerUserId?: string | null; transactionDate: string };
 
-const memberSpending = [
-  ["Melisa", 21300, 41],
-  ["Berk", 16850, 33],
-  ["Birdal", 8290, 16],
-  ["Nevin", 4990, 10],
-] as const;
-
-type TransactionType = "expense" | "income";
-type FamilyActivity = {
-  id: string;
-  creator: string;
-  owner: string;
-  label: string;
-  labelTr?: string;
-  amount: number;
-  receiptName?: string;
-  userAdded?: boolean;
-};
-
-const storageKey = "budgetbuddy-family-activities:v1";
-const defaultActivities: FamilyActivity[] = [
-  { id: "default-groceries", creator: "Melisa", owner: "Berk", label: "Groceries", labelTr: "Market alışverişi", amount: -1850 },
-  { id: "default-electricity", creator: "Berk", owner: "family", label: "Electricity bill", labelTr: "Elektrik faturası", amount: -1240 },
-  { id: "default-pension", creator: "Birdal", owner: "Birdal", label: "Pension", labelTr: "Emekli maaşı", amount: 18500 },
-];
+function initials(name: string) { return name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase(); }
+function roleLabel(role: FamilyMember["role"], tr: boolean) { return role === "owner" ? (tr ? "Yönetici" : "Owner") : role === "member" ? (tr ? "Üye" : "Member") : (tr ? "Görüntüleyici" : "Viewer"); }
 
 export function FamilyScreen() {
   const { language } = useContext(LanguageContext);
   const tr = language === "tr";
-  const [activities, setActivities] = useState<FamilyActivity[]>(defaultActivities);
+  const [groups, setGroups] = useState<FamilyGroup[]>([]);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [selectedGroupId, setSelectedGroupId] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let restoreTimer: ReturnType<typeof setTimeout> | undefined;
+  const reload = useCallback(async () => {
+    setLoading(true);
     try {
-      const stored = window.localStorage.getItem(storageKey);
-      if (!stored) return;
-      const parsed = JSON.parse(stored) as FamilyActivity[];
-      if (Array.isArray(parsed)) restoreTimer = setTimeout(() => setActivities(parsed), 0);
-    } catch {
-      try {
-        window.localStorage.removeItem(storageKey);
-      } catch {
-        // Storage can be unavailable in privacy-focused browser modes.
-      }
-    }
-    return () => { if (restoreTimer) clearTimeout(restoreTimer); };
-  }, []);
+      const [familyResult, inviteResult, transactionResult] = await Promise.all([fetch("/api/family"), fetch("/api/family/invitations"), fetch("/api/transactions")]);
+      const [family, invite, transaction] = await Promise.all([familyResult.json(), inviteResult.json(), transactionResult.json()]) as [{ groups?: FamilyGroup[]; error?: string }, { invitations?: Invitation[] }, { transactions?: Transaction[] }];
+      if (!familyResult.ok) throw new Error(family.error);
+      setGroups(family.groups ?? []); setInvitations(invite.invitations ?? []); setTransactions(transaction.transactions ?? []);
+      setSelectedGroupId((current) => current && (family.groups ?? []).some((group) => group.id === current) ? current : family.groups?.[0]?.id ?? "");
+    } catch (error) {
+      toast.error(error instanceof Error && error.message ? error.message : (tr ? "Aile verileri yüklenemedi." : "Unable to load family data."));
+    } finally { setLoading(false); }
+  }, [tr]);
 
-  const addActivity = (activity: Omit<FamilyActivity, "id" | "creator" | "userAdded">) => {
-    const nextActivity: FamilyActivity = {
-      ...activity,
-      id: window.crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      creator: "Melisa",
-      userAdded: true,
-    };
-    setActivities((current) => {
-      const next = [nextActivity, ...current];
-      try {
-        window.localStorage.setItem(storageKey, JSON.stringify(next));
-      } catch {
-        // The current session still keeps the activity when storage is unavailable.
-      }
-      return next;
-    });
+  useEffect(() => { const timer = window.setTimeout(() => void reload(), 0); return () => window.clearTimeout(timer); }, [reload]);
+  const group = groups.find((item) => item.id === selectedGroupId) ?? null;
+  const familyTransactions = useMemo(() => transactions.filter((item) => item.familyGroupId === group?.id), [transactions, group?.id]);
+  const income = familyTransactions.filter((item) => item.type === "income").reduce((sum, item) => sum + item.amount, 0);
+  const expenses = familyTransactions.filter((item) => item.type === "expense").reduce((sum, item) => sum + item.amount, 0);
+  const money = (value: number) => new Intl.NumberFormat(tr ? "tr-TR" : "en-US", { style: "currency", currency: group?.currency ?? "TRY", maximumFractionDigits: 2 }).format(value);
+  const respond = async (invitation: Invitation, accept: boolean) => {
+    const response = await fetch(`/api/family/invitations/${invitation.id}/respond`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accept }) });
+    const payload = await response.json().catch(() => ({})) as { error?: string };
+    if (!response.ok) { toast.error(payload.error ?? (tr ? "Davet güncellenemedi." : "Unable to update invitation.")); return; }
+    toast.success(accept ? (tr ? "Aile daveti kabul edildi." : "Family invitation accepted.") : (tr ? "Davet reddedildi." : "Invitation declined."));
+    void reload();
   };
 
-  const addedActivities = activities.filter((activity) => activity.userAdded);
-  const addedIncome = addedActivities.reduce((total, activity) => total + Math.max(0, activity.amount), 0);
-  const addedExpenses = addedActivities.reduce((total, activity) => total + Math.max(0, -activity.amount), 0);
-  const familyBalance = 146850 + addedIncome - addedExpenses;
-  const familyIncome = 92000 + addedIncome;
-  const familyExpenses = 51430 + addedExpenses;
-  const savingsRate = familyIncome ? Math.max(0, (familyIncome - familyExpenses) / familyIncome * 100) : 0;
-  const formatMoney = (value: number) => `₺${value.toLocaleString(tr ? "tr-TR" : "en-US", { maximumFractionDigits: 2 })}`;
-
+  if (loading) return <section className="family-page"><p>{tr ? "Aile grupları yükleniyor…" : "Loading family groups…"}</p></section>;
+  if (!group) return <EmptyFamily invitations={invitations} onRespond={respond} onCreated={reload} tr={tr} />;
+  const writable = group.role !== "viewer";
+  const accepted = group.members.filter((member) => member.invitationStatus === "accepted");
+  const spendTotal = Math.max(expenses, 1);
   return <section className="family-page">
-    <div className="page-head">
-      <div><h2>{tr ? "Uyar Ailesi bütçesi" : "Uyar Family budget"}</h2><p>{tr ? "Ailenizin ortak gelir, gider ve hedeflerini tek yerden takip edin." : "Track shared income, expenses, and goals in one place."}</p></div>
-      <div className="family-actions"><InviteMember /><FamilyTransaction onSave={addActivity} /></div>
-    </div>
-    <div className="family-banner">
-      <div><span><Users /></span><div><small>{tr ? "AİLE TOPLAM BAKİYESİ" : "TOTAL FAMILY BALANCE"}</small><strong>{formatMoney(familyBalance)}</strong><p>{tr ? "4 aile bireyi · Eylül 2026" : "4 family members · September 2026"}</p></div></div>
-      <div><b>{formatMoney(familyIncome)}<small>{tr ? "Toplam gelir" : "Total income"}</small></b><b>{formatMoney(familyExpenses)}<small>{tr ? "Toplam gider" : "Total expenses"}</small></b><b>{savingsRate.toLocaleString(tr ? "tr-TR" : "en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%<small>{tr ? "Tasarruf oranı" : "Savings rate"}</small></b></div>
-    </div>
+    <div className="page-head"><div><h2>{group.name}</h2><p>{tr ? "Ortak gelir, gider ve aile işlemlerini güvenle yönetin." : "Manage shared income, expenses, and family transactions securely."}</p></div><div className="family-actions">{groups.length > 1 && <Select value={group.id} onValueChange={setSelectedGroupId}><SelectTrigger aria-label={tr ? "Aile grubu seç" : "Select family group"}><SelectValue /></SelectTrigger><SelectContent>{groups.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent></Select>}{group.role === "owner" && <InviteMember group={group} onComplete={reload} tr={tr} />}{writable && <FamilyTransaction group={group} onComplete={reload} tr={tr} />}<GroupControls group={group} onComplete={reload} tr={tr} /></div></div>
+    {invitations.length > 0 && <div className="panel family-invites"><b>{tr ? "Bekleyen aile davetleri" : "Pending family invitations"}</b>{invitations.map((invite) => <div key={invite.id}><span>{invite.groupName} · {roleLabel(invite.role, tr)}</span><Button size="sm" onClick={() => void respond(invite, true)}>{tr ? "Kabul et" : "Accept"}</Button><Button size="sm" variant="outline" onClick={() => void respond(invite, false)}>{tr ? "Reddet" : "Decline"}</Button></div>)}</div>}
+    <div className="family-banner"><div><span><Users /></span><div><small>{tr ? "AİLE TOPLAM BAKİYESİ" : "TOTAL FAMILY BALANCE"}</small><strong>{money(income - expenses)}</strong><p>{accepted.length} {tr ? "kabul edilmiş üye" : "accepted members"}</p></div></div><div><b>{money(income)}<small>{tr ? "Toplam gelir" : "Total income"}</small></b><b>{money(expenses)}<small>{tr ? "Toplam gider" : "Total expenses"}</small></b><b>{income ? `${Math.max(0, (income - expenses) / income * 100).toFixed(1)}%` : "—"}<small>{tr ? "Tasarruf oranı" : "Savings rate"}</small></b></div></div>
     <div className="family-grid">
-      <article className="panel family-members">
-        <PanelHead title={tr ? "Aile bireyleri" : "Family members"} sub={tr ? "Rol ve erişim durumları" : "Roles and access"} />
-        {members.map((member, index) => <div className="member" key={member[0]}><span style={{ background: member[3] }}>{member[2]}</span><b>{member[0]}<small>{tr ? member[1].replace("Owner · You", "Yönetici · Sen").replace("Member", "Üye").replace("Viewer", "Görüntüleyici") : member[1]}</small></b>{index === 0 && <Crown />}<button type="button" aria-label={tr ? "Üye işlemleri" : "Member actions"}><MoreHorizontal /></button></div>)}
-      </article>
-      <article className="panel family-spending">
-        <PanelHead title={tr ? "Kişiye göre harcama" : "Spending by member"} sub={tr ? "Bu ay" : "This month"} />
-        {memberSpending.map(([name, amount, percentage]) => <div className="member-spend" key={name}><div><b>{name}</b><span>{formatMoney(amount)}</span></div><Progress value={percentage} /><small>{percentage}%</small></div>)}
-      </article>
-      <article className="panel family-activity">
-        <PanelHead title={tr ? "Aile hareketleri" : "Family activity"} sub={tr ? "Kim, kimin için işlem ekledi" : "Who added what for whom"} />
-        {activities.map((activity) => <div className="family-tx" key={activity.id}>
-          <span>{activity.creator.slice(0, 1)}</span>
-          <div><b>{tr && activity.labelTr ? activity.labelTr : activity.label}</b><small>{activity.creator} → {activity.owner === "family" ? (tr ? "Aile" : "Family") : activity.owner}{activity.receiptName && <em><ReceiptText />{activity.receiptName}</em>}</small></div>
-          <strong className={activity.amount > 0 ? "pos" : "neg"}>{activity.amount > 0 ? "+" : "−"}{formatMoney(Math.abs(activity.amount))}</strong>
-        </div>)}
-      </article>
-      <article className="panel family-rules">
-        <PanelHead title={tr ? "Grup yetkileri" : "Group permissions"} sub={tr ? "Güvenli ortak kullanım" : "Safe shared access"} />
-        <ul>
-          <li><Check /><span><b>{tr ? "Yönetici" : "Owner"}</b>{tr ? " Üye davet eder ve rolleri yönetir." : " invites members and manages roles."}</span></li>
-          <li><Check /><span><b>{tr ? "Üye" : "Member"}</b>{tr ? " Kendisi veya aile için işlem ekler." : " adds transactions for self or family."}</span></li>
-          <li><Check /><span><b>{tr ? "Görüntüleyici" : "Viewer"}</b>{tr ? " Bütçeyi görür, değiştiremez." : " can view but cannot edit."}</span></li>
-        </ul>
-        <p><ShieldCheck />{tr ? "Her işlemde ekleyen kişi ve işlem sahibi kaydedilir." : "Every transaction records its creator and owner."}</p>
-      </article>
+      <article className="panel family-members"><PanelHead title={tr ? "Aile bireyleri" : "Family members"} sub={tr ? "Rol ve erişim durumları" : "Roles and access"} />{group.members.filter((member) => member.invitationStatus !== "declined").map((member) => <MemberRow key={member.id} group={group} member={member} tr={tr} onComplete={reload} />)}</article>
+      <article className="panel family-spending"><PanelHead title={tr ? "Aile işlemleri" : "Family transactions"} sub={tr ? "İşlem sahibine göre giderler" : "Expenses by transaction owner"} />{accepted.map((member) => { const spent = member.userId ? familyTransactions.filter((item) => item.type === "expense" && item.ownerUserId === member.userId).reduce((sum, item) => sum + item.amount, 0) : 0; const percent = Math.round(spent / spendTotal * 100); return <div className="member-spend" key={member.id}><div><b>{member.name}</b><span>{money(spent)}</span></div><Progress value={percent} /><small>{percent}%</small></div>; })}</article>
+      <article className="panel family-activity"><PanelHead title={tr ? "Aile hareketleri" : "Family activity"} sub={tr ? "Ortak kaydedilen son işlemler" : "Recent shared transactions"} />{familyTransactions.length ? familyTransactions.slice(0, 6).map((transaction) => <div className="family-tx" key={transaction.id}><span>{transaction.title.slice(0, 1).toUpperCase()}</span><div><b>{transaction.title}</b><small>{transaction.transactionDate}</small></div><strong className={transaction.type === "income" ? "pos" : "neg"}>{transaction.type === "income" ? "+" : "−"}{money(transaction.amount)}</strong></div>) : <p className="empty-copy">{tr ? "Henüz ortak işlem yok." : "There are no shared transactions yet."}</p>}</article>
+      <article className="panel family-rules"><PanelHead title={tr ? "Grup yetkileri" : "Group permissions"} sub={tr ? "Güvenli ortak kullanım" : "Safe shared access"} /><ul><li><Check /><span><b>{tr ? "Yönetici" : "Owner"}</b>{tr ? " davetleri ve rolleri yönetir." : " manages invitations and roles."}</span></li><li><Check /><span><b>{tr ? "Üye" : "Member"}</b>{tr ? " aile işlemi ekler." : " adds family transactions."}</span></li><li><Check /><span><b>{tr ? "Görüntüleyici" : "Viewer"}</b>{tr ? " verileri görür, değiştiremez." : " sees data but cannot change it."}</span></li></ul><p><ShieldCheck />{tr ? "İşlem kaydı, ekleyen kişiyi ve işlem sahibini saklar." : "Transaction records keep the creator and owner."}</p></article>
     </div>
   </section>;
 }
 
-function InviteMember() {
-  const { language } = useContext(LanguageContext);
-  const tr = language === "tr";
-  return <Dialog><DialogTrigger asChild><Button variant="outline"><UserPlus />{tr ? "Üye davet et" : "Invite member"}</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>{tr ? "Aile bireyi davet et" : "Invite a family member"}</DialogTitle><DialogDescription>{tr ? "E-posta adresini ve gruptaki rolünü belirleyin." : "Choose their email address and group role."}</DialogDescription></DialogHeader><form className="modal"><label>{tr ? "E-posta adresi" : "Email address"}<Input type="email" placeholder="family@example.com" /></label><label>{tr ? "Rol" : "Role"}<Select defaultValue="member"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="member">{tr ? "Üye" : "Member"}</SelectItem><SelectItem value="viewer">{tr ? "Görüntüleyici" : "Viewer"}</SelectItem></SelectContent></Select></label><Button type="button">{tr ? "Daveti gönder" : "Send invitation"}</Button></form></DialogContent></Dialog>;
-}
+function EmptyFamily({ invitations, onRespond, onCreated, tr }: { invitations: Invitation[]; onRespond: (invite: Invitation, accept: boolean) => Promise<void>; onCreated: () => Promise<void>; tr: boolean }) { return <section className="family-page"><div className="panel empty-family"><Users /><h2>{tr ? "Aile grubunu oluştur" : "Create a family group"}</h2><p>{tr ? "Ortak bütçeyi başlatın, ardından üyeleri e-posta adresleriyle davet edin." : "Start a shared budget, then invite members with their email addresses."}</p><CreateFamily onComplete={onCreated} tr={tr} />{invitations.length > 0 && <div className="family-invites">{invitations.map((invite) => <div key={invite.id}><span>{invite.groupName} · {roleLabel(invite.role, tr)}</span><Button size="sm" onClick={() => void onRespond(invite, true)}>{tr ? "Kabul et" : "Accept"}</Button><Button size="sm" variant="outline" onClick={() => void onRespond(invite, false)}>{tr ? "Reddet" : "Decline"}</Button></div>)}</div>}</div></section>; }
 
-function FamilyTransaction({ onSave }: { onSave: (activity: Omit<FamilyActivity, "id" | "creator" | "userAdded">) => void }) {
-  const { language } = useContext(LanguageContext);
-  const tr = language === "tr";
-  const [open, setOpen] = useState(false);
-  const [owner, setOwner] = useState("family");
-  const [transactionType, setTransactionType] = useState<TransactionType>("expense");
-  const [amount, setAmount] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("");
-  const [account, setAccount] = useState("");
-  const [error, setError] = useState("");
-  const [receipt, setReceipt] = useState<FamilyReceiptDraft | null>(null);
-  const receiptRef = useRef<FamilyReceiptDraft | null>(null);
+function CreateFamily({ onComplete, tr }: { onComplete: () => Promise<void>; tr: boolean }) { const [name, setName] = useState(""); const [open, setOpen] = useState(false); const [saving, setSaving] = useState(false); const submit = async (event: React.FormEvent) => { event.preventDefault(); setSaving(true); try { const response = await fetch("/api/family", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) }); const payload = await response.json() as { error?: string }; if (!response.ok) throw new Error(payload.error); toast.success(tr ? "Aile grubu oluşturuldu." : "Family group created."); setOpen(false); setName(""); await onComplete(); } catch (error) { toast.error(error instanceof Error && error.message ? error.message : "Unable to create family group."); } finally { setSaving(false); } }; return <Dialog open={open} onOpenChange={setOpen}><DialogTrigger asChild><Button><Plus />{tr ? "Grup oluştur" : "Create group"}</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>{tr ? "Yeni aile grubu" : "New family group"}</DialogTitle><DialogDescription>{tr ? "Grubun ilk yöneticisi siz olacaksınız." : "You will be the first owner of this group."}</DialogDescription></DialogHeader><form className="modal" onSubmit={submit}><label>{tr ? "Grup adı" : "Group name"}<Input value={name} onChange={(event) => setName(event.target.value)} placeholder={tr ? "Örn. Uyar Ailesi" : "e.g. Uyar Family"} /></label><Button disabled={saving} type="submit">{saving ? (tr ? "Oluşturuluyor…" : "Creating…") : (tr ? "Grubu oluştur" : "Create group")}</Button></form></DialogContent></Dialog>; }
 
-  useEffect(() => {
-    receiptRef.current = receipt;
-  }, [receipt]);
+function InviteMember({ group, onComplete, tr }: { group: FamilyGroup; onComplete: () => Promise<void>; tr: boolean }) { const [open, setOpen] = useState(false); const [email, setEmail] = useState(""); const [role, setRole] = useState<"member" | "viewer">("member"); const [saving, setSaving] = useState(false); const submit = async (event: React.FormEvent) => { event.preventDefault(); setSaving(true); try { const response = await fetch("/api/family/invitations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ familyGroupId: group.id, email, role }) }); const payload = await response.json() as { error?: string }; if (!response.ok) throw new Error(payload.error); toast.success(tr ? "Davet kaydedildi. E-posta gönderimi henüz etkin değil." : "Invitation saved. Email delivery is not enabled yet."); setOpen(false); setEmail(""); await onComplete(); } catch (error) { toast.error(error instanceof Error && error.message ? error.message : "Unable to create invitation."); } finally { setSaving(false); } }; return <Dialog open={open} onOpenChange={setOpen}><DialogTrigger asChild><Button variant="outline"><UserPlus />{tr ? "Üye davet et" : "Invite member"}</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>{tr ? "Aile bireyi davet et" : "Invite a family member"}</DialogTitle><DialogDescription>{tr ? "Davet, bu e-postayla giriş yapan kişinin kabul ekranında görünür. E-posta gönderilmez." : "The invitation appears for the user who signs in with this email. No email is sent."}</DialogDescription></DialogHeader><form className="modal" onSubmit={submit}><label>{tr ? "E-posta adresi" : "Email address"}<Input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="family@example.com" /></label><label>{tr ? "Rol" : "Role"}<Select value={role} onValueChange={(value) => setRole(value as "member" | "viewer")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="member">{tr ? "Üye" : "Member"}</SelectItem><SelectItem value="viewer">{tr ? "Görüntüleyici" : "Viewer"}</SelectItem></SelectContent></Select></label><Button disabled={saving} type="submit">{saving ? (tr ? "Kaydediliyor…" : "Saving…") : (tr ? "Daveti kaydet" : "Save invitation")}</Button></form></DialogContent></Dialog>; }
 
-  useEffect(() => () => {
-    if (receiptRef.current) URL.revokeObjectURL(receiptRef.current.previewUrl);
-  }, []);
+function FamilyTransaction({ group, onComplete, tr }: { group: FamilyGroup; onComplete: () => Promise<void>; tr: boolean }) { const [open, setOpen] = useState(false); const people = group.members.filter((member) => member.invitationStatus === "accepted" && member.userId).map((member) => ({ userId: member.userId!, name: member.name })); return <Dialog open={open} onOpenChange={setOpen}><DialogTrigger asChild><Button><Plus />{tr ? "Aile işlemi ekle" : "Add family transaction"}</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>{tr ? "Aile işlemi ekle" : "Add family transaction"}</DialogTitle><DialogDescription>{tr ? "Ekleyen kişi ve işlem sahibi kayıt altına alınır." : "The creator and transaction owner are recorded."}</DialogDescription></DialogHeader><TransactionForm familyGroupId={group.id} familyMembers={people} onSuccess={() => { setOpen(false); void onComplete(); }} /></DialogContent></Dialog>; }
 
-  const clearReceipt = () => setReceipt((current) => {
-    if (current) URL.revokeObjectURL(current.previewUrl);
-    return null;
-  });
+function GroupControls({ group, onComplete, tr }: { group: FamilyGroup; onComplete: () => Promise<void>; tr: boolean }) { const [open, setOpen] = useState(false); const [nextOwner, setNextOwner] = useState(""); const [saving, setSaving] = useState(false); const people = group.members.filter((member) => member.invitationStatus === "accepted" && member.userId && member.role !== "owner"); const request = async (url: string, method: string, body?: object) => { setSaving(true); try { const response = await fetch(url, { method, headers: body ? { "Content-Type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined }); const payload = await response.json().catch(() => ({})) as { error?: string }; if (!response.ok) throw new Error(payload.error); setOpen(false); await onComplete(); } catch (error) { toast.error(error instanceof Error && error.message ? error.message : "Unable to update family group."); } finally { setSaving(false); } }; const transfer = () => { if (nextOwner) void request(`/api/family/${group.id}`, "PATCH", { transferOwnershipTo: nextOwner }); }; const leave = () => { if (window.confirm(tr ? "Bu aile grubundan ayrılmak istiyor musunuz?" : "Leave this family group?")) void request(`/api/family/${group.id}/leave`, "POST"); }; const remove = () => { if (window.confirm(tr ? "Aile grubu ve ortak verileri silinsin mi?" : "Delete this family group and its shared data?")) void request(`/api/family/${group.id}`, "DELETE"); }; return <Dialog open={open} onOpenChange={setOpen}><DialogTrigger asChild><Button variant="outline">{tr ? "Grubu yönet" : "Manage group"}</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>{tr ? "Aile grubunu yönet" : "Manage family group"}</DialogTitle><DialogDescription>{group.role === "owner" ? (tr ? "Sahipliği devredebilir veya grubu silebilirsiniz." : "You can transfer ownership or delete the group.") : (tr ? "Bu gruptan ayrılabilirsiniz." : "You can leave this group.")}</DialogDescription></DialogHeader>{group.role === "owner" ? <div className="modal"><label>{tr ? "Yeni yönetici" : "New owner"}<Select value={nextOwner} onValueChange={setNextOwner}><SelectTrigger><SelectValue placeholder={tr ? "Üye seç" : "Choose a member"} /></SelectTrigger><SelectContent>{people.map((member) => <SelectItem key={member.id} value={member.userId!}>{member.name}</SelectItem>)}</SelectContent></Select></label><Button disabled={!nextOwner || saving} type="button" variant="outline" onClick={transfer}>{tr ? "Sahipliği devret" : "Transfer ownership"}</Button><Button disabled={saving} type="button" variant="destructive" onClick={remove}>{tr ? "Aile grubunu sil" : "Delete family group"}</Button></div> : <div className="modal"><Button disabled={saving} type="button" variant="destructive" onClick={leave}>{tr ? "Aile grubundan ayrıl" : "Leave family group"}</Button></div>}</DialogContent></Dialog>; }
 
-  const chooseReceipt = (file?: File) => {
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      setError(tr ? "Görsel en fazla 5 MB olabilir." : "The image must be 5 MB or smaller.");
-      return;
-    }
-    setError("");
-    setReceipt((current) => {
-      if (current) URL.revokeObjectURL(current.previewUrl);
-      return { name: file.name, size: file.size, previewUrl: URL.createObjectURL(file) };
-    });
-  };
-
-  const resetForm = () => {
-    setOwner("family");
-    setTransactionType("expense");
-    setAmount("");
-    setDescription("");
-    setCategory("");
-    setAccount("");
-    setError("");
-    clearReceipt();
-  };
-
-  const handleOpenChange = (nextOpen: boolean) => {
-    setOpen(nextOpen);
-    if (!nextOpen) resetForm();
-  };
-
-  const saveTransaction = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const numericAmount = Number(amount.replace(/\s|₺/g, "").replace(/\./g, "").replace(",", "."));
-    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-      setError(tr ? "Geçerli bir tutar girin." : "Enter a valid amount.");
-      return;
-    }
-    if (!description.trim()) {
-      setError(tr ? "Açıklama alanını doldurun." : "Enter a description.");
-      return;
-    }
-    if (!category || !account) {
-      setError(tr ? "Kategori ve hesap seçin." : "Select a category and account.");
-      return;
-    }
-
-    onSave({ owner, label: description.trim(), amount: transactionType === "expense" ? -numericAmount : numericAmount, receiptName: receipt?.name });
-    toast.success(tr ? "Aile işlemi kaydedildi." : "Family transaction saved.");
-    setOpen(false);
-    resetForm();
-  };
-
-  return <Dialog open={open} onOpenChange={handleOpenChange}>
-    <DialogTrigger asChild><Button><Plus />{tr ? "Aile işlemi ekle" : "Add family transaction"}</Button></DialogTrigger>
-    <DialogContent>
-      <DialogHeader><DialogTitle>{tr ? "Aile işlemi ekle" : "Add family transaction"}</DialogTitle><DialogDescription>{tr ? "İşlemin kimin için olduğunu seçin. Ekleyen kişi otomatik kaydedilir." : "Choose who this transaction belongs to. Its creator is recorded automatically."}</DialogDescription></DialogHeader>
-      <form className="modal" onSubmit={saveTransaction}>
-        <label>{tr ? "İşlem sahibi" : "Transaction owner"}<Select value={owner} onValueChange={setOwner}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="family">{tr ? "Ortak aile bütçesi" : "Shared family budget"}</SelectItem><SelectItem value="Melisa">Melisa</SelectItem><SelectItem value="Berk">Berk</SelectItem><SelectItem value="Birdal">Birdal</SelectItem></SelectContent></Select></label>
-        <div className="type"><button type="button" className={transactionType === "expense" ? "active" : ""} onClick={() => setTransactionType("expense")}>{tr ? "Gider" : "Expense"}</button><button type="button" className={transactionType === "income" ? "active" : ""} onClick={() => setTransactionType("income")}>{tr ? "Gelir" : "Income"}</button></div>
-        <label>{tr ? "Tutar" : "Amount"}<Input inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="₺0,00" /></label>
-        <label>{tr ? "Açıklama" : "Description"}<Input value={description} onChange={(event) => setDescription(event.target.value)} placeholder={tr ? "Örn. Market alışverişi" : "e.g. Groceries"} /></label>
-        <div className="form-grid">
-          <label>{tr ? "Kategori" : "Category"}<Select value={category} onValueChange={setCategory}><SelectTrigger><SelectValue placeholder={tr ? "Kategori seç" : "Select category"} /></SelectTrigger><SelectContent><SelectItem value="food">{tr ? "Market" : "Groceries"}</SelectItem><SelectItem value="home">{tr ? "Ev" : "Housing"}</SelectItem></SelectContent></Select></label>
-          <label>{tr ? "Hesap" : "Account"}<Select value={account} onValueChange={setAccount}><SelectTrigger><SelectValue placeholder={tr ? "Hesap seç" : "Select account"} /></SelectTrigger><SelectContent><SelectItem value="family">{tr ? "Aile hesabı" : "Family account"}</SelectItem><SelectItem value="cash">{tr ? "Nakit" : "Cash"}</SelectItem></SelectContent></Select></label>
-        </div>
-        <div className="receipt-field">
-          <div><b>{tr ? "Fiş veya belge görseli" : "Receipt or document image"}</b><small>{tr ? "İsteğe bağlı · JPG, PNG veya WEBP · en fazla 5 MB" : "Optional · JPG, PNG or WEBP · up to 5 MB"}</small></div>
-          {receipt ? <div className="receipt-preview"><Image src={receipt.previewUrl} alt={tr ? "Seçilen fiş önizlemesi" : "Selected receipt preview"} width={120} height={120} unoptimized /><span><Check />{tr ? "Görsel hazır" : "Image ready"}<button type="button" onClick={clearReceipt}>{tr ? "Kaldır" : "Remove"}</button></span></div> : <label className="receipt-upload"><ImagePlus /><span><b>{tr ? "Görsel ekle" : "Add image"}</b><small>{tr ? "Kameradan çek veya galeriden seç" : "Take a photo or choose from gallery"}</small></span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => chooseReceipt(event.target.files?.[0])} /></label>}
-        </div>
-        <p className="receipt-visibility"><Users />{tr ? "Bu görsel aile grubundaki yetkili kişiler tarafından görüntülenebilir." : "This image will be visible to authorized family group members."}</p>
-        {error && <p className="form-error" role="alert">{error}</p>}
-        <Button type="submit">{tr ? "İşlemi kaydet" : "Save transaction"}</Button>
-      </form>
-    </DialogContent>
-  </Dialog>;
-}
+function MemberRow({ group, member, onComplete, tr }: { group: FamilyGroup; member: FamilyMember; onComplete: () => Promise<void>; tr: boolean }) { const canManage = group.role === "owner" && member.role !== "owner"; const update = async (method: "PATCH" | "DELETE", role?: "member" | "viewer") => { const response = await fetch(`/api/family/${group.id}/members/${member.id}`, { method, headers: { "Content-Type": "application/json" }, body: role ? JSON.stringify({ role }) : undefined }); const payload = await response.json().catch(() => ({})) as { error?: string }; if (!response.ok) return toast.error(payload.error ?? "Unable to update family member."); toast.success(method === "DELETE" ? (tr ? "Üye kaldırıldı." : "Member removed.") : (tr ? "Rol güncellendi." : "Role updated.")); void onComplete(); }; return <div className="member"><span style={{ background: member.role === "owner" ? "#5267df" : "#2c9b7b" }}>{initials(member.name)}</span><b>{member.name}<small>{roleLabel(member.role, tr)}{member.invitationStatus === "pending" && ` · ${tr ? "Davet bekliyor" : "Invitation pending"}`}</small></b>{member.role === "owner" && <Crown />}{canManage && <div className="member-actions"><Select value={member.role} onValueChange={(value) => void update("PATCH", value as "member" | "viewer")}><SelectTrigger aria-label={tr ? "Rol değiştir" : "Change role"}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="member">{tr ? "Üye" : "Member"}</SelectItem><SelectItem value="viewer">{tr ? "Görüntüleyici" : "Viewer"}</SelectItem></SelectContent></Select><button type="button" aria-label={tr ? "Üyeyi kaldır" : "Remove member"} onClick={() => void update("DELETE")}><Trash2 /></button></div>}</div>; }
