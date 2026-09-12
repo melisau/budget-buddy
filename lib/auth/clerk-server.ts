@@ -51,3 +51,7 @@ export async function getClerkAuth(): Promise<ClerkAuthState> {
 export async function getCurrentClerkUser(userId: string): Promise<User> {
   return createClerkClient({ secretKey: clerkSecretKey() }).users.getUser(userId);
 }
+
+export async function deleteClerkUser(userId: string): Promise<void> {
+  await createClerkClient({ secretKey: clerkSecretKey() }).users.deleteUser(userId);
+}

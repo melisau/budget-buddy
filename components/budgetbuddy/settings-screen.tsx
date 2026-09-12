@@ -1,8 +1,8 @@
 "use client";
 
 import { useClerk, useUser } from "@clerk/react";
+import { useState } from "react";
 import { Download } from "lucide-react";
-import { ConfirmDelete } from "@/components/budgetbuddy/shared";
 import { useT } from "@/components/providers/language-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,8 @@ export function SettingsScreen() {
   const displayName = user?.fullName || "";
   const email = user?.primaryEmailAddress?.emailAddress || "";
   const initials = displayName.split(/\s+/).filter(Boolean).map((part) => part[0]).join("").slice(0, 2).toUpperCase() || "BB";
+  const [deleting, setDeleting] = useState(false);
+  const deleteAccount = async () => { if (!window.confirm(t("Permanently remove all data."))) return; setDeleting(true); try { const response = await fetch("/api/account", { method: "DELETE" }); if (!response.ok) throw new Error(); window.location.assign("/"); } finally { setDeleting(false); } };
   return <div className="settings">
     <nav aria-label={t("Settings sections")}>{["Profile", "Preferences", "Categories", "Subscription", "Data"].map((label, index) => <button type="button" className={index === 0 ? "active" : ""} key={label}>{t(label)}</button>)}</nav>
     <section>
@@ -34,7 +36,7 @@ export function SettingsScreen() {
       <article className="panel settings-card">
         <h3>{t("Data")}</h3>
         <div className="setting"><span><b>{t("Export data")}</b><small>{t("Download your records as CSV.")}</small></span><Button variant="outline"><Download />{t("Export")}</Button></div>
-        <div className="setting"><span><b>{t("Delete account")}</b><small>{t("Permanently remove all data.")}</small></span><ConfirmDelete /></div>
+        <div className="setting"><span><b>{t("Delete account")}</b><small>{t("Permanently remove all data.")}</small></span><Button variant="destructive" disabled={deleting} onClick={() => void deleteAccount()}>{deleting ? "…" : t("Delete")}</Button></div>
       </article>
     </section>
   </div>;
