@@ -8,11 +8,7 @@ import { Input } from "@/components/ui/input";
 
 type Message = readonly ["ai" | "user", string];
 
-function initialMessages(turkish: boolean): Message[] {
-  return turkish
-    ? [["ai", "Merhaba Melisa — finansınla ilgili neyi anlamak istersin?"], ["user", "Bu ay en çok neye para harcadım?"], ["ai", "Bu ay en büyük harcama kategorin Konut: ₺7.400. Toplam giderinin yaklaşık %40'ı. Yemek ₺3.250 ile ikinci sırada."]]
-    : [["ai", "Hi Melisa — what would you like to understand about your money?"], ["user", "What did I spend the most on this month?"], ["ai", "Housing is your largest category this month at ₺7,400, about 40% of total spending. Food & Dining is second at ₺3,250."]];
-}
+function initialMessages(turkish: boolean): Message[] { return [["ai", turkish ? "Merhaba — yetkili finans verilerini inceleyerek nasıl yardımcı olabilirim?" : "Hi — how can I help you understand your authorized financial data?"]]; }
 
 export function AssistantScreen() {
   const t = useT();
@@ -21,15 +17,13 @@ export function AssistantScreen() {
   const [listening, setListening] = useState(false);
   const [value, setValue] = useState("");
   const [messages, setMessages] = useState<Message[]>(() => initialMessages(turkish));
+  const [isSending, setIsSending] = useState(false);
 
-  const send = (question = value) => {
+  const send = async (question = value) => {
     const normalizedQuestion = question.trim();
     if (!normalizedQuestion) return;
-    const answer = turkish
-      ? "Eylül verilerine göre yemek ve eğlence harcamalarında küçük bir azaltma, ₺5.000 tasarruf hedefine yaklaşmana yardımcı olur. Bu bir bütçeleme değerlendirmesidir; yatırım tavsiyesi değildir."
-      : "Based on September data, a small reduction in dining and entertainment would help you reach your ₺5,000 savings goal. This is budgeting guidance, not investment advice.";
-    setMessages((current) => [...current, ["user", normalizedQuestion], ["ai", answer]]);
-    setValue("");
+    setMessages((current) => [...current, ["user", normalizedQuestion]]); setValue(""); setIsSending(true);
+    try { const response = await fetch("/api/assistant", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: normalizedQuestion, language }) }); const payload = await response.json() as { answer?: string; error?: string }; if (!response.ok || !payload.answer) throw new Error(payload.error); setMessages((current) => [...current, ["ai", payload.answer!]]); } catch (error) { setMessages((current) => [...current, ["ai", error instanceof Error && error.message ? error.message : (turkish ? "Yanıt alınamadı." : "Unable to get an answer.")]]); } finally { setIsSending(false); }
   };
 
   return <div className="assistant">
@@ -46,7 +40,7 @@ export function AssistantScreen() {
       <div className={`chatbox ${listening ? "listening" : ""}`}>
         <button type="button" aria-label={listening ? t("Stop listening") : t("Start listening")} onClick={() => setListening((current) => !current)}><Mic /></button>
         <Input value={value} onChange={(event) => setValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") send(); }} placeholder={listening ? t("Listening…") : t("Ask about your finances…")} />
-        <Button aria-label={t("Send message")} size="icon" onClick={() => send()}><Send /></Button>
+        <Button aria-label={t("Send message")} size="icon" disabled={isSending} onClick={() => void send()}><Send /></Button>
       </div>
     </section>
   </div>;
