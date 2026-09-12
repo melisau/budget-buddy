@@ -9,6 +9,7 @@ import {Logo} from "@/components/layout/logo";
 
 export type AppView="dashboard"|"family"|"transactions"|"budgets"|"accounts"|"goals"|"analytics"|"assistant"|"settings";
 type Navigate=(view:AppView|"landing")=>void;
+type Prefetch=(view:AppView)=>void;
 
 export const APP_NAVIGATION=[
  ["dashboard","Dashboard",LayoutDashboard],
@@ -22,7 +23,7 @@ export const APP_NAVIGATION=[
  ["settings","Settings",Settings],
 ] as const;
 
-export function AppSidebar({view,go}:{view:AppView;go:Navigate}){
+export function AppSidebar({view,go,prefetch}:{view:AppView;go:Navigate;prefetch?:Prefetch}){
  const t=useT();
  const {user}=useUser();
  const displayName=user?.fullName||user?.primaryEmailAddress?.emailAddress||"BudgetBuddy";
@@ -31,7 +32,7 @@ export function AppSidebar({view,go}:{view:AppView;go:Navigate}){
   <Logo go={()=>go("landing")}/>
   <small>{t("WORKSPACE")}</small>
   <nav aria-label={t("Main navigation")}>{APP_NAVIGATION.map(([id,label,Icon])=>
-   <button type="button" className={view===id?"active":""} onClick={()=>go(id)} key={id}><Icon/>{t(label)}{id==="assistant"&&<em>AI</em>}</button>
+   <button type="button" className={view===id?"active":""} onClick={()=>go(id)} onMouseEnter={()=>prefetch?.(id)} onFocus={()=>prefetch?.(id)} key={id}><Icon/>{t(label)}{id==="assistant"&&<em>AI</em>}</button>
   )}</nav>
   <div className="plan"><b><Sparkles/>{t("Core plan")}</b><small>{t("12 days in trial")}</small><Progress value={60}/><button type="button">{t("View plan")}<ChevronRight/></button></div>
   <div className="profile"><UserButton/><b>{displayName}<small>{email}</small></b><MoreHorizontal/></div>
@@ -50,10 +51,10 @@ export function AppHeader({view,quickAdd}:{view:AppView;quickAdd:ReactNode}){
  </header>;
 }
 
-export function MobileNavigation({view,go}:{view:AppView;go:Navigate}){
+export function MobileNavigation({view,go,prefetch}:{view:AppView;go:Navigate;prefetch?:Prefetch}){
  const t=useT();
  const items=[["dashboard","Home",Home],["transactions","Transactions",ReceiptText],["add","Add",Plus],["budgets","Budgets",PiggyBank],["family","Family Group",Users]] as const;
  return <nav className="bottom" aria-label={t("Mobile navigation")}>{items.map(([id,label,Icon])=>
-  <button type="button" className={(view===id?"active ":"")+(id==="add"?"add":"")} onClick={()=>go(id==="add"?"transactions":id)} key={id}><Icon/>{t(label)}</button>
+  <button type="button" className={(view===id?"active ":"")+(id==="add"?"add":"")} onClick={()=>go(id==="add"?"transactions":id)} onPointerEnter={()=>prefetch?.(id==="add"?"transactions":id)} onFocus={()=>prefetch?.(id==="add"?"transactions":id)} key={id}><Icon/>{t(label)}</button>
  )}</nav>;
 }

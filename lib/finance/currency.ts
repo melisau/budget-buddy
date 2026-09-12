@@ -14,3 +14,7 @@ export function formatCurrency(amount: number, currency: Currency = "TRY") {
     maximumFractionDigits: 0,
   }).format(amount);
 }
+
+export function formatNumber(amount: number, language: "en" | "tr") {
+  return amount.toLocaleString(language === "tr" ? "tr-TR" : "en-US");
+}

@@ -2,7 +2,9 @@
 
 import { Target } from "lucide-react";
 import { PageHead } from "@/components/budgetbuddy/shared";
-import { useT } from "@/components/providers/language-provider";
+import { LanguageContext, useT } from "@/components/providers/language-provider";
+import { useContext } from "react";
+import { formatNumber } from "@/lib/finance/currency";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
@@ -14,6 +16,7 @@ const goals = [
 
 export function GoalsScreen() {
   const t = useT();
+  const { language } = useContext(LanguageContext);
   return <>
     <PageHead title="Your savings goals" sub="Big plans become easier when progress is visible." button="Create goal" />
     <div className="goal-grid">{goals.map(([name, saved, target, date], index) => {
@@ -21,9 +24,9 @@ export function GoalsScreen() {
       return <article className="panel goal" key={name}>
         <div className={`goal-art g${index}`}><Target /></div>
         <h3>{t(name)}</h3><p>{t("Target date")} · {t(date)}</p>
-        <b>₺{saved.toLocaleString()} <span>{t("of")} ₺{target.toLocaleString()}</span></b>
+        <b>₺{formatNumber(saved, language)} <span>{t("of")} ₺{formatNumber(target, language)}</span></b>
         <Progress value={progress} />
-        <small>{progress}% {t("complete")} <span>₺{(target - saved).toLocaleString()} {t("to go")}</span></small>
+        <small>{progress}% {t("complete")} <span>₺{formatNumber(target - saved, language)} {t("to go")}</span></small>
         <Button variant="outline">{t("Update progress")}</Button>
       </article>;
     })}</div>

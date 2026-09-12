@@ -2,8 +2,10 @@
 
 import { ChevronRight, Plus, type LucideIcon } from "lucide-react";
 import { TransactionForm } from "@/components/transactions/transaction-form";
-import { useT } from "@/components/providers/language-provider";
+import { LanguageContext, useT } from "@/components/providers/language-provider";
+import { useContext } from "react";
 import { calculateBudgetUsage } from "@/lib/finance/calculations";
+import { formatNumber } from "@/lib/finance/currency";
 import type { BudgetSummary } from "@/types/finance";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -20,14 +22,16 @@ export function PanelHead({ title, sub, action, onClick }: { title: string; sub:
 
 export function Transaction({ transaction }: { transaction: DemoTransaction }) {
   const t = useT();
+  const { language } = useContext(LanguageContext);
   const Icon = transaction[4];
-  return <div className="transaction"><i><Icon /></i><span><b>{t(transaction[0])}</b><small>{t(transaction[1])} · {t(transaction[2])}</small></span><strong className={transaction[3] > 0 ? "pos" : "neg"}>{transaction[3] > 0 ? "+" : "−"}₺{Math.abs(transaction[3]).toLocaleString()}</strong></div>;
+  return <div className="transaction"><i><Icon /></i><span><b>{t(transaction[0])}</b><small>{t(transaction[1])} · {t(transaction[2])}</small></span><strong className={transaction[3] > 0 ? "pos" : "neg"}>{transaction[3] > 0 ? "+" : "−"}₺{formatNumber(Math.abs(transaction[3]), language)}</strong></div>;
 }
 
 export function BudgetRow({ budget }: { budget: BudgetRowData }) {
   const t = useT();
+  const { language } = useContext(LanguageContext);
   const usage = calculateBudgetUsage({ category: budget[0], spent: budget[1], limit: budget[2] } satisfies BudgetSummary);
-  return <div className="budget-row"><div><b>{t(budget[0])}</b><span>₺{budget[1].toLocaleString()} / ₺{budget[2].toLocaleString()}</span></div><Progress value={Math.min(100, usage)} /><small className={budget[4]}>{t(budget[3])}</small><strong>{usage}%</strong></div>;
+  return <div className="budget-row"><div><b>{t(budget[0])}</b><span>₺{formatNumber(budget[1], language)} / ₺{formatNumber(budget[2], language)}</span></div><Progress value={Math.min(100, usage)} /><small className={budget[4]}>{t(budget[3])}</small><strong>{usage}%</strong></div>;
 }
 
 export function AddTransaction() {

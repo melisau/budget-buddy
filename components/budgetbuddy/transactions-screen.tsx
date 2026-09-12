@@ -4,6 +4,7 @@ import { useContext, useRef, useState } from "react";
 import { AlertCircle, Check, FileSpreadsheet, Search, Upload } from "lucide-react";
 import { demoTransactions } from "@/components/budgetbuddy/demo-data";
 import { parseTransactionCsv, type CsvParseResult } from "@/lib/finance/csv-import";
+import { formatNumber } from "@/lib/finance/currency";
 import { AddTransaction, Transaction } from "@/components/budgetbuddy/shared";
 import { LanguageContext, useT } from "@/components/providers/language-provider";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { Input } from "@/components/ui/input";
 
 export function TransactionsScreen() {
   const t = useT();
+  const { language } = useContext(LanguageContext);
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const filteredTransactions = demoTransactions.filter((item) =>
@@ -29,7 +31,7 @@ export function TransactionsScreen() {
       <header><span>{t("Transaction")}</span><span>{t("Category")}</span><span>{t("Date")}</span><span>{t("Account")}</span><span>{t("Amount")}</span></header>
       {filteredTransactions.map((item) => <div className="tx-row" key={item[0]}>
         <b>{t(item[0])}</b><span>{t(item[1])}</span><span>{t(item[2])}</span><span>{t("Everyday account")}</span>
-        <strong className={item[3] > 0 ? "pos" : "neg"}>{item[3] > 0 ? "+" : "−"}₺{Math.abs(item[3]).toLocaleString()}</strong>
+        <strong className={item[3] > 0 ? "pos" : "neg"}>{item[3] > 0 ? "+" : "−"}₺{formatNumber(Math.abs(item[3]), language)}</strong>
         <div className="mobile-only"><Transaction transaction={item} /></div>
       </div>)}
     </article> : <Empty className="panel empty-state"><EmptyHeader><EmptyMedia variant="icon"><Search /></EmptyMedia><EmptyTitle>{t("No matching transactions")}</EmptyTitle><EmptyDescription>{t("Try a different search, or add your first income or expense.")}</EmptyDescription></EmptyHeader><EmptyContent><AddTransaction /></EmptyContent></Empty>}

@@ -8,6 +8,7 @@ import { cashFlow, demoBudgets, demoTransactions, spendingCategories } from "@/c
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 import { EmptyDashboard } from "@/components/dashboard/empty-dashboard";
 import { LanguageContext, useT } from "@/components/providers/language-provider";
+import { formatNumber } from "@/lib/finance/currency";
 import { Button } from "@/components/ui/button";
 import type { Navigate } from "@/components/budgetbuddy/view-types";
 
@@ -46,7 +47,7 @@ export function DashboardScreen({ go }: { go: Navigate }) {
         <PanelHead title="Spending by category" sub="September" />
         <div className="donut">
           <div><ResponsiveContainer><PieChart><Pie data={spendingCategories.map((category) => ({ name: t(category[0]), value: category[1] }))} dataKey="value" innerRadius={58} outerRadius={78} paddingAngle={3}>{spendingCategories.map((category) => <Cell key={category[0]} fill={category[2]} />)}</Pie></PieChart></ResponsiveContainer><span>{t("Spent")}<b>₺30,700</b></span></div>
-          <ul>{spendingCategories.slice(0, 5).map((category) => <li key={category[0]}><i style={{ background: category[2] }} />{t(category[0])}<b>₺{category[1].toLocaleString()}</b></li>)}</ul>
+          <ul>{spendingCategories.slice(0, 5).map((category) => <li key={category[0]}><i style={{ background: category[2] }} />{t(category[0])}<b>₺{formatNumber(category[1], language)}</b></li>)}</ul>
         </div>
       </article>
       <article className="panel"><PanelHead title="Budget progress" sub="3 of 4 budgets on track" action="View all" onClick={() => go("budgets")} />{demoBudgets.slice(0, 3).map((budget) => <BudgetRow budget={budget} key={budget[0]} />)}</article>

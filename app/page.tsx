@@ -1,5 +1,5 @@
-import {BudgetBuddyScreen} from "@/components/budgetbuddy/screens";
+import { LandingPage } from "@/components/budgetbuddy/landing-page";
 
-export default function Page(){
- return <BudgetBuddyScreen view="landing"/>;
+export default function Page() {
+  return <LandingPage />;
 }
