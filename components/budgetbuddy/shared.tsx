@@ -34,9 +34,9 @@ export function BudgetRow({ budget }: { budget: BudgetRowData }) {
   return <div className="budget-row"><div><b>{t(budget[0])}</b><span>₺{formatNumber(budget[1], language)} / ₺{formatNumber(budget[2], language)}</span></div><Progress value={Math.min(100, usage)} /><small className={budget[4]}>{t(budget[3])}</small><strong>{usage}%</strong></div>;
 }
 
-export function AddTransaction() {
+export function AddTransaction({ onCreated }: { onCreated?: () => void }) {
   const t = useT();
-  return <Dialog><DialogTrigger asChild><Button className="add-transaction-button"><Plus />{t("Add transaction")}</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>{t("Add transaction")}</DialogTitle><DialogDescription>{t("Record a new income or expense.")}</DialogDescription></DialogHeader><TransactionForm /></DialogContent></Dialog>;
+  return <Dialog><DialogTrigger asChild><Button className="add-transaction-button"><Plus />{t("Add transaction")}</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>{t("Add transaction")}</DialogTitle><DialogDescription>{t("Record a new income or expense.")}</DialogDescription></DialogHeader><TransactionForm onSuccess={onCreated} /></DialogContent></Dialog>;
 }
 
 export function PageHead({ title, sub, button }: { title: string; sub: string; button: string }) {

@@ -13,8 +13,8 @@ Durumlar: Bekliyor / Devam ediyor / Engelli / Tamamlandı. Aşağıdaki uygulama
 
 - [ ] BB-01 — **Devam ediyor.** Clerk kimlik doğrulama. Mevcut projeyi bağla veya gerekli kurulumu belirle; kayıt, giriş, e-posta doğrulama, şifre sıfırlama, çıkış, korunan rotalar ve kalıcı oturum akışlarını tamamla. Clerk kimliğini Supabase kullanıcı kaydıyla eşleştir; ad, e-posta, fotoğraf, dil ve para birimi tercihlerini sakla. Bağımlılık: BB-00; profil kalıcılığı için BB-02. Kabul: Gerçek kullanıcı hesap açabilir, oturumu korunur ve kendi profiline erişir.
 - [x] BB-02 — Supabase şeması ve bağlantısı. Mevcut migration taslağını incele; kullanıcı, hesap, kategori, işlem, bütçe, hedef, aile grubu, aile üyeliği ve AI geçmişi tablolarını tamamla ve uygulanmasını doğrula. Güncelleme tarihleri, indeksler, benzersizlik ve ilişkisel bütünlük kurallarını kur. Ayrıcalıklı anahtarları sunucuda tut. Bağımlılık: BB-00. Kabul: Migration sonucu ve sunucudan kalıcı veri erişimi doğrulanır.
-- [ ] BB-03 — Veri erişim kuralları. Kişisel veri sahipliği, aile üyeliği ve yönetici/üye/görüntüleyici yetkilerini uygula; işlemi ekleyen ve adına işlem yapılan kişiyi ayrı kaydet. İsteklerde gönderilen kimliklere güvenme; çıkarılan üyelerin erişimini sonlandır. Bağımlılık: BB-01, BB-02. Kabul: Başka kullanıcı kimliği veya URL ile veri okunamaz/değiştirilemez; rol testleri geçer.
-- [ ] BB-04 — Kalıcı hesap, kategori ve işlem yönetimi. İşlemler için ekleme, düzenleme, silme; tarih, kategori, hesap, açıklama, not ve kişisel/aile kapsamını kaydet. Gerçek listeleme, arama, tarih/hesap/kategori/tür filtreleri, yüklenme/başarı/hata durumları ve çift gönderim korumasını tamamla. Bağımlılık: BB-03. Kabul: Kaydedilen işlem ikinci cihazdan görünür; yetkisiz değişiklik reddedilir.
+- [ ] BB-03 — **Devam ediyor.** Veri erişim kuralları. Kişisel veri sahipliği, aile üyeliği ve yönetici/üye/görüntüleyici yetkilerini uygula; işlemi ekleyen ve adına işlem yapılan kişiyi ayrı kaydet. İsteklerde gönderilen kimliklere güvenme; çıkarılan üyelerin erişimini sonlandır. Bağımlılık: BB-01, BB-02. Kabul: Başka kullanıcı kimliği veya URL ile veri okunamaz/değiştirilemez; rol testleri geçer.
+- [ ] BB-04 — **Devam ediyor.** Kalıcı hesap, kategori ve işlem yönetimi. İşlemler için ekleme, düzenleme, silme; tarih, kategori, hesap, açıklama, not ve kişisel/aile kapsamını kaydet. Gerçek listeleme, arama, tarih/hesap/kategori/tür filtreleri, yüklenme/başarı/hata durumları ve çift gönderim korumasını tamamla. Bağımlılık: BB-03. Kabul: Kaydedilen işlem ikinci cihazdan görünür; yetkisiz değişiklik reddedilir.
 
 ## Aile ve belgeler — Faz 2.5
 
@@ -73,3 +73,10 @@ Durumlar: Bekliyor / Devam ediyor / Engelli / Tamamlandı. Aşağıdaki uygulama
 - `0001_budgetbuddy_foundation.sql` ve `0002_new_user_starter_data.sql` canlı Supabase SQL Editor'de başarıyla uygulandı.
 - Kullanıcılar, hesaplar, kategoriler, işlemler, bütçeler, hedefler, aile tabloları ve AI oturumları canlı API üzerinden erişilebilir durumda.
 - `starter_data_seeded_at` kolonu ve `seed_user_starter_data` işlevi canlı API üzerinden doğrulandı. Henüz Budget Buddy kullanıcısı giriş yapmadığı için tüm tablolar boş.
+
+### 12 Eylül 2026 — BB-03 ve BB-04 uygulama katmanı eklendi
+
+- Tüm işlem API uçları önce Clerk oturumunu, ardından uygulama kullanıcısını sunucuda doğrular. Supabase service role anahtarı tarayıcıya verilmez.
+- Kişisel işlem oluşturma sırasında hesap ve kategori, oturumdaki kullanıcıya ait değilse istek reddedilir. Düzenleme ve silme, işlem sahibini; aile işlemlerinde ise kabul edilmiş aile rolünü denetler. Görüntüleyici rolü değişiklik yapamaz.
+- İşlem ekranı Supabase verilerini listeler; ekleme, düzenleme, silme, arama ve tür/hesap/kategori/tarih filtreleri gerçek API üzerinden çalışır. Form, gönderim sürerken devre dışı kalır.
+- Oturumsuz GET, POST ve DELETE istekleri yerel doğrulamada `401` ile reddedildi. Çok kullanıcılı aile rolü kabul testi BB-05 aile davet akışı ile birlikte tamamlanacak.

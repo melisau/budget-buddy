@@ -14,6 +14,19 @@ export interface FinanceTransaction {
   type: TransactionType;
 }
 
+export interface TransactionOption {
+  id: string;
+  name: string;
+  type?: TransactionType;
+}
+
+export interface StoredTransaction extends FinanceTransaction {
+  categoryId: string;
+  accountId: string;
+  note: string | null;
+  familyGroupId: string | null;
+}
+
 export interface BudgetSummary {
   category: string;
   spent: number;

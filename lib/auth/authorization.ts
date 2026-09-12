@@ -1,0 +1,92 @@
+import { getCurrentClerkUser, getClerkAuth } from "@/lib/auth/clerk-server";
+import { syncAppUser, toAppUserIdentity } from "@/lib/auth/app-user";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+
+export class AccessError extends Error {
+  constructor(
+    message: string,
+    readonly status: 401 | 403 | 404 = 403,
+  ) {
+    super(message);
+  }
+}
+
+export type AppUser = {
+  id: string;
+  clerkUserId: string;
+};
+
+type FamilyRole = "owner" | "member" | "viewer";
+
+export async function requireAppUser(): Promise<AppUser> {
+  const { isAuthenticated, userId } = await getClerkAuth();
+  if (!isAuthenticated || !userId) {
+    throw new AccessError("Sign in is required.", 401);
+  }
+
+  const supabase = getSupabaseServerClient();
+  const lookup = await supabase
+    .from("users")
+    .select("id, clerk_user_id")
+    .eq("clerk_user_id", userId)
+    .maybeSingle();
+
+  if (lookup.error) throw new Error(`Unable to look up the signed-in user: ${lookup.error.message}`);
+
+  let appUser = lookup.data;
+
+  if (!appUser) {
+    const clerkUser = await getCurrentClerkUser(userId);
+    await syncAppUser(toAppUserIdentity(clerkUser));
+    const retry = await supabase
+      .from("users")
+      .select("id, clerk_user_id")
+      .eq("clerk_user_id", userId)
+      .single();
+
+    if (retry.error) throw new Error(`Unable to create the signed-in user: ${retry.error.message}`);
+    appUser = retry.data;
+  }
+
+  return { id: appUser.id, clerkUserId: appUser.clerk_user_id };
+}
+
+export async function getAcceptedFamilyRole(userId: string, familyGroupId: string): Promise<FamilyRole | null> {
+  const supabase = getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("family_members")
+    .select("role")
+    .eq("family_group_id", familyGroupId)
+    .eq("user_id", userId)
+    .eq("invitation_status", "accepted")
+    .maybeSingle();
+
+  if (error) throw new Error(`Unable to check family membership: ${error.message}`);
+  return data?.role as FamilyRole | undefined ?? null;
+}
+
+export async function requireFamilyWriteAccess(userId: string, familyGroupId: string): Promise<FamilyRole> {
+  const role = await getAcceptedFamilyRole(userId, familyGroupId);
+  if (!role || role === "viewer") {
+    throw new AccessError("You do not have permission to change this family data.");
+  }
+  return role;
+}
+
+export async function requireTransactionWriteAccess(userId: string, transactionId: string): Promise<void> {
+  const supabase = getSupabaseServerClient();
+  const { data: transaction, error } = await supabase
+    .from("transactions")
+    .select("user_id, family_group_id")
+    .eq("id", transactionId)
+    .maybeSingle();
+
+  if (error) throw new Error(`Unable to look up the transaction: ${error.message}`);
+  if (!transaction) throw new AccessError("Transaction not found.", 404);
+  if (transaction.user_id === userId && !transaction.family_group_id) return;
+  if (transaction.family_group_id) {
+    await requireFamilyWriteAccess(userId, transaction.family_group_id);
+    return;
+  }
+  throw new AccessError("You do not have permission to change this transaction.");
+}

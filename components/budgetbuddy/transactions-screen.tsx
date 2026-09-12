@@ -1,41 +1,133 @@
 "use client";
 
-import { useContext, useRef, useState } from "react";
-import { AlertCircle, Check, FileSpreadsheet, Search, Upload } from "lucide-react";
-import { demoTransactions } from "@/components/budgetbuddy/demo-data";
-import { parseTransactionCsv, type CsvParseResult } from "@/lib/finance/csv-import";
-import { formatNumber } from "@/lib/finance/currency";
-import { AddTransaction, Transaction } from "@/components/budgetbuddy/shared";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { Check, FileSpreadsheet, Pencil, Search, Trash2, Upload } from "lucide-react";
+import { toast } from "sonner";
+import { AddTransaction } from "@/components/budgetbuddy/shared";
+import { TransactionForm } from "@/components/transactions/transaction-form";
 import { LanguageContext, useT } from "@/components/providers/language-provider";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { StoredTransaction, TransactionOption, TransactionType } from "@/types/finance";
+import { formatNumber } from "@/lib/finance/currency";
+import { parseTransactionCsv, type CsvParseResult } from "@/lib/finance/csv-import";
+
+type TransactionData = {
+  transactions: StoredTransaction[];
+  accounts: TransactionOption[];
+  categories: TransactionOption[];
+};
+
+const initialData: TransactionData = { transactions: [], accounts: [], categories: [] };
 
 export function TransactionsScreen() {
   const t = useT();
   const { language } = useContext(LanguageContext);
+  const [data, setData] = useState<TransactionData>(initialData);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string>();
   const [query, setQuery] = useState("");
-  const normalizedQuery = query.trim().toLocaleLowerCase();
-  const filteredTransactions = demoTransactions.filter((item) =>
-    [item[0], item[1], item[2]].some((value) => value.toLocaleLowerCase().includes(normalizedQuery)),
-  );
+  const [typeFilter, setTypeFilter] = useState<"all" | TransactionType>("all");
+  const [accountFilter, setAccountFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+
+  const loadTransactions = useCallback(async () => {
+    setLoadError(undefined);
+    try {
+      const response = await fetch("/api/transactions", { cache: "no-store" });
+      const payload = await response.json() as TransactionData & { error?: string };
+      if (!response.ok) throw new Error(payload.error);
+      setData(payload);
+    } catch (error) {
+      setLoadError(error instanceof Error && error.message ? error.message : (language === "tr" ? "İşlemler yüklenemedi." : "Unable to load transactions."));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [language]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadTransactions(), 0);
+    return () => window.clearTimeout(timer);
+  }, [loadTransactions]);
+
+  const filteredTransactions = useMemo(() => {
+    const locale = language === "tr" ? "tr-TR" : "en-US";
+    const normalizedQuery = query.trim().toLocaleLowerCase(locale);
+    return data.transactions.filter((transaction) => {
+      const matchesSearch = !normalizedQuery || [transaction.title, transaction.category, transaction.accountName]
+        .some((value) => value.toLocaleLowerCase(locale).includes(normalizedQuery));
+      return matchesSearch
+        && (typeFilter === "all" || transaction.type === typeFilter)
+        && (accountFilter === "all" || transaction.accountId === accountFilter)
+        && (categoryFilter === "all" || transaction.categoryId === categoryFilter)
+        && (!fromDate || transaction.transactionDate >= fromDate)
+        && (!toDate || transaction.transactionDate <= toDate);
+    });
+  }, [accountFilter, categoryFilter, data.transactions, fromDate, language, query, toDate, typeFilter]);
+
+  const hasFilters = Boolean(query || typeFilter !== "all" || accountFilter !== "all" || categoryFilter !== "all" || fromDate || toDate);
 
   return <>
-    <div className="toolbar">
+    <div className="toolbar transaction-toolbar">
       <div><Search /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("Search transactions")} aria-label={t("Search transactions")} /></div>
+      <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as "all" | TransactionType)}><SelectTrigger aria-label={t("Transaction type")}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t("All types")}</SelectItem><SelectItem value="expense">{t("Expense")}</SelectItem><SelectItem value="income">{t("Income")}</SelectItem></SelectContent></Select>
+      <Select value={accountFilter} onValueChange={setAccountFilter}><SelectTrigger aria-label={t("Account")}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t("All accounts")}</SelectItem>{data.accounts.map((account) => <SelectItem value={account.id} key={account.id}>{account.name}</SelectItem>)}</SelectContent></Select>
+      <Select value={categoryFilter} onValueChange={setCategoryFilter}><SelectTrigger aria-label={t("Category")}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t("All categories")}</SelectItem>{data.categories.map((category) => <SelectItem value={category.id} key={category.id}>{category.name}</SelectItem>)}</SelectContent></Select>
+      <Input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} aria-label={t("From date")} />
+      <Input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} aria-label={t("To date")} />
       <CsvImport />
-      <AddTransaction />
+      <AddTransaction onCreated={() => void loadTransactions()} />
     </div>
-    {filteredTransactions.length ? <article className="panel tx-table">
-      <header><span>{t("Transaction")}</span><span>{t("Category")}</span><span>{t("Date")}</span><span>{t("Account")}</span><span>{t("Amount")}</span></header>
-      {filteredTransactions.map((item) => <div className="tx-row" key={item[0]}>
-        <b>{t(item[0])}</b><span>{t(item[1])}</span><span>{t(item[2])}</span><span>{t("Everyday account")}</span>
-        <strong className={item[3] > 0 ? "pos" : "neg"}>{item[3] > 0 ? "+" : "−"}₺{formatNumber(Math.abs(item[3]), language)}</strong>
-        <div className="mobile-only"><Transaction transaction={item} /></div>
+    {loadError && <div className="panel empty-state"><p role="alert">{loadError}</p><Button onClick={() => void loadTransactions()}>{t("Try again")}</Button></div>}
+    {isLoading && <div className="panel empty-state"><p>{t("Loading transactions…")}</p></div>}
+    {!isLoading && !loadError && filteredTransactions.length ? <article className="panel tx-table">
+      <header><span>{t("Transaction")}</span><span>{t("Category")}</span><span>{t("Date")}</span><span>{t("Account")}</span><span>{t("Amount")}</span><span>{t("Actions")}</span></header>
+      {filteredTransactions.map((transaction) => <div className="tx-row" key={transaction.id}>
+        <b>{transaction.title}</b><span>{transaction.category}</span><span>{formatTransactionDate(transaction.transactionDate, language)}</span><span>{transaction.accountName}</span>
+        <strong className={transaction.type === "income" ? "pos" : "neg"}>{transaction.type === "income" ? "+" : "−"}₺{formatNumber(transaction.amount, language)}</strong>
+        <TransactionActions transaction={transaction} onChanged={loadTransactions} />
       </div>)}
-    </article> : <Empty className="panel empty-state"><EmptyHeader><EmptyMedia variant="icon"><Search /></EmptyMedia><EmptyTitle>{t("No matching transactions")}</EmptyTitle><EmptyDescription>{t("Try a different search, or add your first income or expense.")}</EmptyDescription></EmptyHeader><EmptyContent><AddTransaction /></EmptyContent></Empty>}
+    </article> : !isLoading && !loadError && <Empty className="panel empty-state"><EmptyHeader><EmptyMedia variant="icon"><Search /></EmptyMedia><EmptyTitle>{hasFilters ? t("No matching transactions") : t("No transactions yet")}</EmptyTitle><EmptyDescription>{hasFilters ? t("Try a different search, or add your first income or expense.") : t("Add your first income or expense to start tracking your money.")}</EmptyDescription></EmptyHeader><EmptyContent><AddTransaction onCreated={() => void loadTransactions()} /></EmptyContent></Empty>}
   </>;
+}
+
+function TransactionActions({ transaction, onChanged }: { transaction: StoredTransaction; onChanged: () => Promise<void> }) {
+  const t = useT();
+  const { language } = useContext(LanguageContext);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  async function removeTransaction() {
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/transactions/${transaction.id}`, { method: "DELETE" });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({})) as { error?: string };
+        throw new Error(payload.error);
+      }
+      toast.success(language === "tr" ? "İşlem silindi." : "Transaction deleted.");
+      await onChanged();
+    } catch (error) {
+      toast.error(error instanceof Error && error.message ? error.message : (language === "tr" ? "İşlem silinemedi." : "Unable to delete the transaction."));
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
+  return <div className="tx-actions">
+    <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}><DialogTrigger asChild><Button variant="ghost" size="sm" aria-label={t("Edit transaction")}><Pencil />{t("Edit")}</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>{t("Edit transaction")}</DialogTitle><DialogDescription>{t("Update the transaction details.")}</DialogDescription></DialogHeader><TransactionForm key={transaction.id} transaction={transaction} onSuccess={() => { setIsEditOpen(false); void onChanged(); }} /></DialogContent></Dialog>
+    <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="sm" disabled={isDeleting} aria-label={t("Delete transaction")}><Trash2 />{t("Delete")}</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{t("Delete this transaction?")}</AlertDialogTitle><AlertDialogDescription>{t("This action cannot be undone.")}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>{t("Cancel")}</AlertDialogCancel><AlertDialogAction variant="destructive" onClick={() => void removeTransaction()}>{t("Delete")}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+  </div>;
+}
+
+function formatTransactionDate(value: string, language: "en" | "tr") {
+  return new Intl.DateTimeFormat(language === "tr" ? "tr-TR" : "en-US", { day: "numeric", month: "short", year: "numeric" }).format(new Date(`${value}T00:00:00Z`));
 }
 
 function CsvImport() {
@@ -53,23 +145,18 @@ function CsvImport() {
   async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
-
     setFileError(undefined);
     setParseResult(undefined);
-
     if (!file.name.toLocaleLowerCase().endsWith(".csv")) {
       setFileError(t("Please choose a CSV file."));
       return;
     }
-
     try {
       const result = parseTransactionCsv(await file.text());
-
       if (!result.transactions.length && !result.issues.length) {
         setFileError(t("The file does not contain any transaction rows."));
         return;
       }
-
       setFileName(file.name);
       setParseResult(result);
       setStep(2);
@@ -90,26 +177,11 @@ function CsvImport() {
 
   return <Dialog onOpenChange={resetDialog}>
     <DialogTrigger asChild><Button variant="outline"><Upload />{t("Import CSV")}</Button></DialogTrigger>
-    <DialogContent>
-      <DialogHeader><DialogTitle>{t("Import transactions")}</DialogTitle><DialogDescription>{t("Nothing is added until you review and approve it.")}</DialogDescription></DialogHeader>
+    <DialogContent><DialogHeader><DialogTitle>{t("Import transactions")}</DialogTitle><DialogDescription>{t("Nothing is added until you review and approve it.")}</DialogDescription></DialogHeader>
       <div className="steps">{["Upload", "Map columns", "Review"].map((label, index) => <span className={step > index ? "on" : ""} key={label}><b>{step > index + 1 ? <Check /> : index + 1}</b>{t(label)}</span>)}</div>
-      {step === 1 && <div className="drop">
-        <Upload /><h3>{t("Drop your CSV here")}</h3><p>{t("date, description and amount required")}</p>
-        <Input ref={fileInput} type="file" accept=".csv,text/csv" onChange={handleFileChange} aria-label={t("Choose CSV")} />
-        {fileError && <p role="alert" className="text-destructive">{fileError}</p>}
-      </div>}
-      {step === 2 && parseResult && <div className="mapping">
-        <div className="flex items-center gap-2"><FileSpreadsheet /><p>{fileName} · {parseResult.delimiter === ";" ? "semicolon" : "comma"} separated</p></div>
-        {mappingRows.map((row) => <p key={row}>{row}<Check /></p>)}
-        <Button onClick={() => setStep(3)}>{t("Continue to review")}</Button>
-      </div>}
-      {step === 3 && parseResult && <div className="review">
-        <Check /><h3>{parseResult.transactions.length} {t("rows ready")}</h3>
-        <p>{parseResult.issues.length ? `${parseResult.issues.length} ${t("rows need attention before import.")}` : t("All rows passed validation.")}</p>
-        {parseResult.issues.slice(0, 3).map((issue) => <span key={`${issue.rowNumber}-${issue.message}`}><AlertCircle />{t("Row")} {issue.rowNumber} · {issue.message}</span>)}
-        {parseResult.issues.length > 3 && <p>{parseResult.issues.length - 3} {t("more rows need attention.")}</p>}
-        <p className="text-muted-foreground">{t("Preview complete. Importing to your account will be enabled when secure storage is connected.")}</p>
-      </div>}
+      {step === 1 && <div className="drop"><Upload /><h3>{t("Drop your CSV here")}</h3><p>{t("date, description and amount required")}</p><Input ref={fileInput} type="file" accept=".csv,text/csv" onChange={handleFileChange} aria-label={t("Choose CSV")} />{fileError && <p role="alert" className="text-destructive">{fileError}</p>}</div>}
+      {step === 2 && parseResult && <div className="mapping"><div className="flex items-center gap-2"><FileSpreadsheet /><p>{fileName} · {parseResult.delimiter === ";" ? "semicolon" : "comma"} separated</p></div>{mappingRows.map((row) => <p key={row}>{row}<Check /></p>)}<Button onClick={() => setStep(3)}>{t("Continue to review")}</Button></div>}
+      {step === 3 && parseResult && <div className="review"><Check /><h3>{parseResult.transactions.length} {t("rows ready")}</h3><p>{parseResult.issues.length ? `${parseResult.issues.length} ${t("rows need attention before import.")}` : t("All rows passed validation.")}</p><p className="text-muted-foreground">{t("CSV import will be completed in the next phase.")}</p></div>}
     </DialogContent>
   </Dialog>;
 }
