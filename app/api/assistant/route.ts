@@ -5,7 +5,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 
 type OllamaResponse = { message?: { content?: string } };
-type ExchangeRateResponse = { base?: string; quote?: string; rate?: number; date?: string };
+type ExchangeRateResponse = { rate?: number; date?: string };
 
 function getOllamaConfiguration() {
   const baseUrl = (process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434").replace(/\/$/, "");

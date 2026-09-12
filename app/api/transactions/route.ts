@@ -70,7 +70,6 @@ export async function POST(request: Request) {
       date: payload.date,
       note: payload.note,
       familyGroupId: payload.familyGroupId,
-      ownerUserId: payload.ownerUserId,
     });
 
     return NextResponse.json({ transaction: toClientTransaction(transaction as Record<string, unknown>) }, { status: 201 });

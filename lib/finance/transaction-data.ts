@@ -1,4 +1,4 @@
-import { AccessError, requireFamilyWriteAccess, type AppUser } from "@/lib/auth/authorization";
+import { requireFamilyWriteAccess, type AppUser } from "@/lib/auth/authorization";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export type TransactionPayload = {
@@ -10,7 +10,6 @@ export type TransactionPayload = {
   date: string;
   note?: string;
   familyGroupId?: string;
-  ownerUserId?: string;
 };
 
 const transactionSelect = "id, type, amount, title, note, transaction_date, family_group_id, owner_user_id, created_by_user_id, receipt_path, receipt_content_type, account:accounts(id, name), category:categories(id, name)";
@@ -70,7 +69,6 @@ export async function createTransaction(user: AppUser, payload: TransactionPaylo
 
   if (payload.familyGroupId) {
     await requireFamilyWriteAccess(user.id, payload.familyGroupId);
-    if (payload.ownerUserId && payload.ownerUserId !== user.id) throw new AccessError("Family transactions can only be created in your own name.");
   }
 
   const { data, error } = await supabase
