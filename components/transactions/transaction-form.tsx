@@ -123,7 +123,7 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, familyM
   };
 
   return (
-    <form className="modal" onSubmit={form.handleSubmit(submit)} noValidate>
+    <form className="modal transaction-form" onSubmit={form.handleSubmit(submit)} noValidate>
       <div className="type" aria-label={tr ? "İşlem türü" : "Transaction type"}>
         {(["expense", "income"] as const).map((value) => (
           <button
@@ -155,6 +155,12 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, familyM
         <Input placeholder={tr ? "Haftalık market alışverişi" : "Weekly groceries"} {...form.register("title")} aria-invalid={!!form.formState.errors.title} />
         {form.formState.errors.title && <small className="field-error">{form.formState.errors.title.message}</small>}
       </label>
+      <div className="receipt-field">
+        <div><b>{tr ? "Fiş görseli" : "Receipt image"}</b><small>{tr ? "JPG, PNG veya WEBP · en fazla 5 MB" : "JPG, PNG, or WEBP · up to 5 MB"}</small></div>
+        <label className="receipt-upload"><ImagePlus /><span><b>{receipt ? receipt.name : (tr ? "Görsel seç" : "Choose image")}</b><small>{tr ? "Kamera veya galeriden ekleyin" : "Add it from your camera or gallery"}</small></span><Input key={receiptInputKey} type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={(event) => setReceipt(event.target.files?.[0])} /></label>
+        {hasStoredReceipt && !receipt && <p className="receipt-visibility"><ReceiptText />{tr ? "Bu işlemde kayıtlı bir fiş görseli var." : "This transaction already has a saved receipt image."}<button type="button" disabled={isRemovingReceipt} onClick={() => void removeStoredReceipt()}><Trash2 />{isRemovingReceipt ? (tr ? "Kaldırılıyor…" : "Removing…") : (tr ? "Kaldır" : "Remove")}</button></p>}
+        {receipt && <p className="receipt-visibility"><ReceiptText />{tr ? "Görsel işlem kaydedildikten sonra güvenli olarak yüklenecek." : "The image will upload securely after the transaction is saved."}<button type="button" onClick={() => { setReceipt(undefined); setReceiptInputKey((current) => current + 1); }}><Trash2 />{tr ? "Kaldır" : "Remove"}</button></p>}
+      </div>
       <div className="form-grid">
         <label>
           {tr ? "Kategori" : "Category"}
@@ -183,12 +189,6 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, familyM
         <Input placeholder={tr ? "İsteğe bağlı not" : "Optional note"} {...form.register("note")} />
         {form.formState.errors.note && <small className="field-error">{form.formState.errors.note.message}</small>}
       </label>
-      <div className="receipt-field">
-        <div><b>{tr ? "Fiş görseli" : "Receipt image"}</b><small>{tr ? "JPG, PNG veya WEBP · en fazla 5 MB" : "JPG, PNG, or WEBP · up to 5 MB"}</small></div>
-        <label className="receipt-upload"><ImagePlus /><span><b>{receipt ? receipt.name : (tr ? "Görsel seç" : "Choose image")}</b><small>{tr ? "Kamera veya galeriden ekleyin" : "Add it from your camera or gallery"}</small></span><Input key={receiptInputKey} type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={(event) => setReceipt(event.target.files?.[0])} /></label>
-        {hasStoredReceipt && !receipt && <p className="receipt-visibility"><ReceiptText />{tr ? "Bu işlemde kayıtlı bir fiş görseli var." : "This transaction already has a saved receipt image."}<button type="button" disabled={isRemovingReceipt} onClick={() => void removeStoredReceipt()}><Trash2 />{isRemovingReceipt ? (tr ? "Kaldırılıyor…" : "Removing…") : (tr ? "Kaldır" : "Remove")}</button></p>}
-        {receipt && <p className="receipt-visibility"><ReceiptText />{tr ? "Görsel işlem kaydedildikten sonra güvenli olarak yüklenecek." : "The image will upload securely after the transaction is saved."}<button type="button" onClick={() => { setReceipt(undefined); setReceiptInputKey((current) => current + 1); }}><Trash2 />{tr ? "Kaldır" : "Remove"}</button></p>}
-      </div>
       {optionsError && <p className="field-error" role="alert">{optionsError}</p>}
       <Button disabled={isSubmitting} type="submit">
         {isSubmitting ? (tr ? "Kaydediliyor…" : "Saving…") : transaction ? (tr ? "Değişiklikleri kaydet" : "Save changes") : (tr ? "İşlem ekle" : "Add transaction")}
