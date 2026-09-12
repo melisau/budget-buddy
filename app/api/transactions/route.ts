@@ -28,6 +28,7 @@ function toClientTransaction(transaction: Record<string, unknown>) {
     familyGroupId: typeof transaction.family_group_id === "string" ? transaction.family_group_id : null,
     ownerUserId: typeof transaction.owner_user_id === "string" ? transaction.owner_user_id : null,
     createdByUserId: typeof transaction.created_by_user_id === "string" ? transaction.created_by_user_id : null,
+    hasReceipt: typeof transaction.receipt_path === "string" && transaction.receipt_path.length > 0,
   };
 }
 

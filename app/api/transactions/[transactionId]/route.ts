@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { AccessError, requireAppUser, requireTransactionWriteAccess } from "@/lib/auth/authorization";
 import { deleteTransaction, updateTransaction } from "@/lib/finance/transaction-data";
+import { deleteStoredReceipt } from "@/lib/finance/receipt-storage";
 import { transactionRequestSchema } from "@/validations/transaction";
 
 type RouteContext = { params: Promise<{ transactionId: string }> };
@@ -42,7 +43,8 @@ export async function DELETE(_: Request, context: RouteContext) {
     const user = await requireAppUser();
     const { transactionId } = await context.params;
     await requireTransactionWriteAccess(user.id, transactionId);
-    await deleteTransaction(transactionId);
+    const receiptPath = await deleteTransaction(transactionId);
+    try { await deleteStoredReceipt(receiptPath); } catch (receiptError) { console.error("[transactions] receipt cleanup failed", receiptError); }
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     return errorResponse(error);

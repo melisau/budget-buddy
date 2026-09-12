@@ -13,7 +13,7 @@ export type TransactionPayload = {
   ownerUserId?: string;
 };
 
-const transactionSelect = "id, type, amount, title, note, transaction_date, family_group_id, owner_user_id, created_by_user_id, account:accounts(id, name), category:categories(id, name)";
+const transactionSelect = "id, type, amount, title, note, transaction_date, family_group_id, owner_user_id, created_by_user_id, receipt_path, receipt_content_type, account:accounts(id, name), category:categories(id, name)";
 
 async function assertPersonalReferences(user: AppUser, payload: TransactionPayload) {
   const supabase = getSupabaseServerClient();
@@ -122,6 +122,9 @@ export async function updateTransaction(user: AppUser, transactionId: string, pa
 
 export async function deleteTransaction(transactionId: string) {
   const supabase = getSupabaseServerClient();
+  const { data: transaction, error: lookupError } = await supabase.from("transactions").select("receipt_path").eq("id", transactionId).maybeSingle();
+  if (lookupError) throw new Error(`Unable to look up the transaction receipt: ${lookupError.message}`);
   const { error } = await supabase.from("transactions").delete().eq("id", transactionId);
   if (error) throw new Error(`Unable to delete the transaction: ${error.message}`);
+  return transaction?.receipt_path ?? null;
 }

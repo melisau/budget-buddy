@@ -27,6 +27,7 @@ export interface StoredTransaction extends FinanceTransaction {
   familyGroupId: string | null;
   ownerUserId?: string | null;
   createdByUserId?: string | null;
+  hasReceipt?: boolean;
 }
 
 export interface BudgetSummary {

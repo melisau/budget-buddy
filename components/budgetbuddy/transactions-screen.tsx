@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { Check, FileSpreadsheet, Pencil, Search, Trash2, Upload } from "lucide-react";
+import { Check, FileSpreadsheet, Pencil, ReceiptText, Search, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { AddTransaction } from "@/components/budgetbuddy/shared";
 import { TransactionForm } from "@/components/transactions/transaction-form";
@@ -121,9 +121,26 @@ function TransactionActions({ transaction, onChanged }: { transaction: StoredTra
   }
 
   return <div className="tx-actions">
+    {transaction.hasReceipt && <ReceiptLink transactionId={transaction.id} language={language} />}
     <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}><DialogTrigger asChild><Button variant="ghost" size="sm" aria-label={t("Edit transaction")}><Pencil />{t("Edit")}</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>{t("Edit transaction")}</DialogTitle><DialogDescription>{t("Update the transaction details.")}</DialogDescription></DialogHeader><TransactionForm key={transaction.id} transaction={transaction} onSuccess={() => { setIsEditOpen(false); void onChanged(); }} /></DialogContent></Dialog>
     <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="sm" disabled={isDeleting} aria-label={t("Delete transaction")}><Trash2 />{t("Delete")}</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{t("Delete this transaction?")}</AlertDialogTitle><AlertDialogDescription>{t("This action cannot be undone.")}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>{t("Cancel")}</AlertDialogCancel><AlertDialogAction variant="destructive" onClick={() => void removeTransaction()}>{t("Delete")}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </div>;
+}
+
+function ReceiptLink({ transactionId, language }: { transactionId: string; language: "tr" | "en" }) {
+  const [isOpening, setIsOpening] = useState(false);
+  const openReceipt = async () => {
+    setIsOpening(true);
+    try {
+      const response = await fetch(`/api/transactions/${transactionId}/receipt`, { cache: "no-store" });
+      const payload = await response.json() as { url?: string; error?: string };
+      if (!response.ok || !payload.url) throw new Error(payload.error);
+      window.open(payload.url, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      toast.error(error instanceof Error && error.message ? error.message : (language === "tr" ? "Fiş görseli açılamadı." : "Unable to open receipt image."));
+    } finally { setIsOpening(false); }
+  };
+  return <Button variant="ghost" size="sm" disabled={isOpening} onClick={() => void openReceipt()}><ReceiptText />{language === "tr" ? "Fiş" : "Receipt"}</Button>;
 }
 
 function formatTransactionDate(value: string, language: "en" | "tr") {

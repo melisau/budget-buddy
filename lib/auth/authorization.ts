@@ -92,3 +92,17 @@ export async function requireTransactionWriteAccess(userId: string, transactionI
   }
   throw new AccessError("You do not have permission to change this transaction.");
 }
+
+export async function requireTransactionReadAccess(userId: string, transactionId: string): Promise<void> {
+  const supabase = getSupabaseServerClient();
+  const { data: transaction, error } = await supabase
+    .from("transactions")
+    .select("user_id, family_group_id")
+    .eq("id", transactionId)
+    .maybeSingle();
+  if (error) throw new Error(`Unable to look up the transaction: ${error.message}`);
+  if (!transaction) throw new AccessError("Transaction not found.", 404);
+  if (transaction.user_id === userId && !transaction.family_group_id) return;
+  if (transaction.family_group_id && await getAcceptedFamilyRole(userId, transaction.family_group_id)) return;
+  throw new AccessError("You do not have permission to view this transaction.");
+}

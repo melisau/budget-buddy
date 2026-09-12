@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ImagePlus, ReceiptText, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { transactionSchema, type TransactionInput } from "@/validations/transaction";
 import { LanguageContext } from "@/components/providers/language-provider";
@@ -29,6 +30,10 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, familyM
   const [categories, setCategories] = useState<TransactionOption[]>([]);
   const [optionsError, setOptionsError] = useState<string>();
   const [ownerUserId, setOwnerUserId] = useState(familyMembers[0]?.userId ?? "");
+  const [receipt, setReceipt] = useState<File>();
+  const [hasStoredReceipt, setHasStoredReceipt] = useState(Boolean(transaction?.hasReceipt));
+  const [isRemovingReceipt, setIsRemovingReceipt] = useState(false);
+  const [receiptInputKey, setReceiptInputKey] = useState(0);
   const form = useForm<TransactionInput>({
     resolver: zodResolver(transactionSchema),
     defaultValues: {
@@ -70,8 +75,17 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, familyM
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...values, familyGroupId, ownerUserId: familyGroupId && ownerUserId ? ownerUserId : undefined }),
       });
-      const payload = await response.json().catch(() => ({})) as { error?: string };
+      const payload = await response.json().catch(() => ({})) as { error?: string; transaction?: StoredTransaction };
       if (!response.ok) throw new Error(payload.error);
+
+      const transactionId = transaction?.id ?? payload.transaction?.id;
+      if (receipt && transactionId) {
+        const formData = new FormData();
+        formData.append("receipt", receipt);
+        const receiptResponse = await fetch(`/api/transactions/${transactionId}/receipt`, { method: "POST", body: formData });
+        const receiptPayload = await receiptResponse.json().catch(() => ({})) as { error?: string };
+        if (!receiptResponse.ok) throw new Error(receiptPayload.error);
+      }
 
       toast.success(transaction
         ? (tr ? "İşlem güncellendi." : "Transaction updated.")
@@ -79,6 +93,8 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, familyM
       if (!transaction) {
         form.reset({ ...values, amount: undefined, title: "", note: "" });
         setCategory("");
+        setReceipt(undefined);
+        setReceiptInputKey((current) => current + 1);
       }
       onSuccess?.();
     } catch (error) {
@@ -91,6 +107,19 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, familyM
   }
 
   const availableCategories = categories.filter((item) => !item.type || item.type === type);
+  const removeStoredReceipt = async () => {
+    if (!transaction) return;
+    setIsRemovingReceipt(true);
+    try {
+      const response = await fetch(`/api/transactions/${transaction.id}/receipt`, { method: "DELETE" });
+      const payload = await response.json().catch(() => ({})) as { error?: string };
+      if (!response.ok) throw new Error(payload.error);
+      setHasStoredReceipt(false);
+      toast.success(tr ? "Fiş görseli kaldırıldı." : "Receipt image removed.");
+    } catch (error) {
+      toast.error(error instanceof Error && error.message ? error.message : (tr ? "Fiş görseli kaldırılamadı." : "Unable to remove receipt image."));
+    } finally { setIsRemovingReceipt(false); }
+  };
 
   return (
     <form className="modal" onSubmit={form.handleSubmit(submit)} noValidate>
@@ -153,6 +182,12 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, familyM
         <Input placeholder={tr ? "İsteğe bağlı not" : "Optional note"} {...form.register("note")} />
         {form.formState.errors.note && <small className="field-error">{form.formState.errors.note.message}</small>}
       </label>
+      <div className="receipt-field">
+        <div><b>{tr ? "Fiş görseli" : "Receipt image"}</b><small>{tr ? "JPG, PNG veya WEBP · en fazla 5 MB" : "JPG, PNG, or WEBP · up to 5 MB"}</small></div>
+        <label className="receipt-upload"><ImagePlus /><span><b>{receipt ? receipt.name : (tr ? "Görsel seç" : "Choose image")}</b><small>{tr ? "Kamera veya galeriden ekleyin" : "Add it from your camera or gallery"}</small></span><Input key={receiptInputKey} type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={(event) => setReceipt(event.target.files?.[0])} /></label>
+        {hasStoredReceipt && !receipt && <p className="receipt-visibility"><ReceiptText />{tr ? "Bu işlemde kayıtlı bir fiş görseli var." : "This transaction already has a saved receipt image."}<button type="button" disabled={isRemovingReceipt} onClick={() => void removeStoredReceipt()}><Trash2 />{isRemovingReceipt ? (tr ? "Kaldırılıyor…" : "Removing…") : (tr ? "Kaldır" : "Remove")}</button></p>}
+        {receipt && <p className="receipt-visibility"><ReceiptText />{tr ? "Görsel işlem kaydedildikten sonra güvenli olarak yüklenecek." : "The image will upload securely after the transaction is saved."}<button type="button" onClick={() => { setReceipt(undefined); setReceiptInputKey((current) => current + 1); }}><Trash2 />{tr ? "Kaldır" : "Remove"}</button></p>}
+      </div>
       {optionsError && <p className="field-error" role="alert">{optionsError}</p>}
       <Button disabled={isSubmitting} type="submit">
         {isSubmitting ? (tr ? "Kaydediliyor…" : "Saving…") : transaction ? (tr ? "Değişiklikleri kaydet" : "Save changes") : (tr ? "İşlem ekle" : "Add transaction")}
