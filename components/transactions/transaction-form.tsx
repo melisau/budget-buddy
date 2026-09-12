@@ -17,13 +17,14 @@ interface TransactionFormProps {
   onSuccess?: () => void;
   familyGroupId?: string;
   familyMembers?: { userId: string; name: string }[];
+  initialDraft?: Partial<Pick<TransactionInput, "type" | "amount" | "title" | "date" | "note">>;
 }
 
-export function TransactionForm({ transaction, onSuccess, familyGroupId, familyMembers = [] }: TransactionFormProps) {
+export function TransactionForm({ transaction, onSuccess, familyGroupId, familyMembers = [], initialDraft }: TransactionFormProps) {
   const { language } = useContext(LanguageContext);
   const tr = language === "tr";
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [type, setType] = useState<TransactionInput["type"]>(transaction?.type ?? "expense");
+  const [type, setType] = useState<TransactionInput["type"]>(transaction?.type ?? initialDraft?.type ?? "expense");
   const [category, setCategory] = useState(transaction?.categoryId ?? "");
   const [account, setAccount] = useState(transaction?.accountId ?? "");
   const [accounts, setAccounts] = useState<TransactionOption[]>([]);
@@ -37,13 +38,13 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, familyM
   const form = useForm<TransactionInput>({
     resolver: zodResolver(transactionSchema),
     defaultValues: {
-      type: transaction?.type ?? "expense",
-      amount: transaction?.amount,
-      title: transaction?.title ?? "",
+      type: transaction?.type ?? initialDraft?.type ?? "expense",
+      amount: transaction?.amount ?? initialDraft?.amount,
+      title: transaction?.title ?? initialDraft?.title ?? "",
       category: transaction?.categoryId ?? "",
       account: transaction?.accountId ?? "",
-      date: transaction?.transactionDate ?? "2026-09-10",
-      note: transaction?.note ?? "",
+      date: transaction?.transactionDate ?? initialDraft?.date ?? new Date().toISOString().slice(0, 10),
+      note: transaction?.note ?? initialDraft?.note ?? "",
     },
   });
 

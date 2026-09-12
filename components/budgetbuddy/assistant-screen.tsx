@@ -5,9 +5,12 @@ import { Eye, EyeOff, Mic, Plus, Send, Sparkles } from "lucide-react";
 import { LanguageContext, useT } from "@/components/providers/language-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { TransactionForm } from "@/components/transactions/transaction-form";
 
 type Message = readonly ["ai" | "user", string];
 type AssistantSession = { id: string; question: string; response: string; created_at: string };
+type VoiceTransactionDraft = { type: "expense" | "income"; amount: number; title: string; date: string };
 
 type SpeechRecognitionResultEvent = Event & {
   results: { isFinal: boolean; 0: { transcript: string } }[];
@@ -35,6 +38,27 @@ declare global {
 
 function initialMessages(turkish: boolean): Message[] { return [["ai", turkish ? "Merhaba — yetkili finans verilerini inceleyerek nasıl yardımcı olabilirim?" : "Hi — how can I help you understand your authorized financial data?"]]; }
 
+function transactionDraftFromSpeech(transcript: string, turkish: boolean): VoiceTransactionDraft | null {
+  const normalized = transcript.toLocaleLowerCase(turkish ? "tr-TR" : "en-US");
+  const draftIntent = turkish
+    ? /işlem taslağı|harcama ekle|gider ekle|gelir ekle/.test(normalized)
+    : /transaction draft|add expense|add income/.test(normalized);
+  if (!draftIntent) return null;
+
+  const amountMatch = normalized.match(/(\d+(?:[.,]\d{1,2})?)\s*(?:₺|tl|try|lira|eur|euro|usd|dolar)?/);
+  if (!amountMatch) return null;
+  const amount = Number(amountMatch[1].replace(",", "."));
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+
+  const title = transcript
+    .replace(turkish ? /işlem taslağı|harcama ekle|gider ekle|gelir ekle/gi : /transaction draft|add expense|add income/gi, "")
+    .replace(amountMatch[0], "")
+    .replace(/\b(₺|tl|try|lira|eur|euro|usd|dolar)\b/gi, "")
+    .trim() || (turkish ? "Sesli işlem" : "Voice transaction");
+
+  return { type: turkish && /gelir/.test(normalized) || !turkish && /income/.test(normalized) ? "income" : "expense", amount, title, date: new Date().toISOString().slice(0, 10) };
+}
+
 export function AssistantScreen() {
   const t = useT();
   const { language } = useContext(LanguageContext);
@@ -44,6 +68,7 @@ export function AssistantScreen() {
   const [messages, setMessages] = useState<Message[]>(() => initialMessages(turkish));
   const [sessions, setSessions] = useState<AssistantSession[]>([]);
   const [historyVisible, setHistoryVisible] = useState(true);
+  const [voiceDraft, setVoiceDraft] = useState<VoiceTransactionDraft | null>(null);
   const [isSending, setIsSending] = useState(false);
   const messageListRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
@@ -105,7 +130,13 @@ export function AssistantScreen() {
     recognition.onend = () => {
       setListening(false);
       recognitionRef.current = null;
-      if (finalTranscript) void send(finalTranscript);
+      if (!finalTranscript) return;
+      const draft = transactionDraftFromSpeech(finalTranscript, turkish);
+      if (draft) {
+        setVoiceDraft(draft);
+      } else {
+        void send(finalTranscript);
+      }
     };
     recognitionRef.current = recognition;
     setListening(true);
@@ -129,6 +160,12 @@ export function AssistantScreen() {
         <Input value={value} onChange={(event) => setValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") send(); }} placeholder={listening ? t("Listening…") : t("Ask about your finances…")} />
         <Button aria-label={t("Send message")} size="icon" disabled={isSending} onClick={() => void send()}><Send /></Button>
       </div>
+      <Dialog open={Boolean(voiceDraft)} onOpenChange={(open) => { if (!open) setVoiceDraft(null); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{turkish ? "Sesli işlem taslağı" : "Voice transaction draft"}</DialogTitle><DialogDescription>{turkish ? "Taslak henüz kaydedilmedi. Hesap ve kategoriyi seçip işlemi açıkça onaylayın." : "This draft has not been saved. Choose an account and category, then explicitly confirm the transaction."}</DialogDescription></DialogHeader>
+          {voiceDraft && <TransactionForm initialDraft={voiceDraft} onSuccess={() => setVoiceDraft(null)} />}
+        </DialogContent>
+      </Dialog>
     </section>
   </div>;
 }
