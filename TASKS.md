@@ -87,6 +87,7 @@ Durumlar: Bekliyor / Devam ediyor / Engelli / Tamamlandı. Aşağıdaki uygulama
 - E-posta gönderimi kasten etkinleştirilmedi: davet, ilgili e-posta ile giriş yapan kullanıcının Aile Grubu sayfasında görünür. Gerçek kişilere dış e-posta göndermek için ayrıca açık gönderim yetkisi gerekir.
 - Aile ekranı demo/localStorage verisini bırakıp gerçek grupları, üyeleri, bekleyen davetleri, ortak işlem toplamlarını ve işlem sahibi dağılımını gösterir. Üye ve yönetici aile işlemi ekleyebilir; görüntüleyici değiştiremez.
 - TypeScript ve üretim derlemesi geçti. Oturumsuz aile oluşturma, davet oluşturma ve ayrılma denemeleri `401` ile reddedildi. İki ayrı gerçek Clerk kullanıcısıyla kabul testi henüz yapılmadı.
+- Canlı Supabase üzerinde geçici iki kullanıcıyla oluşturulan grup, bekleyen davet, kabul edilmiş üyelik ve `member → viewer` rol değişimi doğrulandı; test kayıtları işlem sonunda silindi. Gerçek Clerk oturumu ile iki tarayıcıdan uçtan uca kabul testi, ikinci oturum bulunmadığı için ayrıca açık kalır.
 
 ### 12 Eylül 2026 — BB-06 fiş görseli altyapısı eklendi
 
