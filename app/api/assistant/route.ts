@@ -18,7 +18,7 @@ export async function GET() {
     const user = await requireAppUser();
     const { data, error } = await getSupabaseServerClient()
       .from("ai_sessions")
-      .select("id, question, response, created_at")
+      .select("id, conversation_id, question, response, created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(30);
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
     const user = await requireAppUser();
     const limit = checkRateLimit(`assistant:${user.id}`, 12, 60_000);
     if (!limit.allowed) return NextResponse.json({ error: "Too many assistant requests. Please try again shortly." }, { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } });
-    const { question, language } = (await request.json()) as { question?: unknown; language?: unknown };
+    const { question, language, conversationId } = (await request.json()) as { question?: unknown; language?: unknown; conversationId?: unknown };
     if (typeof question !== "string" || question.trim().length < 2 || question.length > 800) {
       throw new AccessError("Enter a valid question.", 404);
     }
@@ -77,9 +77,9 @@ export async function POST(request: Request) {
     if (requestsCurrentEurTryRate(question)) {
       const answer = await getCurrentEurTryAnswer(selectedLanguage);
       const { data: session, error } = await getSupabaseServerClient().from("ai_sessions").insert({
-        user_id: user.id, question: question.trim(), response: answer,
+        user_id: user.id, conversation_id: typeof conversationId === "string" ? conversationId : crypto.randomUUID(), question: question.trim(), response: answer,
         context_summary: { language: selectedLanguage, provider: "frankfurter", currencyPair: "EUR/TRY" },
-      }).select("id, question, response, created_at").single();
+      }).select("id, conversation_id, question, response, created_at").single();
       if (error) throw new Error(`Unable to save AI history: ${error.message}`);
       return NextResponse.json({ answer, session });
     }
@@ -128,11 +128,11 @@ export async function POST(request: Request) {
     if (!answer) throw new Error("Ollama returned no assistant answer.");
 
     const { data: session, error } = await getSupabaseServerClient().from("ai_sessions").insert({
-      user_id: user.id,
+      user_id: user.id, conversation_id: typeof conversationId === "string" ? conversationId : crypto.randomUUID(),
       question: question.trim(),
       response: answer,
       context_summary: { transactionCount: transactions.length, language: selectedLanguage, provider: "ollama", model },
-    }).select("id, question, response, created_at").single();
+    }).select("id, conversation_id, question, response, created_at").single();
     if (error) throw new Error(`Unable to save AI history: ${error.message}`);
 
     return NextResponse.json({ answer, session });

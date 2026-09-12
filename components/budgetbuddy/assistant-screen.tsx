@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { TransactionForm } from "@/components/transactions/transaction-form";
 
 type Message = readonly ["ai" | "user", string];
-type AssistantSession = { id: string; question: string; response: string; created_at: string };
+type AssistantSession = { id: string; conversation_id: string; question: string; response: string; created_at: string };
 type VoiceTransactionDraft = { type: "expense" | "income"; amount: number; title: string; date: string };
 
 type SpeechRecognitionResultEvent = Event & {
@@ -67,6 +67,7 @@ export function AssistantScreen() {
   const [value, setValue] = useState("");
   const [messages, setMessages] = useState<Message[]>(() => initialMessages(turkish));
   const [sessions, setSessions] = useState<AssistantSession[]>([]);
+  const [conversationId, setConversationId] = useState(() => crypto.randomUUID());
   const [historyVisible, setHistoryVisible] = useState(true);
   const [voiceDraft, setVoiceDraft] = useState<VoiceTransactionDraft | null>(null);
   const [isSending, setIsSending] = useState(false);
@@ -96,7 +97,7 @@ export function AssistantScreen() {
     const normalizedQuestion = question.trim();
     if (!normalizedQuestion) return;
     setMessages((current) => [...current, ["user", normalizedQuestion]]); setValue(""); setIsSending(true);
-    try { const response = await fetch("/api/assistant", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: normalizedQuestion, language }) }); const payload = await response.json() as { answer?: string; error?: string; session?: AssistantSession }; if (!response.ok || !payload.answer) throw new Error(payload.error); setMessages((current) => [...current, ["ai", payload.answer!]]); if (payload.session) setSessions((current) => [payload.session!, ...current]); } catch (error) { setMessages((current) => [...current, ["ai", error instanceof Error && error.message ? error.message : (turkish ? "Yanıt alınamadı." : "Unable to get an answer.")]]); } finally { setIsSending(false); }
+    try { const response = await fetch("/api/assistant", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: normalizedQuestion, language, conversationId }) }); const payload = await response.json() as { answer?: string; error?: string; session?: AssistantSession }; if (!response.ok || !payload.answer) throw new Error(payload.error); setMessages((current) => [...current, ["ai", payload.answer!]]); if (payload.session) setSessions((current) => [payload.session!, ...current]); } catch (error) { setMessages((current) => [...current, ["ai", error instanceof Error && error.message ? error.message : (turkish ? "Yanıt alınamadı." : "Unable to get an answer.")]]); } finally { setIsSending(false); }
   };
 
   const toggleListening = () => {
@@ -145,9 +146,9 @@ export function AssistantScreen() {
 
   return <div className="assistant">
     <aside>
-      <Button onClick={() => { setMessages(initialMessages(turkish)); setValue(""); }}><Plus />{t("New conversation")}</Button>
+      <Button onClick={() => { setMessages(initialMessages(turkish)); setValue(""); setConversationId(crypto.randomUUID()); }}><Plus />{t("New conversation")}</Button>
       <div className="assistant-history-head"><h3>{t("Recent")}</h3><button type="button" aria-label={historyVisible ? (turkish ? "Konuşma geçmişini gizle" : "Hide conversation history") : (turkish ? "Konuşma geçmişini göster" : "Show conversation history")} onClick={() => setHistoryVisibility(!historyVisible)}>{historyVisible ? <EyeOff /> : <Eye />}</button></div>
-      {historyVisible && sessions.map((session) => <button type="button" onClick={() => setMessages([["user", session.question], ["ai", session.response]])} key={session.id}><Sparkles />{session.question}</button>)}
+      {historyVisible && [...new Map(sessions.map((session) => [session.conversation_id, session])).values()].slice(0, 5).map((session) => <button type="button" onClick={() => { setConversationId(session.conversation_id); setMessages(sessions.filter((item) => item.conversation_id === session.conversation_id).flatMap((item) => [["user", item.question] as Message, ["ai", item.response] as Message])); }} key={session.conversation_id}><Sparkles />{session.question}</button>)}
       {historyVisible && sessions.length === 0 && <p className="assistant-history-empty">{turkish ? "Henüz konuşma yok." : "No conversations yet."}</p>}
       <small>{t("AI explains your tracked data. It is not investment advice.")}</small>
     </aside>
