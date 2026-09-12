@@ -172,7 +172,7 @@ export function LandingScreen({ go }: { go: Navigate }) {
           </div>
         </section>
 
-        <Pricing go={go} />
+        <Pricing />
 
         <section className="section faq">
           <div><span className="eyebrow">{t("Questions, answered")}</span><h2>{t("Know before you start.")}</h2><p>{t("BudgetBuddy helps you understand your own data. It does not provide investment advice.")}</p></div>
@@ -192,7 +192,7 @@ export function LandingScreen({ go }: { go: Navigate }) {
   );
 }
 
-function Pricing({ go }: { go: Navigate }) {
+function Pricing() {
   const t = useT();
   const plans = [
     { name: "Free", price: "₺0", features: ["Manual tracking", "Basic dashboard", "Core categories", "Basic budgets"] },
