@@ -89,6 +89,7 @@ Durumlar: Bekliyor / Devam ediyor / Engelli / Tamamlandı. Aşağıdaki uygulama
 - TypeScript ve üretim derlemesi geçti. Oturumsuz aile oluşturma, davet oluşturma ve ayrılma denemeleri `401` ile reddedildi. İki ayrı gerçek Clerk kullanıcısıyla kabul testi henüz yapılmadı.
 - Canlı Supabase üzerinde geçici iki kullanıcıyla oluşturulan grup, bekleyen davet, kabul edilmiş üyelik ve `member → viewer` rol değişimi doğrulandı; test kayıtları işlem sonunda silindi. Gerçek Clerk oturumu ile iki tarayıcıdan uçtan uca kabul testi, ikinci oturum bulunmadığı için ayrıca açık kalır.
 - Geliştirme Clerk örneğinde iki geçici kullanıcı oluşturularak uygulamanın yetkilendirme fonksiyonları gerçek Clerk kullanıcı kimlikleriyle çalıştırıldı: davet kabulü, üyenin yönetici adına ortak işlem eklemesi, yöneticinin bu işlemi görmesi ve görüntüleyici yazma engeli geçti. İlgili Supabase ve Clerk kayıtları test sonunda silindi.
+- Bir kullanıcının birden fazla gruba ait olması desteklenir: üyelik benzersizliği yalnızca aynı grup içindedir. Aile ekranı mevcut gruptayken de yeni grup oluşturmaya, çoklu grup seçicisiyle gruplar arasında geçmeye izin verir. Bu yapı eş, ebeveyn veya etkinlik/arkadaş gruplarını bağımsız tutar.
 
 ### 12 Eylül 2026 — BB-06 fiş görseli altyapısı eklendi
 
