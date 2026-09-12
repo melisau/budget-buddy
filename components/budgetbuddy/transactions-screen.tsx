@@ -81,7 +81,7 @@ export function TransactionsScreen() {
       <Select value={categoryFilter} onValueChange={setCategoryFilter}><SelectTrigger aria-label={t("Category")}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t("All categories")}</SelectItem>{data.categories.map((category) => <SelectItem value={category.id} key={category.id}>{category.name}</SelectItem>)}</SelectContent></Select>
       <Input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} aria-label={t("From date")} />
       <Input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} aria-label={t("To date")} />
-      <CsvImport />
+      <CsvImport onImported={loadTransactions} />
       <AddTransaction onCreated={() => void loadTransactions()} />
     </div>
     {loadError && <div className="panel empty-state"><p role="alert">{loadError}</p><Button onClick={() => void loadTransactions()}>{t("Try again")}</Button></div>}
@@ -147,7 +147,7 @@ function formatTransactionDate(value: string, language: "en" | "tr") {
   return new Intl.DateTimeFormat(language === "tr" ? "tr-TR" : "en-US", { day: "numeric", month: "short", year: "numeric" }).format(new Date(`${value}T00:00:00Z`));
 }
 
-function CsvImport() {
+function CsvImport({ onImported }: { onImported: () => Promise<void> }) {
   const t = useT();
   const { language } = useContext(LanguageContext);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -155,6 +155,7 @@ function CsvImport() {
   const [fileName, setFileName] = useState<string>();
   const [parseResult, setParseResult] = useState<CsvParseResult>();
   const [fileError, setFileError] = useState<string>();
+  const [isImporting, setIsImporting] = useState(false);
   const mappingRows = language === "tr"
     ? ["Tarih → İşlem tarihi", "Açıklama → Satıcı / Açıklama", "Tutar → İşlem tutarı", "Tür → Gider / Gelir", "Kategori → Kategori", "Hesap → Hesap adı"]
     : ["Date → Transaction Date", "Description → Merchant / Description", "Amount → Transaction Amount", "Type → Debit / Credit", "Category → Category", "Account → Account Name"];
@@ -192,13 +193,25 @@ function CsvImport() {
     }
   }
 
+  async function saveImport() {
+    if (!parseResult?.transactions.length) return;
+    setIsImporting(true);
+    try {
+      const response = await fetch("/api/transactions/import", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rows: parseResult.transactions }) });
+      const payload = await response.json() as { imported?: number; duplicates?: number; error?: string };
+      if (!response.ok) throw new Error(payload.error);
+      toast.success(language === "tr" ? `${payload.imported ?? 0} işlem aktarıldı${payload.duplicates ? `, ${payload.duplicates} mükerrer satır atlandı` : ""}.` : `${payload.imported ?? 0} transactions imported${payload.duplicates ? `, ${payload.duplicates} duplicates skipped` : ""}.`);
+      await onImported(); setStep(1); setParseResult(undefined); setFileName(undefined);
+    } catch (error) { setFileError(error instanceof Error && error.message ? error.message : "Unable to import CSV."); } finally { setIsImporting(false); }
+  }
+
   return <Dialog onOpenChange={resetDialog}>
     <DialogTrigger asChild><Button variant="outline"><Upload />{t("Import CSV")}</Button></DialogTrigger>
     <DialogContent><DialogHeader><DialogTitle>{t("Import transactions")}</DialogTitle><DialogDescription>{t("Nothing is added until you review and approve it.")}</DialogDescription></DialogHeader>
       <div className="steps">{["Upload", "Map columns", "Review"].map((label, index) => <span className={step > index ? "on" : ""} key={label}><b>{step > index + 1 ? <Check /> : index + 1}</b>{t(label)}</span>)}</div>
       {step === 1 && <div className="drop"><Upload /><h3>{t("Drop your CSV here")}</h3><p>{t("date, description and amount required")}</p><Input ref={fileInput} type="file" accept=".csv,text/csv" onChange={handleFileChange} aria-label={t("Choose CSV")} />{fileError && <p role="alert" className="text-destructive">{fileError}</p>}</div>}
       {step === 2 && parseResult && <div className="mapping"><div className="flex items-center gap-2"><FileSpreadsheet /><p>{fileName} · {parseResult.delimiter === ";" ? "semicolon" : "comma"} separated</p></div>{mappingRows.map((row) => <p key={row}>{row}<Check /></p>)}<Button onClick={() => setStep(3)}>{t("Continue to review")}</Button></div>}
-      {step === 3 && parseResult && <div className="review"><Check /><h3>{parseResult.transactions.length} {t("rows ready")}</h3><p>{parseResult.issues.length ? `${parseResult.issues.length} ${t("rows need attention before import.")}` : t("All rows passed validation.")}</p><p className="text-muted-foreground">{t("CSV import will be completed in the next phase.")}</p></div>}
+      {step === 3 && parseResult && <div className="review"><Check /><h3>{parseResult.transactions.length} {t("rows ready")}</h3><p>{parseResult.issues.length ? `${parseResult.issues.length} ${t("rows need attention before import.")}` : t("All rows passed validation.")}</p>{parseResult.issues.length ? <p className="text-destructive">{t("Fix invalid rows in the CSV and upload it again.")}</p> : <Button disabled={isImporting} onClick={() => void saveImport()}>{isImporting ? (language === "tr" ? "Aktarılıyor…" : "Importing…") : (language === "tr" ? "İşlemleri aktar" : "Import transactions")}</Button>}{fileError && <p className="text-destructive" role="alert">{fileError}</p>}</div>}
     </DialogContent>
   </Dialog>;
 }
