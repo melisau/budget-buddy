@@ -100,8 +100,8 @@ export function LandingScreen({ go }: { go: Navigate }) {
           <a href="#pricing" onClick={closeMenu}>{t("Pricing")}</a>
           <a href="#about" onClick={closeMenu}>{t("About")}</a>
           <LanguageSelect />
-          <button type="button" onClick={() => go("signin")}>{t("Sign in")}</button>
-          <Button onClick={() => go("signup")}>{t("Get started")}</Button>
+          <a href="/sign-in" onClick={closeMenu}>{t("Sign in")}</a>
+          <Button asChild><a href="/sign-up" onClick={closeMenu}>{t("Get started")}</a></Button>
         </nav>
         <div className="mobile-language"><LanguageSelect /></div>
         <button
@@ -122,7 +122,7 @@ export function LandingScreen({ go }: { go: Navigate }) {
             <h1>{t("Take control of your money without complicated spreadsheets.")}</h1>
             <p>{t("Track income, expenses and budgets in one place, then let BudgetBuddy turn your financial data into simple, useful insights.")}</p>
             <div className="hero-btns">
-              <Button size="lg" onClick={() => go("signup")}>{t("Start for free")} <ArrowRight /></Button>
+              <Button size="lg" asChild><a href="/sign-up">{t("Start for free")} <ArrowRight /></a></Button>
               <Button size="lg" variant="outline" onClick={() => go("dashboard")}><Play /> {t("See how it works")}</Button>
             </div>
             <div className="trust">
@@ -183,7 +183,7 @@ export function LandingScreen({ go }: { go: Navigate }) {
 
         <section className="cta">
           <div><span className="eyebrow">{t("A calmer money routine starts here")}</span><h2>{t("Make your money make sense.")}</h2></div>
-          <Button size="lg" variant="secondary" onClick={() => go("signup")}>{t("Start for free")} <ArrowRight /></Button>
+          <Button size="lg" variant="secondary" asChild><a href="/sign-up">{t("Start for free")} <ArrowRight /></a></Button>
         </section>
       </main>
 
@@ -207,7 +207,7 @@ function Pricing({ go }: { go: Navigate }) {
         {plans.map((plan) => <article className={plan.featured ? "hot" : ""} key={plan.name}>
           {plan.featured && <em>{t("Most popular")}</em>}
           <h3>{t(plan.name)}</h3><strong>{plan.price}<small>{t("/month")}</small></strong><p>{t("Clear money management for your next step.")}</p>
-          <Button variant={plan.featured ? "default" : "outline"} onClick={() => go("signup")}>{plan.name === "Free" ? t("Start for free") : `${t("Choose")} ${t(plan.name)}`}</Button>
+          <Button variant={plan.featured ? "default" : "outline"} asChild><a href="/sign-up">{plan.name === "Free" ? t("Start for free") : `${t("Choose")} ${t(plan.name)}`}</a></Button>
           <ul>{plan.features.map((feature) => <li key={feature}><Check />{t(feature)}</li>)}</ul>
         </article>)}
       </div>
