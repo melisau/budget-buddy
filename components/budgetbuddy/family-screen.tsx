@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { Check, Crown, Plus, ShieldCheck, Trash2, UserPlus, Users } from "lucide-react";
+import { Check, Crown, Plus, ReceiptText, ShieldCheck, Trash2, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 import { LanguageContext } from "@/components/providers/language-provider";
 import { PanelHead } from "@/components/budgetbuddy/shared";
@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 type FamilyMember = { id: string; userId: string | null; name: string; email: string | null; role: "owner" | "member" | "viewer"; invitationStatus: "pending" | "accepted" | "declined" };
 type FamilyGroup = { id: string; name: string; currency: string; ownerUserId: string; role: "owner" | "member" | "viewer"; members: FamilyMember[] };
 type Invitation = { id: string; familyGroupId: string; groupName: string; role: "member" | "viewer" };
-type Transaction = { id: string; title: string; amount: number; type: "income" | "expense"; familyGroupId: string | null; ownerUserId?: string | null; transactionDate: string };
+type Transaction = { id: string; title: string; amount: number; type: "income" | "expense"; familyGroupId: string | null; ownerUserId?: string | null; transactionDate: string; hasReceipt?: boolean };
 
 function initials(name: string) { return name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase(); }
 function roleLabel(role: FamilyMember["role"], tr: boolean) { return role === "owner" ? (tr ? "Yönetici" : "Owner") : role === "member" ? (tr ? "Üye" : "Member") : (tr ? "Görüntüleyici" : "Viewer"); }
@@ -68,10 +68,16 @@ export function FamilyScreen() {
     <div className="family-grid">
       <article className="panel family-members"><PanelHead title={tr ? "Aile bireyleri" : "Family members"} sub={tr ? "Rol ve erişim durumları" : "Roles and access"} />{group.members.filter((member) => member.invitationStatus !== "declined").map((member) => <MemberRow key={member.id} group={group} member={member} tr={tr} onComplete={reload} />)}</article>
       <article className="panel family-spending"><PanelHead title={tr ? "Aile işlemleri" : "Family transactions"} sub={tr ? "İşlem sahibine göre giderler" : "Expenses by transaction owner"} />{accepted.map((member) => { const spent = member.userId ? familyTransactions.filter((item) => item.type === "expense" && item.ownerUserId === member.userId).reduce((sum, item) => sum + item.amount, 0) : 0; const percent = Math.round(spent / spendTotal * 100); return <div className="member-spend" key={member.id}><div><b>{member.name}</b><span>{money(spent)}</span></div><Progress value={percent} /><small>{percent}%</small></div>; })}</article>
-      <article className="panel family-activity"><PanelHead title={tr ? "Aile hareketleri" : "Family activity"} sub={tr ? "Ortak kaydedilen son işlemler" : "Recent shared transactions"} />{familyTransactions.length ? familyTransactions.slice(0, 6).map((transaction) => <div className="family-tx" key={transaction.id}><span>{transaction.title.slice(0, 1).toUpperCase()}</span><div><b>{transaction.title}</b><small>{transaction.transactionDate}</small></div><strong className={transaction.type === "income" ? "pos" : "neg"}>{transaction.type === "income" ? "+" : "−"}{money(transaction.amount)}</strong></div>) : <p className="empty-copy">{tr ? "Henüz ortak işlem yok." : "There are no shared transactions yet."}</p>}</article>
+      <article className="panel family-activity"><PanelHead title={tr ? "Aile hareketleri" : "Family activity"} sub={tr ? "Ortak kaydedilen son işlemler" : "Recent shared transactions"} />{familyTransactions.length ? familyTransactions.slice(0, 6).map((transaction) => <div className="family-tx" key={transaction.id}><span>{transaction.title.slice(0, 1).toUpperCase()}</span><div><b>{transaction.title}</b><small>{transaction.transactionDate}</small></div>{transaction.hasReceipt && <FamilyReceiptLink transactionId={transaction.id} tr={tr} />}<strong className={transaction.type === "income" ? "pos" : "neg"}>{transaction.type === "income" ? "+" : "−"}{money(transaction.amount)}</strong></div>) : <p className="empty-copy">{tr ? "Henüz ortak işlem yok." : "There are no shared transactions yet."}</p>}</article>
       <article className="panel family-rules"><PanelHead title={tr ? "Grup yetkileri" : "Group permissions"} sub={tr ? "Güvenli ortak kullanım" : "Safe shared access"} /><ul><li><Check /><span><b>{tr ? "Yönetici" : "Owner"}</b>{tr ? " davetleri ve rolleri yönetir." : " manages invitations and roles."}</span></li><li><Check /><span><b>{tr ? "Üye" : "Member"}</b>{tr ? " aile işlemi ekler." : " adds family transactions."}</span></li><li><Check /><span><b>{tr ? "Görüntüleyici" : "Viewer"}</b>{tr ? " verileri görür, değiştiremez." : " sees data but cannot change it."}</span></li></ul><p><ShieldCheck />{tr ? "İşlem kaydı, ekleyen kişiyi ve işlem sahibini saklar." : "Transaction records keep the creator and owner."}</p></article>
     </div>
   </section>;
+}
+
+function FamilyReceiptLink({ transactionId, tr }: { transactionId: string; tr: boolean }) {
+  const [opening, setOpening] = useState(false);
+  const open = async () => { setOpening(true); try { const response = await fetch(`/api/transactions/${transactionId}/receipt`, { cache: "no-store" }); const payload = await response.json() as { url?: string; error?: string }; if (!response.ok || !payload.url) throw new Error(payload.error); window.open(payload.url, "_blank", "noopener,noreferrer"); } catch (error) { toast.error(error instanceof Error && error.message ? error.message : (tr ? "Fiş açılamadı." : "Unable to open receipt.")); } finally { setOpening(false); } };
+  return <Button variant="ghost" size="sm" className="family-receipt" disabled={opening} onClick={() => void open()}><ReceiptText />{tr ? "Fiş" : "Receipt"}</Button>;
 }
 
 function EmptyFamily({ invitations, onRespond, onCreated, tr }: { invitations: Invitation[]; onRespond: (invite: Invitation, accept: boolean) => Promise<void>; onCreated: () => Promise<void>; tr: boolean }) { return <section className="family-page"><div className="panel empty-family"><Users /><h2>{tr ? "Aile grubunu oluştur" : "Create a family group"}</h2><p>{tr ? "Ortak bütçeyi başlatın, ardından üyeleri e-posta adresleriyle davet edin." : "Start a shared budget, then invite members with their email addresses."}</p><CreateFamily onComplete={onCreated} tr={tr} />{invitations.length > 0 && <div className="family-invites">{invitations.map((invite) => <div key={invite.id}><span>{invite.groupName} · {roleLabel(invite.role, tr)}</span><Button size="sm" onClick={() => void onRespond(invite, true)}>{tr ? "Kabul et" : "Accept"}</Button><Button size="sm" variant="outline" onClick={() => void onRespond(invite, false)}>{tr ? "Reddet" : "Decline"}</Button></div>)}</div>}</div></section>; }
