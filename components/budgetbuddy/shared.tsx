@@ -36,7 +36,7 @@ export function BudgetRow({ budget }: { budget: BudgetRowData }) {
 
 export function AddTransaction() {
   const t = useT();
-  return <Dialog><DialogTrigger asChild><Button><Plus />{t("Add transaction")}</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>{t("Add transaction")}</DialogTitle><DialogDescription>{t("Record a new income or expense.")}</DialogDescription></DialogHeader><TransactionForm /></DialogContent></Dialog>;
+  return <Dialog><DialogTrigger asChild><Button className="add-transaction-button"><Plus />{t("Add transaction")}</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>{t("Add transaction")}</DialogTitle><DialogDescription>{t("Record a new income or expense.")}</DialogDescription></DialogHeader><TransactionForm /></DialogContent></Dialog>;
 }
 
 export function PageHead({ title, sub, button }: { title: string; sub: string; button: string }) {
