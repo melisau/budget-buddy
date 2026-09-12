@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { Check, FileSpreadsheet, Pencil, ReceiptText, Search, Trash2, Upload } from "lucide-react";
+import { Check, Download, FileSpreadsheet, Pencil, ReceiptText, Search, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { AddTransaction } from "@/components/budgetbuddy/shared";
 import { TransactionForm } from "@/components/transactions/transaction-form";
@@ -81,6 +81,7 @@ export function TransactionsScreen() {
       <Select value={categoryFilter} onValueChange={setCategoryFilter}><SelectTrigger aria-label={t("Category")}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t("All categories")}</SelectItem>{data.categories.map((category) => <SelectItem value={category.id} key={category.id}>{category.name}</SelectItem>)}</SelectContent></Select>
       <Input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} aria-label={t("From date")} />
       <Input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} aria-label={t("To date")} />
+      <CsvExport />
       <CsvImport onImported={loadTransactions} />
       <AddTransaction onCreated={() => void loadTransactions()} />
     </div>
@@ -95,6 +96,21 @@ export function TransactionsScreen() {
       </div>)}
     </article> : !isLoading && !loadError && <Empty className="panel empty-state"><EmptyHeader><EmptyMedia variant="icon"><Search /></EmptyMedia><EmptyTitle>{hasFilters ? t("No matching transactions") : t("No transactions yet")}</EmptyTitle><EmptyDescription>{hasFilters ? t("Try a different search, or add your first income or expense.") : t("Add your first income or expense to start tracking your money.")}</EmptyDescription></EmptyHeader><EmptyContent><AddTransaction onCreated={() => void loadTransactions()} /></EmptyContent></Empty>}
   </>;
+}
+
+function CsvExport() {
+  const { language } = useContext(LanguageContext);
+  const [scope, setScope] = useState<"personal" | "family">("personal");
+  const [isDownloading, setIsDownloading] = useState(false);
+  const download = async () => {
+    setIsDownloading(true);
+    try {
+      const response = await fetch(`/api/transactions/export?scope=${scope}`);
+      if (!response.ok) { const payload = await response.json().catch(() => ({})) as { error?: string }; throw new Error(payload.error); }
+      const blob = await response.blob(); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `budgetbuddy-${scope}-transactions.csv`; link.click(); URL.revokeObjectURL(url);
+    } catch (error) { toast.error(error instanceof Error && error.message ? error.message : (language === "tr" ? "CSV dışa aktarılamadı." : "Unable to export CSV.")); } finally { setIsDownloading(false); }
+  };
+  return <div className="csv-export"><Select value={scope} onValueChange={(value) => setScope(value as "personal" | "family")}><SelectTrigger aria-label={language === "tr" ? "Dışa aktarma kapsamı" : "Export scope"}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="personal">{language === "tr" ? "Kişisel" : "Personal"}</SelectItem><SelectItem value="family">{language === "tr" ? "Aile" : "Family"}</SelectItem></SelectContent></Select><Button variant="outline" disabled={isDownloading} onClick={() => void download()}><Download />{language === "tr" ? "CSV dışa aktar" : "Export CSV"}</Button></div>;
 }
 
 function TransactionActions({ transaction, onChanged }: { transaction: StoredTransaction; onChanged: () => Promise<void> }) {
