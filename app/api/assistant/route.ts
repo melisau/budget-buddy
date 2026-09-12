@@ -4,11 +4,62 @@ import { listTransactionData } from "@/lib/finance/transaction-data";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 type OllamaResponse = { message?: { content?: string } };
+type ExchangeRateResponse = { base?: string; quote?: string; rate?: number; date?: string };
 
 function getOllamaConfiguration() {
   const baseUrl = (process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434").replace(/\/$/, "");
   const model = process.env.OLLAMA_MODEL ?? "qwen2.5:3b";
   return { baseUrl, model };
+}
+
+export async function GET() {
+  try {
+    const user = await requireAppUser();
+    const { data, error } = await getSupabaseServerClient()
+      .from("ai_sessions")
+      .select("id, question, response, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(30);
+    if (error) throw new Error(`Unable to load AI history: ${error.message}`);
+    return NextResponse.json({ sessions: data ?? [] });
+  } catch (error) {
+    if (error instanceof AccessError) return NextResponse.json({ error: error.message }, { status: error.status });
+    console.error("[assistant] history failed", error);
+    return NextResponse.json({ error: "Unable to load AI history." }, { status: 500 });
+  }
+}
+
+function requestsCurrentEurTryRate(question: string) {
+  const normalized = question.toLocaleLowerCase("tr-TR");
+  const mentionsEuro = /\b(euro|eur)\b/.test(normalized);
+  const asksForCurrentValue = /güncel|bugün|şu an|şuan|kaç|kur/.test(normalized);
+  return mentionsEuro && asksForCurrentValue;
+}
+
+async function getCurrentEurTryAnswer(language: "tr" | "en") {
+  let response: Response;
+  try {
+    response = await fetch("https://api.frankfurter.dev/v2/rate/eur/try", {
+      signal: AbortSignal.timeout(5_000),
+      next: { revalidate: 3_600 },
+    });
+  } catch {
+    throw new Error(language === "tr" ? "Güncel EUR/TRY kuru şu anda alınamıyor. Lütfen biraz sonra tekrar dene." : "The current EUR/TRY rate is unavailable. Please try again shortly.");
+  }
+
+  const rate = (await response.json().catch(() => ({}))) as ExchangeRateResponse;
+  if (!response.ok || typeof rate.rate !== "number" || !rate.date) {
+    throw new Error(language === "tr" ? "Güncel EUR/TRY kuru şu anda alınamıyor. Lütfen biraz sonra tekrar dene." : "The current EUR/TRY rate is unavailable. Please try again shortly.");
+  }
+
+  const formattedRate = new Intl.NumberFormat(language === "tr" ? "tr-TR" : "en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 4,
+  }).format(rate.rate);
+  return language === "tr"
+    ? `1 EUR = ${formattedRate} TRY. Kur tarihi: ${rate.date}. Bu bir referans kurdur; banka alış ve satış fiyatları farklı olabilir.`
+    : `1 EUR = ${formattedRate} TRY. Rate date: ${rate.date}. This is a reference rate; bank buy and sell prices can differ.`;
 }
 
 export async function POST(request: Request) {
@@ -19,6 +70,17 @@ export async function POST(request: Request) {
       throw new AccessError("Enter a valid question.", 404);
     }
 
+    const selectedLanguage = language === "tr" ? "tr" : "en";
+    if (requestsCurrentEurTryRate(question)) {
+      const answer = await getCurrentEurTryAnswer(selectedLanguage);
+      const { data: session, error } = await getSupabaseServerClient().from("ai_sessions").insert({
+        user_id: user.id, question: question.trim(), response: answer,
+        context_summary: { language: selectedLanguage, provider: "frankfurter", currencyPair: "EUR/TRY" },
+      }).select("id, question, response, created_at").single();
+      if (error) throw new Error(`Unable to save AI history: ${error.message}`);
+      return NextResponse.json({ answer, session });
+    }
+
     const data = await listTransactionData(user);
     const transactions = data.transactions.slice(0, 100).map((item) => ({
       date: item.transaction_date,
@@ -27,13 +89,13 @@ export async function POST(request: Request) {
       title: item.title,
       family: Boolean(item.family_group_id),
     }));
-    const selectedLanguage = language === "tr" ? "Turkish" : "English";
+    const selectedLanguageName = selectedLanguage === "tr" ? "Turkish" : "English";
     const { baseUrl, model } = getOllamaConfiguration();
     const systemPrompt = [
       "You are Budget Buddy's financial activity assistant.",
       "Use only the financial data supplied below. If the data cannot answer the question, say so clearly.",
       "Explain spending patterns plainly. Do not make investment recommendations and do not claim that you performed an action.",
-      `Reply in ${selectedLanguage}.`,
+      `Reply in ${selectedLanguageName}.`,
       `Financial context: ${JSON.stringify({ currency: "TRY", transactions })}`,
     ].join("\n\n");
 
@@ -62,15 +124,15 @@ export async function POST(request: Request) {
     const answer = payload.message?.content?.trim();
     if (!answer) throw new Error("Ollama returned no assistant answer.");
 
-    const { error } = await getSupabaseServerClient().from("ai_sessions").insert({
+    const { data: session, error } = await getSupabaseServerClient().from("ai_sessions").insert({
       user_id: user.id,
       question: question.trim(),
       response: answer,
-      context_summary: { transactionCount: transactions.length, language: language === "tr" ? "tr" : "en", provider: "ollama", model },
-    });
+      context_summary: { transactionCount: transactions.length, language: selectedLanguage, provider: "ollama", model },
+    }).select("id, question, response, created_at").single();
     if (error) throw new Error(`Unable to save AI history: ${error.message}`);
 
-    return NextResponse.json({ answer });
+    return NextResponse.json({ answer, session });
   } catch (error) {
     if (error instanceof AccessError) return NextResponse.json({ error: error.message }, { status: error.status });
     console.error("[assistant] request failed", error);

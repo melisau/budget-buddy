@@ -31,7 +31,7 @@ Durumlar: Bekliyor / Devam ediyor / Engelli / Tamamlandı. Aşağıdaki uygulama
 ## AI ve ses — Faz 4–5
 
 - [ ] BB-11 — Devam ediyor. Sunucu üzerinden yerel Ollama bağlantısı, yalnızca yetkili finans verisi özeti, ay/hesap kapsamı, akış yanıtları, TR/EN, geçmiş, yeni sohbet/silme, kullanım ve maliyet limitleri ile servis hata durumlarını uygula. Yanıtın dayandığı veri ve dönemi göster; bulunmayan veriyi belirt. Para transferi veya işlem oluşturma yetkisi verme; yatırım tavsiyesi sınırını uygula. Bağımlılık: BB-10. Kabul: Yanıtlar gerçek yetkili kayıtlara dayanır; kapsam dışı veri modele gönderilmez.
-- [ ] BB-12 — Sesli kullanım. Mikrofon izni, konuşmadan metne dönüşüm, TR/EN, dinleme/durdurma/hata durumları, metin onayı, finans soruları ve isteğe bağlı işlem taslağı akışını tamamla. Taslağı kaydetmeden açık onay al; yazılı kullanım alternatifini koru. Bağımlılık: BB-11. Kabul: Onaysız işlem kaydedilmez. Ücretli ses hizmeti açık onay olmadan etkinleştirilmez.
+- [ ] BB-12 — Devam ediyor. Mikrofon izni, konuşmadan metne dönüşüm, TR/EN, dinleme/durdurma/hata durumları, metin onayı, finans soruları ve isteğe bağlı işlem taslağı akışını tamamla. Taslağı kaydetmeden açık onay al; yazılı kullanım alternatifini koru. Bağımlılık: BB-11. Kabul: Onaysız işlem kaydedilmez. Ücretli ses hizmeti açık onay olmadan etkinleştirilmez.
 
 ## Üretim hazırlığı ve isteğe bağlı ödeme — Faz 6–7
 
