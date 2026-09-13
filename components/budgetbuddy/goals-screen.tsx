@@ -1,34 +1,16 @@
 "use client";
-
-import { Target } from "lucide-react";
-import { PageHead } from "@/components/budgetbuddy/shared";
-import { LanguageContext, useT } from "@/components/providers/language-provider";
-import { useContext } from "react";
+import { useEffect, useState } from "react";
+import { MoreHorizontal, Target } from "lucide-react";
+import { useT } from "@/components/providers/language-provider";
 import { formatNumber } from "@/lib/finance/currency";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+type Goal={id:string;name:string;target_amount:number;current_amount:number;deadline:string|null};
+const date=(v:string|null)=>v?new Intl.DateTimeFormat(undefined,{dateStyle:"medium"}).format(new Date(`${v}T00:00:00`)):"No target date";
+export function GoalsScreen(){const t=useT();const [goals,setGoals]=useState<Goal[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState<string|null>(null),[creating,setCreating]=useState(false);const load=async()=>{setLoading(true);try{const r=await fetch("/api/goals",{cache:"no-store"}),d=await r.json() as {goals:Goal[];goal:Goal;error?:string};if(!r.ok)throw new Error(d.error);setGoals(d.goals);}catch(e){setError(e instanceof Error?e.message:"Unable to load goals.");}finally{setLoading(false);}};useEffect(()=>{void Promise.resolve().then(load);},[]);const create=async(f:FormData)=>{setCreating(true);try{const r=await fetch("/api/goals",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:f.get("name"),targetAmount:f.get("target"),deadline:f.get("deadline")})});const d=await r.json() as {goals:Goal[];goal:Goal;error?:string};if(!r.ok)throw new Error(d.error);setGoals(x=>[d.goal,...x]);}catch(e){setError(e instanceof Error?e.message:"Unable to create goal.");}finally{setCreating(false);}};const update=async(g:Goal)=>{const value=window.prompt("Saved amount",String(g.current_amount));if(value===null)return;const r=await fetch(`/api/goals/${g.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({currentAmount:value})}),d=await r.json() as {goals:Goal[];goal:Goal;error?:string};if(!r.ok){setError(d.error??"Unable to update the goal.");return;}setGoals(x=>x.map(i=>i.id===g.id?d.goal:i));};const remove=async(g:Goal)=>{if(!window.confirm(`Delete ${g.name}?`))return;const r=await fetch(`/api/goals/${g.id}`,{method:"DELETE"});if(!r.ok){setError("Unable to delete the goal.");return;}setGoals(x=>x.filter(i=>i.id!==g.id));};return <><div className="page-head"><div><h2>{t("Your savings goals")}</h2><p>{t("Big plans become easier when progress is visible.")}</p></div><Dialog><DialogTrigger asChild><Button><Target />{t("Create goal")}</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>{t("Create goal")}</DialogTitle><DialogDescription>Create a target and keep your progress visible.</DialogDescription></DialogHeader><form className="goal-form" action={create}><label>Name<Input name="name" required minLength={2}/></label><label>Target amount<Input name="target" type="number" min="1" step="0.01" required/></label><label>Target date<Input name="deadline" type="date"/></label><Button disabled={creating}>{creating?"Creating…":t("Create goal")}</Button></form></DialogContent></Dialog></div>{error&&<p className="form-error">{error}</p>}{loading?<div className="panel">Loading goals…</div>:goals.length===0?<div className="panel empty-state">No goals yet. Create your first savings target.</div>:<div className="goal-grid">{goals.map((g,i)=>{const p=Math.min(100,Math.round(Number(g.current_amount)/Number(g.target_amount)*100));return <article className="panel goal" key={g.id}><div className={`goal-art g${i%3}`}><Target/></div><button className="goal-delete" aria-label={`Delete ${g.name}`} onClick={()=>void remove(g)}><MoreHorizontal/></button><h3>{g.name}</h3><p>Target date · {date(g.deadline)}</p><b>₺{formatNumber(Number(g.current_amount),"en")} <span>of ₺{formatNumber(Number(g.target_amount),"en")}</span></b><Progress value={p}/><small>{p}% complete <span>₺{formatNumber(Math.max(0,Number(g.target_amount)-Number(g.current_amount)),"en")} to go</span></small><Button variant="outline" onClick={()=>void update(g)}>Update progress</Button></article>;})}</div>}</>;}
 
-const goals = [
-  ["Germany Relocation Fund", 42000, 100000, "December 2026"],
-  ["Emergency Fund", 26750, 40000, "March 2027"],
-  ["New Laptop", 15500, 55000, "June 2027"],
-] as const;
 
-export function GoalsScreen() {
-  const t = useT();
-  const { language } = useContext(LanguageContext);
-  return <>
-    <PageHead title="Your savings goals" sub="Big plans become easier when progress is visible." button="Create goal" />
-    <div className="goal-grid">{goals.map(([name, saved, target, date], index) => {
-      const progress = Math.round(saved / target * 100);
-      return <article className="panel goal" key={name}>
-        <div className={`goal-art g${index}`}><Target /></div>
-        <h3>{t(name)}</h3><p>{t("Target date")} · {t(date)}</p>
-        <b>₺{formatNumber(saved, language)} <span>{t("of")} ₺{formatNumber(target, language)}</span></b>
-        <Progress value={progress} />
-        <small>{progress}% {t("complete")} <span>₺{formatNumber(target - saved, language)} {t("to go")}</span></small>
-        <Button variant="outline">{t("Update progress")}</Button>
-      </article>;
-    })}</div>
-  </>;
-}
+
+
