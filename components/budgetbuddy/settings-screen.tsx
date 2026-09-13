@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { SubscriptionCard } from "@/components/billing/subscription-card";
 
 export function SettingsScreen() {
   const t = useT();
@@ -33,6 +34,7 @@ export function SettingsScreen() {
         <div className="setting"><span><b>{t("Dark mode")}</b><small>{t("Use a darker color theme.")}</small></span><Switch aria-label={t("Dark mode")} /></div>
         <div className="setting"><span><b>{t("Budget notifications")}</b><small>{t("Get notified near a limit.")}</small></span><Switch aria-label={t("Budget notifications")} defaultChecked /></div>
       </article>
+      <SubscriptionCard />
       <article className="panel settings-card">
         <h3>{t("Data")}</h3>
         <div className="setting"><span><b>{t("Export data")}</b><small>{t("Download your records as CSV.")}</small></span><Button variant="outline"><Download />{t("Export")}</Button></div>

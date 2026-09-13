@@ -79,7 +79,7 @@ Use separate Clerk, Supabase, Stripe, and Ollama configuration for development a
 
 ## Billing status
 
-The repository contains the initial data model and Checkout endpoint for Stripe subscriptions. Before enabling payments, configure Stripe product prices and webhook delivery, then add the production Stripe variables to the deployment environment.
+The application stores trial and subscription status, provides Stripe Checkout and Customer Portal routes, records invoices, and verifies Stripe webhook signatures. Apply every migration, configure Stripe product prices, and register `POST /api/billing/webhook` in Stripe before enabling payments. New accounts retain full application access throughout their 14-day trial.
 
 ## Security notes
 
