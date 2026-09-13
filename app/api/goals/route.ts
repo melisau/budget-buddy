@@ -1,0 +1,9 @@
+import { NextResponse } from "next/server";
+import { AccessError, requireAppUser } from "@/lib/auth/authorization";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+
+const errorResponse = (error: unknown) => error instanceof AccessError ? NextResponse.json({ error: error.message }, { status: error.status }) : NextResponse.json({ error: error instanceof Error ? error.message : "Unable to process goals." }, { status: 500 });
+
+export async function GET() { try { const user=await requireAppUser(); const {data,error}=await getSupabaseServerClient().from("goals").select("id, name, target_amount, current_amount, deadline, created_at").eq("user_id",user.id).is("family_group_id",null).order("created_at",{ascending:false}); if(error) throw error; return NextResponse.json({goals:data??[]}); } catch(error){return errorResponse(error);} }
+
+export async function POST(request: Request) { try { const user=await requireAppUser(); const body=await request.json() as {name?:unknown;targetAmount?:unknown;deadline?:unknown}; const name=typeof body.name==="string"?body.name.trim():""; const target=Number(body.targetAmount); if(name.length<2||name.length>100||!Number.isFinite(target)||target<=0) return NextResponse.json({error:"Enter a name and a valid target amount."},{status:400}); const deadline=typeof body.deadline==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(body.deadline)?body.deadline:null; const {data,error}=await getSupabaseServerClient().from("goals").insert({user_id:user.id,name,target_amount:target,deadline}).select("id, name, target_amount, current_amount, deadline, created_at").single(); if(error) throw error; return NextResponse.json({goal:data},{status:201}); } catch(error){return errorResponse(error);} }
