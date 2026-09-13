@@ -87,6 +87,7 @@ The application stores trial and subscription status, provides Stripe Checkout a
 - Receipt files are private and use short-lived signed URLs.
 - Accepted family members can view shared transactions; only a transaction owner can change a family transaction.
 - AI requests are rate-limited and use only authorized financial context.
+- Signed-in client and route-boundary failures are rate-limited and retained in the private `error_events` table for investigation.
 
 ## License
 
