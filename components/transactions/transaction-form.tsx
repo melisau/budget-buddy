@@ -166,7 +166,7 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
           {tr ? "Hesap" : "Account"}
           <Select onValueChange={(value) => { setAccount(value); form.setValue("account", value, { shouldValidate: true }); }} value={account}>
             <SelectTrigger aria-invalid={!!form.formState.errors.account}><SelectValue placeholder={tr ? "Hesap seç" : "Select account"} /></SelectTrigger>
-            <SelectContent>{accounts.map((item) => <SelectItem value={item.id} key={item.id}>{item.name}</SelectItem>)}</SelectContent>
+            <SelectContent>{accounts.map((item) => <SelectItem value={item.id} key={item.id}>{t(item.name)}</SelectItem>)}</SelectContent>
           </Select>
           {form.formState.errors.account && <small className="field-error">{form.formState.errors.account.message}</small>}
         </label>

@@ -30,6 +30,7 @@ const translations:Record<string,string>={
  "date, description and amount required":"tarih, açıklama ve tutar zorunludur","Choose CSV":"CSV seç","Continue to review":"İncelemeye devam et",
  "24 rows ready":"24 satır hazır","2 rows need attention before import.":"İçe aktarmadan önce 2 satır düzeltilmeli.","Row 14 · Missing category":"14. satır · Kategori eksik","Fix row":"Satırı düzelt","Import 24 transactions":"24 işlemi içe aktar",
  "Transaction":"İşlem","Category":"Kategori","Date":"Tarih","Account":"Hesap","Amount":"Tutar","Everyday account":"Günlük hesap",
+ "Unable to load your dashboard.":"Genel bakış yüklenemedi.","Uncategorized":"Kategorisiz",
  "No matching transactions":"Eşleşen işlem yok","Try a different search, or add your first income or expense.":"Başka bir arama deneyin veya ilk gelir ya da giderinizi ekleyin.",
  "Create budget":"Bütçe oluştur","₺27,680 of ₺32,200 planned spending used":"Planlanan ₺32.200 harcamanın ₺27.680'i kullanıldı",
  "Overall progress":"Genel ilerleme","₺4,520 remaining":"₺4.520 kaldı","20 days left":"20 gün kaldı","Edit":"Düzenle","Delete":"Sil",
