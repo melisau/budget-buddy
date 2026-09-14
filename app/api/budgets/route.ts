@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { AccessError, requireAppUser } from "@/lib/auth/authorization";
 import { getBudgetStatus, calculateBudgetUsage } from "@/lib/finance/calculations";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { ensureDefaultCategories } from "@/lib/finance/default-categories";
 
 type BudgetInput = {
   categoryId?: unknown;
@@ -59,6 +60,7 @@ async function requireExpenseCategory(userId: string, categoryId: string) {
 export async function GET() {
   try {
     const user = await requireAppUser();
+    await ensureDefaultCategories(user.id);
     const supabase = getSupabaseServerClient();
     const [{ data: budgets, error: budgetsError }, { data: categories, error: categoriesError }] = await Promise.all([
       supabase
@@ -125,6 +127,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const user = await requireAppUser();
+    await ensureDefaultCategories(user.id);
     const payload = budgetPayload(await request.json() as BudgetInput);
     if (!payload) {
       return NextResponse.json({ error: "Choose a category, monthly amount, and valid month." }, { status: 400 });

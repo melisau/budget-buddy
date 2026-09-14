@@ -78,7 +78,7 @@ export function TransactionsScreen() {
       <div><Search /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("Search transactions")} aria-label={t("Search transactions")} /></div>
       <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as "all" | TransactionType)}><SelectTrigger aria-label={t("Transaction type")}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t("All types")}</SelectItem><SelectItem value="expense">{t("Expense")}</SelectItem><SelectItem value="income">{t("Income")}</SelectItem></SelectContent></Select>
       <Select value={accountFilter} onValueChange={setAccountFilter}><SelectTrigger aria-label={t("Account")}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t("All accounts")}</SelectItem>{data.accounts.map((account) => <SelectItem value={account.id} key={account.id}>{account.name}</SelectItem>)}</SelectContent></Select>
-      <Select value={categoryFilter} onValueChange={setCategoryFilter}><SelectTrigger aria-label={t("Category")}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t("All categories")}</SelectItem>{data.categories.map((category) => <SelectItem value={category.id} key={category.id}>{category.name}</SelectItem>)}</SelectContent></Select>
+      <Select value={categoryFilter} onValueChange={setCategoryFilter}><SelectTrigger aria-label={t("Category")}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t("All categories")}</SelectItem>{data.categories.map((category) => <SelectItem value={category.id} key={category.id}>{t(category.name)}</SelectItem>)}</SelectContent></Select>
       <Input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} aria-label={t("From date")} />
       <Input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} aria-label={t("To date")} />
       <CsvExport />
@@ -90,7 +90,7 @@ export function TransactionsScreen() {
     {!isLoading && !loadError && filteredTransactions.length ? <article className="panel tx-table">
       <header><span>{t("Transaction")}</span><span>{t("Category")}</span><span>{t("Date")}</span><span>{t("Account")}</span><span>{t("Amount")}</span><span>{t("Actions")}</span></header>
       {filteredTransactions.map((transaction) => <div className="tx-row" key={transaction.id}>
-        <b>{transaction.title}</b><span>{transaction.category}</span><span>{formatTransactionDate(transaction.transactionDate, language)}</span><span>{transaction.accountName}</span>
+        <b>{transaction.title}</b><span>{t(transaction.category)}</span><span>{formatTransactionDate(transaction.transactionDate, language)}</span><span>{transaction.accountName}</span>
         <strong className={transaction.type === "income" ? "pos" : "neg"}>{transaction.type === "income" ? "+" : "−"}₺{formatNumber(transaction.amount, language)}</strong>
         <TransactionActions transaction={transaction} onChanged={loadTransactions} />
       </div>)}

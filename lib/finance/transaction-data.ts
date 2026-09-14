@@ -1,5 +1,6 @@
 import { requireFamilyWriteAccess, type AppUser } from "@/lib/auth/authorization";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { ensureDefaultCategories } from "@/lib/finance/default-categories";
 
 export type TransactionPayload = {
   type: "income" | "expense";
@@ -29,6 +30,7 @@ async function assertPersonalReferences(user: AppUser, payload: TransactionPaylo
 }
 
 export async function listTransactionData(user: AppUser) {
+  await ensureDefaultCategories(user.id);
   const supabase = getSupabaseServerClient();
   const { data: memberships, error: membershipError } = await supabase
     .from("family_members")

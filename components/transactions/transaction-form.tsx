@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { ImagePlus, ReceiptText, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { transactionSchema, type TransactionInput } from "@/validations/transaction";
-import { LanguageContext } from "@/components/providers/language-provider";
+import { LanguageContext, useT } from "@/components/providers/language-provider";
 import type { StoredTransaction, TransactionOption } from "@/types/finance";
 
 interface TransactionFormProps {
@@ -20,6 +20,7 @@ interface TransactionFormProps {
 }
 
 export function TransactionForm({ transaction, onSuccess, familyGroupId, initialDraft }: TransactionFormProps) {
+  const t = useT();
   const { language } = useContext(LanguageContext);
   const tr = language === "tr";
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -157,7 +158,7 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
           {tr ? "Kategori" : "Category"}
           <Select onValueChange={(value) => { setCategory(value); form.setValue("category", value, { shouldValidate: true }); }} value={category}>
             <SelectTrigger aria-invalid={!!form.formState.errors.category}><SelectValue placeholder={tr ? "Kategori seç" : "Select category"} /></SelectTrigger>
-            <SelectContent>{availableCategories.map((item) => <SelectItem value={item.id} key={item.id}>{item.name}</SelectItem>)}</SelectContent>
+            <SelectContent>{availableCategories.map((item) => <SelectItem value={item.id} key={item.id}>{t(item.name)}</SelectItem>)}</SelectContent>
           </Select>
           {form.formState.errors.category && <small className="field-error">{form.formState.errors.category.message}</small>}
         </label>
