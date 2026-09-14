@@ -10,7 +10,7 @@ export async function importPersonalCsvTransactions(user: AppUser, rows: CsvTran
   if (rows.length > 500) throw new Error("A maximum of 500 rows can be imported at once.");
   const supabase = getSupabaseServerClient();
   const [accountsResult, categoriesResult, existingResult] = await Promise.all([
-    supabase.from("accounts").select("id, name").eq("user_id", user.id).is("archived_at", null),
+    supabase.from("accounts").select("id, name").eq("user_id", user.id),
     supabase.from("categories").select("id, name, type").eq("user_id", user.id),
     supabase.from("transactions").select("title, amount, type, transaction_date, account_id").eq("user_id", user.id).is("family_group_id", null),
   ]);

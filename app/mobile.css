@@ -96,4 +96,22 @@ body {
     width: 100%;
     max-width: 100%;
   }
+
+  .tx-table > .tx-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 12px;
+    padding: 14px;
+  }
+
+  .tx-row > b,
+  .tx-row > span,
+  .tx-row > strong {
+    display: block;
+  }
+
+  .tx-row > b { min-width: 0; }
+  .tx-row > span { color: #7d8699; font-size: .72rem; }
+  .tx-row > strong { grid-column: 2; grid-row: 1; }
+  .tx-row > .tx-actions { grid-column: 1 / -1; margin-top: 6px; }
 }

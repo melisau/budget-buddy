@@ -9,7 +9,7 @@ export async function GET() {
     const user = await requireAppUser();
     const [{ transactions }, accountsResult, budgetsResult] = await Promise.all([
       listTransactionData(user),
-      getSupabaseServerClient().from("accounts").select("id, initial_balance").eq("user_id", user.id).eq("archived_at", null),
+      getSupabaseServerClient().from("accounts").select("id, initial_balance").eq("user_id", user.id),
       getSupabaseServerClient().from("budgets").select("id, amount_limit, category_id, start_date, end_date").eq("user_id", user.id).is("family_group_id", null),
     ]);
     if (accountsResult.error || budgetsResult.error) throw accountsResult.error ?? budgetsResult.error;
