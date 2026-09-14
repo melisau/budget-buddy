@@ -8,7 +8,8 @@ type OllamaResponse = { message?: { content?: string } };
 type ExchangeRateResponse = { rate?: number; date?: string };
 
 function getOllamaConfiguration() {
-  const baseUrl = (process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434").replace(/\/$/, "");
+  const configuredBaseUrl = process.env.OLLAMA_BASE_URL?.trim();
+  const baseUrl = configuredBaseUrl?.replace(/\/$/, "");
   const model = process.env.OLLAMA_MODEL ?? "qwen2.5:3b";
   return { baseUrl, model };
 }
@@ -94,6 +95,13 @@ export async function POST(request: Request) {
     }));
     const selectedLanguageName = selectedLanguage === "tr" ? "Turkish" : "English";
     const { baseUrl, model } = getOllamaConfiguration();
+    if (!baseUrl) {
+      return NextResponse.json({
+        error: selectedLanguage === "tr"
+          ? "AI Asistanı bu canlı sürümde henüz yapılandırılmadı."
+          : "The AI Assistant is not configured for this live deployment yet.",
+      }, { status: 503 });
+    }
     const systemPrompt = [
       "You are Budget Buddy's financial activity assistant.",
       "Use only the financial data supplied below. If the data cannot answer the question, say so clearly.",
