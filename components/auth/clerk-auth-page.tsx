@@ -32,9 +32,17 @@ export function ClerkAuthPage({ mode }: { mode: "sign-in" | "sign-up" }) {
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-8">
       {mode === "sign-in" ? (
-        <SignIn fallbackRedirectUrl="/auth/complete" forceRedirectUrl="/auth/complete" />
+        <SignIn
+          signUpUrl="/sign-up"
+          fallbackRedirectUrl="/auth/complete"
+          forceRedirectUrl="/auth/complete"
+        />
       ) : (
-        <SignUp fallbackRedirectUrl="/auth/complete" forceRedirectUrl="/auth/complete" />
+        <SignUp
+          signInUrl="/sign-in"
+          fallbackRedirectUrl="/auth/complete"
+          forceRedirectUrl="/auth/complete"
+        />
       )}
     </main>
   );
