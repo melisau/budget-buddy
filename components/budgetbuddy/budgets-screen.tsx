@@ -1,27 +1,37 @@
 "use client";
 
-import { MoreHorizontal } from "lucide-react";
-import { demoBudgets, spendingCategories } from "@/components/budgetbuddy/demo-data";
-import { BudgetRow, ConfirmDelete, PageHead } from "@/components/budgetbuddy/shared";
+import { useEffect, useMemo, useState } from "react";
+import { MoreHorizontal, Pencil, PiggyBank, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { useT } from "@/components/providers/language-provider";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { formatNumber } from "@/lib/finance/currency";
+
+type Category = { id: string; name: string };
+type Budget = { id: string; categoryId: string; categoryName: string; limit: number; spent: number; remaining: number; usage: number; status: "safe" | "approaching" | "critical" | "exceeded"; startDate: string; endDate: string | null };
+const currentMonth = new Date().toISOString().slice(0, 7);
+const statusText: Record<Budget["status"], string> = { safe: "On track", approaching: "Approaching limit", critical: "Nearly used", exceeded: "Limit exceeded" };
+const statusClass: Record<Budget["status"], string> = { safe: "green", approaching: "amber", critical: "amber", exceeded: "red" };
+
+function BudgetForm({ categories, budget, onSaved }: { categories: Category[]; budget?: Budget; onSaved: () => Promise<void> }) {
+  const [categoryId, setCategoryId] = useState(budget?.categoryId ?? "");
+  const [amountLimit, setAmountLimit] = useState(budget?.limit ? String(budget.limit) : "");
+  const [month, setMonth] = useState(budget?.startDate.slice(0, 7) ?? currentMonth);
+  const [saving, setSaving] = useState(false);
+  async function submit(event: React.FormEvent<HTMLFormElement>) { event.preventDefault(); setSaving(true); try { const response = await fetch(budget ? `/api/budgets/${budget.id}` : "/api/budgets", { method: budget ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ categoryId, amountLimit, month }) }); const payload = await response.json().catch(() => ({})) as { error?: string }; if (!response.ok) throw new Error(payload.error ?? "Unable to save the budget."); toast.success(budget ? "Budget updated." : "Budget created."); await onSaved(); } catch (error) { toast.error(error instanceof Error ? error.message : "Unable to save the budget."); } finally { setSaving(false); } }
+  return <form className="goal-form" onSubmit={submit}><label>Category<Select value={categoryId} onValueChange={setCategoryId}><SelectTrigger><SelectValue placeholder="Select an expense category" /></SelectTrigger><SelectContent>{categories.map((category) => <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>)}</SelectContent></Select></label><label>Monthly limit<Input value={amountLimit} min="0.01" step="0.01" inputMode="decimal" type="number" onChange={(event) => setAmountLimit(event.target.value)} required /></label>{!budget && <label>Month<Input type="month" value={month} onChange={(event) => setMonth(event.target.value)} required /></label>}<Button disabled={saving || !categoryId}>{saving ? "Saving…" : budget ? "Save changes" : "Create budget"}</Button></form>;
+}
 
 export function BudgetsScreen() {
-  const t = useT();
-  return <>
-    <PageHead title="September budgets" sub="₺27,680 of ₺32,200 planned spending used" button="Create budget" />
-    <article className="panel overall"><b>{t("Overall progress")} <strong>86%</strong></b><Progress value={86} /><span>{t("₺4,520 remaining")} <small>{t("20 days left")}</small></span></article>
-    <div className="card-grid">
-      {demoBudgets.map((budget, index) => {
-        const Icon = spendingCategories[index][3];
-        return <article className="panel budget-card" key={budget[0]}>
-          <i className={`tone${index}`}><Icon /></i>
-          <button type="button" aria-label={`${t("More")} ${t(budget[0])}`}><MoreHorizontal /></button>
-          <h3>{t(budget[0])}</h3>
-          <BudgetRow budget={budget} />
-          <div><button type="button">{t("Edit")}</button><ConfirmDelete /></div>
-        </article>;
-      })}
-    </div>
-  </>;
+  const t = useT(); const [budgets, setBudgets] = useState<Budget[]>([]); const [categories, setCategories] = useState<Category[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState<string | null>(null);
+  const load = async () => { setLoading(true); try { const response = await fetch("/api/budgets", { cache: "no-store" }); const payload = await response.json() as { budgets?: Budget[]; categories?: Category[]; error?: string }; if (!response.ok) throw new Error(payload.error ?? "Unable to load budgets."); setBudgets(payload.budgets ?? []); setCategories(payload.categories ?? []); setError(null); } catch (loadError) { setError(loadError instanceof Error ? loadError.message : "Unable to load budgets."); } finally { setLoading(false); } };
+  useEffect(() => { void Promise.resolve().then(load); }, []);
+  const totals = useMemo(() => budgets.reduce((result, budget) => ({ spent: result.spent + budget.spent, limit: result.limit + budget.limit }), { spent: 0, limit: 0 }), [budgets]); const totalUsage = totals.limit ? Math.round((totals.spent / totals.limit) * 100) : 0;
+  async function remove(budget: Budget) { try { const response = await fetch(`/api/budgets/${budget.id}`, { method: "DELETE" }); const payload = await response.json().catch(() => ({})) as { error?: string }; if (!response.ok) throw new Error(payload.error ?? "Unable to delete the budget."); toast.success("Budget deleted."); await load(); } catch (deleteError) { toast.error(deleteError instanceof Error ? deleteError.message : "Unable to delete the budget."); } }
+  return <><div className="page-head"><div><h2>{t("Budgets")}</h2><p>{budgets.length ? `${formatNumber(totals.spent, "en")} of ${formatNumber(totals.limit, "en")} planned spending used` : "Plan a monthly limit for each spending category."}</p></div><Dialog><DialogTrigger asChild><Button><Plus />{t("Create budget")}</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>{t("Create budget")}</DialogTitle><DialogDescription>Set a monthly spending limit and track it automatically.</DialogDescription></DialogHeader><BudgetForm categories={categories} onSaved={load} /></DialogContent></Dialog></div>{error && <p className="form-error" role="alert">{error}</p>}{loading ? <div className="panel">Loading budgets…</div> : budgets.length === 0 ? <div className="panel empty-state"><PiggyBank /><h3>No budgets yet</h3><p>Create a monthly limit to see spending progress from your real transactions.</p></div> : <><article className="panel overall"><b>{t("Overall progress")} <strong>{totalUsage}%</strong></b><Progress value={Math.min(100, totalUsage)} /><span><span>{formatNumber(Math.max(0, totals.limit - totals.spent), "en")} remaining</span><small>{budgets.some((budget) => budget.status === "exceeded") ? "Review budgets over their limit" : "All spending is up to date"}</small></span></article><div className="card-grid">{budgets.map((budget) => <article className="panel budget-card" key={budget.id}><i><PiggyBank /></i><MoreHorizontal aria-hidden="true" /><h3>{budget.categoryName}</h3><div className="budget-row"><div><b>{budget.categoryName}</b><span>{formatNumber(budget.spent, "en")} / {formatNumber(budget.limit, "en")}</span></div><Progress value={Math.min(100, budget.usage)} /><small className={statusClass[budget.status]}>{statusText[budget.status]}</small><strong>{budget.usage}%</strong></div><div><Dialog><DialogTrigger asChild><button type="button"><Pencil />{t("Edit")}</button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>Edit budget</DialogTitle><DialogDescription>Change the category or monthly limit.</DialogDescription></DialogHeader><BudgetForm budget={budget} categories={categories} onSaved={load} /></DialogContent></Dialog><AlertDialog><AlertDialogTrigger asChild><button type="button" className="delete"><Trash2 />{t("Delete")}</button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete this budget?</AlertDialogTitle><AlertDialogDescription>Its spending history remains, but this monthly limit will be removed.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>{t("Cancel")}</AlertDialogCancel><AlertDialogAction onClick={() => void remove(budget)}>{t("Delete")}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></div></article>)}</div></>}</>;
 }
