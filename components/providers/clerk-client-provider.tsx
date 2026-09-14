@@ -39,7 +39,7 @@ export function ClerkClientProvider({
   publishableKey?: string;
 }) {
   return (
-    <ClerkProvider publishableKey={publishableKey}>
+    <ClerkProvider publishableKey={publishableKey} proxyUrl="/__clerk">
       <ClerkSessionBridge />
       {children}
     </ClerkProvider>
