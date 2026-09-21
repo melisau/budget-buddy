@@ -4,7 +4,7 @@ import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from "@/compo
 export type Language="en"|"tr";
 export const LanguageContext=createContext<{language:Language;setLanguage:(language:Language)=>void}>({language:"en",setLanguage:()=>{}});
 const translations:Record<string,string>={
- "Features":"Özellikler","How it works":"Nasıl çalışır","Pricing":"Fiyatlandırma","About":"Hakkında","Sign in":"Giriş yap","Get started":"Başla","Open menu":"Menüyü aç","Close menu":"Menüyü kapat",
+ "Features":"Özellikler","How it works":"Nasıl çalışır","Pricing":"Fiyatlandırma","About":"Hakkında","Sign in":"Giriş yap","Get started":"Başla","Open menu":"Menüyü aç","Close menu":"Menüyü kapat","Privacy":"Gizlilik","Terms":"Koşullar",
  "Dashboard":"Genel Bakış","Family Group":"Aile Grubu","Transactions":"İşlemler","Budgets":"Bütçeler","Accounts":"Hesaplar","Goals":"Hedefler","Analytics":"Analizler","AI Assistant":"AI Asistanı","Settings":"Ayarlar",
  "Total balance":"Toplam bakiye","Monthly income":"Aylık gelir","Monthly expenses":"Aylık gider","Savings rate":"Tasarruf oranı",
  "Cash flow":"Nakit akışı","Spending by category":"Kategoriye göre harcama","Budget progress":"Bütçe ilerlemesi","Recent transactions":"Son işlemler",
@@ -52,9 +52,11 @@ const translations:Record<string,string>={
  "Checking · TRY":"Vadesiz hesap · TRY","Savings · TRY":"Birikim · TRY","Cash · TRY":"Nakit · TRY","Credit Card · EUR":"Kredi kartı · EUR",
  "Profile":"Profil","Preferences":"Tercihler","Categories":"Kategoriler","Subscription":"Abonelik","Data":"Veriler","Email":"E-posta",
  "Update your personal details.":"Kişisel bilgilerinizi güncelleyin.","Change photo":"Fotoğrafı değiştir","Full name":"Ad soyad","Save changes":"Değişiklikleri kaydet","Manage account":"Hesabı yönet",
- "Customize currency and appearance.":"Para birimini ve görünümü özelleştirin.","Currency":"Para birimi","Used across balances and reports.":"Bakiye ve raporların tamamında kullanılır.",
+ "Customize currency and appearance.":"Para birimini ve görünümü özelleştirin.","Customize your default currency.":"Varsayılan para biriminizi özelleştirin.","Currency":"Para birimi","Used across balances and reports.":"Bakiye ve raporların tamamında kullanılır.",
  "Dark mode":"Karanlık mod","Use a darker color theme.":"Koyu renk temasını kullanın.","Budget notifications":"Bütçe bildirimleri","Get notified near a limit.":"Limite yaklaştığınızda bildirim alın.",
  "Export data":"Verileri dışa aktar","Download your records as CSV.":"Kayıtlarınızı CSV olarak indirin.","Export":"Dışa aktar","Delete account":"Hesabı sil","Permanently remove all data.":"Tüm verileri kalıcı olarak silin.",
+ "Currency updated.":"Para birimi güncellendi.","Unable to update account preferences.":"Hesap tercihleri güncellenemedi.","Delete permanently":"Kalıcı olarak sil","Deleting your account permanently removes your transactions, accounts, budgets, goals, receipts, conversations, and family memberships. This action cannot be undone.":"Hesabınızı silmek işlemlerinizi, hesaplarınızı, bütçelerinizi, hedeflerinizi, fişlerinizi, konuşmalarınızı ve aile üyeliklerinizi kalıcı olarak kaldırır. Bu işlem geri alınamaz.",
+ "Something went wrong":"Bir sorun oluştu","This page could not be opened.":"Bu sayfa açılamadı.","The error was recorded. You can try again or return to the dashboard.":"Hata kaydedildi. Yeniden deneyebilir veya genel bakışa dönebilirsiniz.",
  "Safe":"Güvenli","Approaching limit":"Limite yaklaşıyor","Critical":"Kritik","Exceeded":"Aşıldı",
  "Rent payment":"Kira ödemesi","Salary":"Maaş","Migros Market":"Migros Market","Shell":"Shell","Coffee Shop":"Kahve dükkânı",
  "Housing":"Konut","Groceries":"Market","Dining":"Dışarıda yemek","Food & Dining":"Yemek","Entertainment":"Eğlence","Shopping":"Alışveriş","Transport":"Ulaşım","Utilities":"Faturalar","Income":"Gelir"

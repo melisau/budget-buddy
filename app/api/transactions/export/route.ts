@@ -11,10 +11,11 @@ const joinedName = (value: unknown) => {
 export async function GET(request: Request) {
   try {
     const user = await requireAppUser();
-    const scope = new URL(request.url).searchParams.get("scope") === "family" ? "family" : "personal";
+    const requestedScope = new URL(request.url).searchParams.get("scope");
+    const scope = requestedScope === "family" || requestedScope === "all" ? requestedScope : "personal";
     const data = await listTransactionData(user);
-    const rows = data.transactions.filter((transaction) => scope === "family" ? Boolean(transaction.family_group_id) : !transaction.family_group_id);
-    const csv = ["date,description,amount,type,category,account,scope", ...rows.map((transaction) => [transaction.transaction_date, transaction.title, transaction.amount, transaction.type, joinedName(transaction.category), joinedName(transaction.account), scope].map(quote).join(","))].join("\r\n");
+    const rows = data.transactions.filter((transaction) => scope === "all" || (scope === "family" ? Boolean(transaction.family_group_id) : !transaction.family_group_id));
+    const csv = ["date,description,amount,type,category,account,scope", ...rows.map((transaction) => [transaction.transaction_date, transaction.title, transaction.amount, transaction.type, joinedName(transaction.category), joinedName(transaction.account), transaction.family_group_id ? "family" : "personal"].map(quote).join(","))].join("\r\n");
     return new NextResponse(csv, { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="budgetbuddy-${scope}-transactions.csv"`, "Cache-Control": "private, no-store" } });
   } catch (error) {
     if (error instanceof AccessError) return NextResponse.json({ error: error.message }, { status: error.status });

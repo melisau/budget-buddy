@@ -48,10 +48,7 @@ pnpm install
 ```  
 cp .env.example .env.local  
 ```
-4. **Apply Database Migrations:**Open the **SQL Editor** in your Supabase Dashboard and run the migration files located in `supabase/migrations/` in order:
-
-  1. `0001_budgetbuddy_foundation.sql`
-  2. `0002_new_user_starter_data.sql`
+4. **Apply database migrations:** Open the **SQL Editor** in your Supabase dashboard and run every SQL file in `supabase/migrations/` in numeric order. Do this for each environment before deploying application code that depends on a new migration.
 5. **Run the development server:**  
 ```  
 pnpm dev  
@@ -85,7 +82,7 @@ It provides complete control over bank accounts, cash balances, savings, and cre
 * 👨‍👩‍👧‍👦 **Personal &amp; Family Finances:** Role-based access control (**Admin**, **Member**, **Viewer**) with shared household expense tracking, invitation flows, and activity feeds.
 * 💳 **Account Management &amp; Transfers:** Create bank, cash, savings, credit card, and digital wallet accounts, track live balances, and record inter-account transfers seamlessly.
 * 🧾 **Secure Receipt Storage:** Upload receipt images (JPG, PNG, WEBP up to 5 MB) stored in private Supabase Storage buckets and served via short-lived signed URLs.
-* ⚡ **Groq Cloud AI Assistant:** Ultra-fast streaming financial analysis, spending advice, and voice-assisted transaction draft confirmations powered by Groq API (`@ai-sdk/groq` / Vercel AI SDK).
+* ⚡ **Groq Cloud AI Assistant:** Fast financial explanations and voice-assisted transaction draft confirmations through Groq's OpenAI-compatible API.
 * 🌐 **Bilingual Support (i18n):** Real-time Turkish and English UI toggling with persistent user language preferences across sessions and browser tabs.
 * 📊 **Budgets &amp; Savings Goals:** Category-specific monthly spending limits, threshold alerts, interactive progress indicators, and goal tracking.
 * 📈 **Analytics &amp; CSV Import/Export:** Recharts-driven 6-month cash flow visualizations, category breakdown charts, and dual-language CSV data export/import.
@@ -99,7 +96,7 @@ It provides complete control over bank accounts, cash balances, savings, and cre
 * **Styling &amp; UI Components:** Tailwind CSS v4, shadcn/ui, Lucide Icons, Recharts.
 * **Database &amp; Storage:** Supabase (PostgreSQL, Row Level Security, Migrations, Private Storage Buckets).
 * **Authentication:** Clerk (`@clerk/nextjs`).
-* **AI Engine:** Groq Cloud API (`@ai-sdk/groq` / Vercel AI SDK).
+* **AI Engine:** Groq Cloud API.
 * **Payments:** Stripe Checkout &amp; Webhook Verification.
 * **Package Manager:** `pnpm`.
 
@@ -116,6 +113,9 @@ pnpm lint
 # TypeScript compilation and type check
 node node_modules/typescript/bin/tsc --noEmit
 
+# Finance calculation unit tests
+pnpm test
+
 # Production build
 pnpm build
 
@@ -126,7 +126,7 @@ pnpm build
 ## 🛡 Security &amp; Architectural Principles
 
 * **Receipt Security:** Receipt files are stored in a private Supabase Storage bucket and accessed strictly via short-lived (60-second) signed URLs.
-* **Data Isolation:** Supabase Row Level Security (RLS) policies enforce strict data ownership; users can only read or write their own data or data shared within their accepted family group.
+* **Data Isolation:** Browser access is blocked by Supabase RLS. Trusted server routes validate Clerk identity, record ownership, and accepted family membership before using the Supabase secret key.
 * **AI Safety Boundaries:** The AI assistant operates strictly on authorized, sanitized financial summaries and cannot commit transactions without explicit user confirmation.
 
 ---

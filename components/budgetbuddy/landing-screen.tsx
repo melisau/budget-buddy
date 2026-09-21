@@ -187,7 +187,7 @@ export function LandingScreen({ go }: { go: Navigate }) {
         </section>
       </main>
 
-      <footer id="about"><Logo /><p>{t("Personal finance clarity, without the clutter.")}</p><span>{t("Privacy · Terms · Help")}</span><small>{t("© 2026 BudgetBuddy. Demo experience.")}</small></footer>
+      <footer id="about"><Logo /><p>{t("Personal finance clarity, without the clutter.")}</p><span><a href="/privacy">{t("Privacy")}</a> · <a href="/terms">{t("Terms")}</a></span><small>{t("© 2026 BudgetBuddy. Demo experience.")}</small></footer>
     </div>
   );
 }
