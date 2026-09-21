@@ -4,14 +4,17 @@ import { listTransactionData } from "@/lib/finance/transaction-data";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 
-type OllamaResponse = { message?: { content?: string } };
+type GroqResponse = {
+  choices?: Array<{ message?: { content?: string } }>;
+  error?: { message?: string };
+};
 type ExchangeRateResponse = { rate?: number; date?: string };
 
-function getOllamaConfiguration() {
-  const configuredBaseUrl = process.env.OLLAMA_BASE_URL?.trim();
-  const baseUrl = configuredBaseUrl?.replace(/\/$/, "");
-  const model = process.env.OLLAMA_MODEL ?? "qwen2.5:3b";
-  return { baseUrl, model };
+function getGroqConfiguration() {
+  return {
+    apiKey: process.env.GROQ_API_KEY?.trim(),
+    model: process.env.GROQ_MODEL?.trim() || "openai/gpt-oss-20b",
+  };
 }
 
 export async function GET() {
@@ -94,11 +97,11 @@ export async function POST(request: Request) {
       family: Boolean(item.family_group_id),
     }));
     const selectedLanguageName = selectedLanguage === "tr" ? "Turkish" : "English";
-    const { baseUrl, model } = getOllamaConfiguration();
-    if (!baseUrl) {
+    const { apiKey, model } = getGroqConfiguration();
+    if (!apiKey) {
       return NextResponse.json({
         error: selectedLanguage === "tr"
-          ? "AI Asistanı bu canlı sürümde henüz yapılandırılmadı."
+          ? "AI Asistanı için Groq API anahtarı henüz yapılandırılmadı."
           : "The AI Assistant is not configured for this live deployment yet.",
       }, { status: 503 });
     }
@@ -112,13 +115,17 @@ export async function POST(request: Request) {
 
     let response: Response;
     try {
-      response = await fetch(`${baseUrl}/api/chat`, {
+      response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        signal: AbortSignal.timeout(20_000),
         body: JSON.stringify({
           model,
-          stream: false,
-          options: { temperature: 0.2 },
+          temperature: 0.2,
+          max_completion_tokens: 700,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: question.trim() },
@@ -126,20 +133,20 @@ export async function POST(request: Request) {
         }),
       });
     } catch {
-      throw new Error(`Ollama is unavailable. Install Ollama, then run: ollama pull ${model}`);
+      throw new Error(selectedLanguage === "tr" ? "Groq servisine şu anda ulaşılamıyor. Lütfen biraz sonra tekrar dene." : "Groq is currently unavailable. Please try again shortly.");
     }
 
-    const payload = (await response.json().catch(() => ({}))) as OllamaResponse & { error?: string };
-    if (!response.ok) throw new Error(payload.error ?? `Ollama request failed with status ${response.status}.`);
+    const payload = (await response.json().catch(() => ({}))) as GroqResponse;
+    if (!response.ok) throw new Error(payload.error?.message ?? `Groq request failed with status ${response.status}.`);
 
-    const answer = payload.message?.content?.trim();
-    if (!answer) throw new Error("Ollama returned no assistant answer.");
+    const answer = payload.choices?.[0]?.message?.content?.trim();
+    if (!answer) throw new Error("Groq returned no assistant answer.");
 
     const { data: session, error } = await getSupabaseServerClient().from("ai_sessions").insert({
       user_id: user.id, conversation_id: typeof conversationId === "string" ? conversationId : crypto.randomUUID(),
       question: question.trim(),
       response: answer,
-      context_summary: { transactionCount: transactions.length, language: selectedLanguage, provider: "ollama", model },
+      context_summary: { transactionCount: transactions.length, language: selectedLanguage, provider: "groq", model },
     }).select("id, conversation_id, question, response, created_at").single();
     if (error) throw new Error(`Unable to save AI history: ${error.message}`);
 

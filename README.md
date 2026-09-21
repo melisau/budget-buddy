@@ -10,7 +10,7 @@ Budget Buddy is a bilingual personal-finance application for tracking income, ex
 - Secure receipt uploads for JPG, PNG, and WEBP files up to 5 MB
 - Accounts, budgets, CSV import/export, and financial reports
 - Turkish and English user interfaces
-- Local Ollama-powered assistant with optional live EUR/TRY reference rates
+- Groq-powered cloud assistant with optional live EUR/TRY reference rates
 - Conversation history, voice input, and confirmed voice transaction drafts
 - Free, Core, and Pro plan definitions with Stripe Checkout groundwork
 
@@ -21,11 +21,11 @@ Budget Buddy is a bilingual personal-finance application for tracking income, ex
 - Supabase for application data and private storage
 - Clerk for authentication
 - Tailwind CSS, shadcn/ui, Lucide, and Recharts
-- Ollama for local AI inference
+- Groq for fast cloud AI inference
 
 ## Local setup
 
-Requirements: Node.js 22.13 or later, pnpm 11, a Clerk application, a Supabase project, and Ollama for AI features.
+Requirements: Node.js 22.13 or later, pnpm 11, a Clerk application, a Supabase project, and a Groq API key for AI features.
 
 1. Install dependencies:
 
@@ -37,11 +37,7 @@ Requirements: Node.js 22.13 or later, pnpm 11, a Clerk application, a Supabase p
 
 3. Apply `supabase/migrations` through the Supabase SQL Editor, in filename order.
 
-4. Prepare the local AI model:
-
-   ```bash
-   ollama pull qwen2.5:3b
-   ```
+4. Add `GROQ_API_KEY` to `.env.local`. The optional `GROQ_MODEL` defaults to `openai/gpt-oss-20b`.
 
 5. Start the application:
 
@@ -69,13 +65,13 @@ Keep real values in `.env.local`; it is ignored by Git. `.env.example` documents
 | `CLERK_SECRET_KEY` | Clerk server key |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
 | `SUPABASE_SECRET_KEY` | Supabase server key |
-| `OLLAMA_BASE_URL` | Local Ollama server URL |
-| `OLLAMA_MODEL` | Local model name |
+| `GROQ_API_KEY` | Server-only Groq API key |
+| `GROQ_MODEL` | Groq model ID; defaults to `openai/gpt-oss-20b` |
 | `STRIPE_SECRET_KEY` | Stripe server key |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signature secret |
 | `STRIPE_CORE_PRICE_ID` / `STRIPE_PRO_PRICE_ID` | Stripe recurring price IDs |
 
-Use separate Clerk, Supabase, Stripe, and Ollama configuration for development and production.
+Use separate Clerk, Supabase, Stripe, and Groq configuration for development and production.
 
 ## Billing status
 
