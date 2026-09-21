@@ -115,7 +115,7 @@ export function LandingScreen({ go }: { go: Navigate }) {
         </button>
       </header>
 
-      <main>
+      <main id="main-content" tabIndex={-1}>
         <section className="hero">
           <div>
             <span className="eyebrow"><Sparkles /> {t("Know where your money goes. Plan where it should go.")}</span>

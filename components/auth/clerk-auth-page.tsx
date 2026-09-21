@@ -23,7 +23,7 @@ export function ClerkAuthPage({ mode, redirectTo = "/dashboard" }: { mode: "sign
 
   if (!isLoaded || isSignedIn) {
     return (
-      <main className="flex min-h-screen items-center justify-center px-4 py-8">
+      <main id="main-content" tabIndex={-1} className="flex min-h-screen items-center justify-center px-4 py-8">
         <div className="flex items-center gap-3 rounded-xl border bg-white px-5 py-4 text-sm shadow-sm">
           <LoaderCircle className="size-5 animate-spin" aria-hidden="true" />
           <span>Oturum kontrol ediliyor…</span>
@@ -33,7 +33,7 @@ export function ClerkAuthPage({ mode, redirectTo = "/dashboard" }: { mode: "sign
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-4 py-8">
+    <main id="main-content" tabIndex={-1} className="flex min-h-screen items-center justify-center px-4 py-8">
       {mode === "sign-in" ? (
         <SignIn
           signUpUrl={otherAuthUrl}
@@ -69,7 +69,7 @@ export function ClerkSessionCompletePage({ redirectTo = "/dashboard" }: { redire
   }, [getToken, isLoaded, isSignedIn, redirectTo]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-4 py-8">
+    <main id="main-content" tabIndex={-1} className="flex min-h-screen items-center justify-center px-4 py-8">
       <div className="flex items-center gap-3 rounded-xl border bg-white px-5 py-4 text-sm shadow-sm">
         <LoaderCircle className="size-5 animate-spin" aria-hidden="true" />
         <span>Giriş tamamlanıyor…</span>

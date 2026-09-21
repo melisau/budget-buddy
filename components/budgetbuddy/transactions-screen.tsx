@@ -86,13 +86,13 @@ export function TransactionsScreen() {
       <AddTransaction onCreated={() => void loadTransactions()} />
     </div>
     {loadError && <div className="panel empty-state"><p role="alert">{loadError}</p><Button onClick={() => void loadTransactions()}>{t("Try again")}</Button></div>}
-    {isLoading && <div className="panel empty-state"><p>{t("Loading transactions…")}</p></div>}
-    {!isLoading && !loadError && filteredTransactions.length ? <article className="panel tx-table">
-      <header><span>{t("Transaction")}</span><span>{t("Category")}</span><span>{t("Date")}</span><span>{t("Account")}</span><span>{t("Amount")}</span><span>{t("Actions")}</span></header>
-      {filteredTransactions.map((transaction) => <div className="tx-row" key={transaction.id}>
-        <b>{transaction.title}</b><span>{t(transaction.category)}</span><span>{formatTransactionDate(transaction.transactionDate, language)}</span><span>{t(transaction.accountName)}</span>
-        <strong className={transaction.type === "income" ? "pos" : "neg"}>{transaction.type === "income" ? "+" : "−"}₺{formatNumber(transaction.amount, language)}</strong>
-        <TransactionActions transaction={transaction} onChanged={loadTransactions} />
+    {isLoading && <div className="panel empty-state" role="status" aria-live="polite"><p>{t("Loading transactions…")}</p></div>}
+    {!isLoading && !loadError && filteredTransactions.length ? <article className="panel tx-table" role="table" aria-label={t("Transactions")}>
+      <header role="row"><span role="columnheader">{t("Transaction")}</span><span role="columnheader">{t("Category")}</span><span role="columnheader">{t("Date")}</span><span role="columnheader">{t("Account")}</span><span role="columnheader">{t("Amount")}</span><span role="columnheader">{t("Actions")}</span></header>
+      {filteredTransactions.map((transaction) => <div className="tx-row" role="row" key={transaction.id}>
+        <b role="cell">{transaction.title}</b><span role="cell">{t(transaction.category)}</span><span role="cell">{formatTransactionDate(transaction.transactionDate, language)}</span><span role="cell">{t(transaction.accountName)}</span>
+        <strong role="cell" className={transaction.type === "income" ? "pos" : "neg"}>{transaction.type === "income" ? "+" : "−"}₺{formatNumber(transaction.amount, language)}</strong>
+        <div role="cell"><TransactionActions transaction={transaction} onChanged={loadTransactions} /></div>
       </div>)}
     </article> : !isLoading && !loadError && <Empty className="panel empty-state"><EmptyHeader><EmptyMedia variant="icon"><Search /></EmptyMedia><EmptyTitle>{hasFilters ? t("No matching transactions") : t("No transactions yet")}</EmptyTitle><EmptyDescription>{hasFilters ? t("Try a different search, or add your first income or expense.") : t("Add your first income or expense to start tracking your money.")}</EmptyDescription></EmptyHeader><EmptyContent><AddTransaction onCreated={() => void loadTransactions()} /></EmptyContent></Empty>}
   </>;

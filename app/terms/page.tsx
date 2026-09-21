@@ -7,7 +7,7 @@ import { LanguageContext, LanguageSelect } from "@/components/providers/language
 export default function TermsPage() {
   const { language } = useContext(LanguageContext);
   const tr = language === "tr";
-  return <main className="legal">
+  return <main className="legal" id="main-content" tabIndex={-1}>
     <header><Link href="/">BudgetBuddy</Link><LanguageSelect /></header>
     <h1>{tr ? "Kullanım Koşulları" : "Terms of Use"}</h1>
     <p>{tr ? "Budget Buddy kişisel finans kayıtlarını düzenlemeye yardımcı olur; yatırım, kredi veya hukuki tavsiye vermez." : "Budget Buddy helps organize personal finance records. It does not provide investment, credit, or legal advice."}</p>

@@ -28,7 +28,7 @@ export function ProtectedShell({ children }: { children: ReactNode }) {
 
   return <div className="shell">
     <AppSidebar view={view} go={go} prefetch={prefetch} />
-    <main className="work"><AppHeader view={view} quickAdd={<AddTransaction />} /><div className="content">{children}</div></main>
+    <main className="work" id="main-content" tabIndex={-1}><AppHeader view={view} quickAdd={<AddTransaction />} /><div className="content">{children}</div></main>
     <MobileNavigation view={view} go={go} prefetch={prefetch} />
   </div>;
 }

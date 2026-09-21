@@ -15,7 +15,7 @@ export function Auth({mode,go}:{mode:"signin"|"signup";go:(view:AuthView)=>void}
  const [show,setShow]=useState(false);
  const signup=mode==="signup";
  return (
-  <main className="auth">
+  <main className="auth" id="main-content" tabIndex={-1}>
    <aside>
     <Logo go={()=>go("landing")}/>
     <div>

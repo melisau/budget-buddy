@@ -7,7 +7,7 @@ import { LanguageContext, LanguageSelect } from "@/components/providers/language
 export default function PrivacyPage() {
   const { language } = useContext(LanguageContext);
   const tr = language === "tr";
-  return <main className="legal">
+  return <main className="legal" id="main-content" tabIndex={-1}>
     <header><Link href="/">BudgetBuddy</Link><LanguageSelect /></header>
     <h1>{tr ? "Gizlilik Politikası" : "Privacy Policy"}</h1>
     <p>{tr ? "Budget Buddy; hesap, işlem, hedef ve aile verilerini uygulama hizmetini sağlamak için işler. Veriler yalnızca yetkili kullanıcılar ve kabul edilmiş aile üyeleriyle paylaşılır." : "Budget Buddy processes account, transaction, goal, and family data to provide the application. Data is shared only with authorized users and accepted family members."}</p>
