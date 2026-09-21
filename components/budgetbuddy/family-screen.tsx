@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { Check, Crown, Plus, ReceiptText, ShieldCheck, Trash2, UserPlus, Users } from "lucide-react";
+import { Check, Copy, Crown, MessageCircle, Plus, ReceiptText, ShieldCheck, Trash2, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 import { LanguageContext } from "@/components/providers/language-provider";
 import { PanelHead } from "@/components/budgetbuddy/shared";
@@ -84,7 +84,40 @@ function EmptyFamily({ invitations, onRespond, onCreated, tr }: { invitations: I
 
 function CreateFamily({ onComplete, tr }: { onComplete: () => Promise<void>; tr: boolean }) { const [name, setName] = useState(""); const [open, setOpen] = useState(false); const [saving, setSaving] = useState(false); const submit = async (event: React.FormEvent) => { event.preventDefault(); setSaving(true); try { const response = await fetch("/api/family", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) }); const payload = await response.json() as { error?: string }; if (!response.ok) throw new Error(payload.error); toast.success(tr ? "Aile grubu oluşturuldu." : "Family group created."); setOpen(false); setName(""); await onComplete(); } catch (error) { toast.error(error instanceof Error && error.message ? error.message : "Unable to create family group."); } finally { setSaving(false); } }; return <Dialog open={open} onOpenChange={setOpen}><DialogTrigger asChild><Button><Plus />{tr ? "Grup oluştur" : "Create group"}</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>{tr ? "Yeni aile grubu" : "New family group"}</DialogTitle><DialogDescription>{tr ? "Grubun ilk yöneticisi siz olacaksınız." : "You will be the first owner of this group."}</DialogDescription></DialogHeader><form className="modal" onSubmit={submit}><label>{tr ? "Grup adı" : "Group name"}<Input value={name} onChange={(event) => setName(event.target.value)} placeholder={tr ? "Örn. Uyar Ailesi" : "e.g. Uyar Family"} /></label><Button disabled={saving} type="submit">{saving ? (tr ? "Oluşturuluyor…" : "Creating…") : (tr ? "Grubu oluştur" : "Create group")}</Button></form></DialogContent></Dialog>; }
 
-function InviteMember({ group, onComplete, tr }: { group: FamilyGroup; onComplete: () => Promise<void>; tr: boolean }) { const [open, setOpen] = useState(false); const [email, setEmail] = useState(""); const [role, setRole] = useState<"member" | "viewer">("member"); const [saving, setSaving] = useState(false); const submit = async (event: React.FormEvent) => { event.preventDefault(); setSaving(true); try { const response = await fetch("/api/family/invitations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ familyGroupId: group.id, email, role }) }); const payload = await response.json() as { error?: string }; if (!response.ok) throw new Error(payload.error); toast.success(tr ? "Davet kaydedildi. E-posta gönderimi henüz etkin değil." : "Invitation saved. Email delivery is not enabled yet."); setOpen(false); setEmail(""); await onComplete(); } catch (error) { toast.error(error instanceof Error && error.message ? error.message : "Unable to create invitation."); } finally { setSaving(false); } }; return <Dialog open={open} onOpenChange={setOpen}><DialogTrigger asChild><Button variant="outline"><UserPlus />{tr ? "Üye davet et" : "Invite member"}</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>{tr ? "Aile bireyi davet et" : "Invite a family member"}</DialogTitle><DialogDescription>{tr ? "Davet, bu e-postayla giriş yapan kişinin kabul ekranında görünür. E-posta gönderilmez." : "The invitation appears for the user who signs in with this email. No email is sent."}</DialogDescription></DialogHeader><form className="modal" onSubmit={submit}><label>{tr ? "E-posta adresi" : "Email address"}<Input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="family@example.com" /></label><label>{tr ? "Rol" : "Role"}<Select value={role} onValueChange={(value) => setRole(value as "member" | "viewer")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="member">{tr ? "Üye" : "Member"}</SelectItem><SelectItem value="viewer">{tr ? "Görüntüleyici" : "Viewer"}</SelectItem></SelectContent></Select></label><Button disabled={saving} type="submit">{saving ? (tr ? "Kaydediliyor…" : "Saving…") : (tr ? "Daveti kaydet" : "Save invitation")}</Button></form></DialogContent></Dialog>; }
+function InviteMember({ group, onComplete, tr }: { group: FamilyGroup; onComplete: () => Promise<void>; tr: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<"member" | "viewer">("member");
+  const [saving, setSaving] = useState(false);
+  const [invitationUrl, setInvitationUrl] = useState("");
+
+  const changeOpen = (next: boolean) => {
+    setOpen(next);
+    if (!next) { setEmail(""); setRole("member"); setInvitationUrl(""); }
+  };
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault(); setSaving(true);
+    try {
+      const response = await fetch("/api/family/invitations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ familyGroupId: group.id, email, role }) });
+      const payload = await response.json() as { error?: string; invitationUrl?: string };
+      if (!response.ok || !payload.invitationUrl) throw new Error(payload.error);
+      setInvitationUrl(payload.invitationUrl);
+      toast.success(tr ? "Davet hazır. Bağlantıyı aile bireyinizle paylaşın." : "Invitation ready. Share the link with your family member.");
+      await onComplete();
+    } catch (error) { toast.error(error instanceof Error && error.message ? error.message : "Unable to create invitation."); }
+    finally { setSaving(false); }
+  };
+  const copyLink = async () => {
+    try { await navigator.clipboard.writeText(invitationUrl); toast.success(tr ? "Davet bağlantısı kopyalandı." : "Invitation link copied."); }
+    catch { toast.error(tr ? "Bağlantı kopyalanamadı." : "Unable to copy the link."); }
+  };
+  const shareOnWhatsApp = () => {
+    const message = tr ? `${group.name} Budget Buddy aile grubuna davet edildin. Daveti görmek için bağlantıyı aç ve ${email} adresiyle giriş yap: ${invitationUrl}` : `You are invited to the ${group.name} Budget Buddy family group. Open the link and sign in with ${email}: ${invitationUrl}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
+  };
+
+  return <Dialog open={open} onOpenChange={changeOpen}><DialogTrigger asChild><Button variant="outline"><UserPlus />{tr ? "Üye davet et" : "Invite member"}</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>{tr ? "Aile bireyi davet et" : "Invite a family member"}</DialogTitle><DialogDescription>{invitationUrl ? (tr ? "Davet kaydedildi. Bağlantıyı yalnızca davet ettiğiniz kişiyle paylaşın." : "Invitation saved. Share the link only with the invited person.") : (tr ? "E-posta adresi daveti doğrulamak için kullanılır; herhangi bir e-posta gönderilmez." : "The email address verifies the invitation; no email is sent.")}</DialogDescription></DialogHeader>{invitationUrl ? <div className="modal"><Input readOnly value={invitationUrl} aria-label={tr ? "Davet bağlantısı" : "Invitation link"} /><Button type="button" onClick={() => void copyLink()}><Copy />{tr ? "Bağlantıyı kopyala" : "Copy invitation link"}</Button><Button type="button" variant="outline" onClick={shareOnWhatsApp}><MessageCircle />{tr ? "WhatsApp'ta paylaş" : "Share on WhatsApp"}</Button><Button type="button" variant="ghost" onClick={() => changeOpen(false)}>{tr ? "Tamam" : "Done"}</Button></div> : <form className="modal" onSubmit={submit}><label>{tr ? "E-posta adresi" : "Email address"}<Input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="family@example.com" /></label><label>{tr ? "Rol" : "Role"}<Select value={role} onValueChange={(value) => setRole(value as "member" | "viewer")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="member">{tr ? "Üye" : "Member"}</SelectItem><SelectItem value="viewer">{tr ? "Görüntüleyici" : "Viewer"}</SelectItem></SelectContent></Select></label><Button disabled={saving} type="submit">{saving ? (tr ? "Hazırlanıyor…" : "Preparing…") : (tr ? "Davet bağlantısı oluştur" : "Create invitation link")}</Button></form>}</DialogContent></Dialog>;
+}
 
 function FamilyTransaction({ group, onComplete, tr }: { group: FamilyGroup; onComplete: () => Promise<void>; tr: boolean }) { const [open, setOpen] = useState(false); return <Dialog open={open} onOpenChange={setOpen}><DialogTrigger asChild><Button><Plus />{tr ? "Aile işlemi ekle" : "Add family transaction"}</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>{tr ? "Aile işlemi ekle" : "Add family transaction"}</DialogTitle><DialogDescription>{tr ? "Bu işlem yalnızca kendi adınıza kaydedilir; diğer üyeler görüntüleyebilir." : "This transaction is saved only in your name; other members can view it."}</DialogDescription></DialogHeader><TransactionForm familyGroupId={group.id} onSuccess={() => { setOpen(false); void onComplete(); }} /></DialogContent></Dialog>; }
 

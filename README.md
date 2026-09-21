@@ -12,6 +12,7 @@ Budget Buddy is a bilingual personal-finance application for tracking income, ex
 - Turkish and English user interfaces
 - Groq-powered cloud assistant with optional live EUR/TRY reference rates
 - Conversation history, voice input, and confirmed voice transaction drafts
+- Free family invitations through copyable links and WhatsApp sharing
 - Free, Core, and Pro plan definitions with Stripe Checkout groundwork
 
 ## Technology

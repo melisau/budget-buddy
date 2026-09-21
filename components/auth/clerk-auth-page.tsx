@@ -5,7 +5,7 @@ import { LoaderCircle } from "lucide-react";
 import { useEffect } from "react";
 import { setClerkSessionCookie } from "@/lib/auth/clerk-session-cookie";
 
-export function ClerkAuthPage({ mode }: { mode: "sign-in" | "sign-up" }) {
+export function ClerkAuthPage({ mode, redirectTo = "/dashboard" }: { mode: "sign-in" | "sign-up"; redirectTo?: "/dashboard" | "/family" }) {
   const { getToken, isLoaded, isSignedIn } = useAuth();
 
   useEffect(() => {
@@ -14,9 +14,12 @@ export function ClerkAuthPage({ mode }: { mode: "sign-in" | "sign-up" }) {
     void getToken().then((token) => {
       if (!token) return;
       setClerkSessionCookie(token);
-      window.location.replace("/dashboard");
+      window.location.replace(redirectTo);
     });
-  }, [getToken, isLoaded, isSignedIn]);
+  }, [getToken, isLoaded, isSignedIn, redirectTo]);
+
+  const completeUrl = `/auth/complete?redirect=${encodeURIComponent(redirectTo)}`;
+  const otherAuthUrl = `${mode === "sign-in" ? "/sign-up" : "/sign-in"}?redirect=${encodeURIComponent(redirectTo)}`;
 
   if (!isLoaded || isSignedIn) {
     return (
@@ -33,22 +36,22 @@ export function ClerkAuthPage({ mode }: { mode: "sign-in" | "sign-up" }) {
     <main className="flex min-h-screen items-center justify-center px-4 py-8">
       {mode === "sign-in" ? (
         <SignIn
-          signUpUrl="/sign-up"
-          fallbackRedirectUrl="/auth/complete"
-          forceRedirectUrl="/auth/complete"
+          signUpUrl={otherAuthUrl}
+          fallbackRedirectUrl={completeUrl}
+          forceRedirectUrl={completeUrl}
         />
       ) : (
         <SignUp
-          signInUrl="/sign-in"
-          fallbackRedirectUrl="/auth/complete"
-          forceRedirectUrl="/auth/complete"
+          signInUrl={otherAuthUrl}
+          fallbackRedirectUrl={completeUrl}
+          forceRedirectUrl={completeUrl}
         />
       )}
     </main>
   );
 }
 
-export function ClerkSessionCompletePage() {
+export function ClerkSessionCompletePage({ redirectTo = "/dashboard" }: { redirectTo?: "/dashboard" | "/family" }) {
   const { getToken, isLoaded, isSignedIn } = useAuth();
 
   useEffect(() => {
@@ -61,9 +64,9 @@ export function ClerkSessionCompletePage() {
     void getToken().then((token) => {
       if (!token) return;
       setClerkSessionCookie(token);
-      window.location.replace("/dashboard");
+      window.location.replace(redirectTo);
     });
-  }, [getToken, isLoaded, isSignedIn]);
+  }, [getToken, isLoaded, isSignedIn, redirectTo]);
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-8">

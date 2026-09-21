@@ -20,7 +20,8 @@ export async function POST(request: Request) {
       throw new AccessError("Please check the invitation fields.", 404);
     }
     const invitationId = await createFamilyInvite(user, body.familyGroupId, body.email, body.role);
-    return NextResponse.json({ invitationId }, { status: 201 });
+    const invitationUrl = new URL("/sign-in?redirect=%2Ffamily", request.url).toString();
+    return NextResponse.json({ invitationId, invitationUrl }, { status: 201 });
   } catch (error) {
     if (error instanceof AccessError) return NextResponse.json({ error: error.message }, { status: error.status });
     console.error("[family invitation] request failed", error);
