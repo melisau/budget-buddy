@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ImagePlus, ReceiptText, Trash2 } from "lucide-react";
+import { ImagePlus, Minus, Plus, ReceiptText, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { transactionSchema, type TransactionInput } from "@/validations/transaction";
 import { LanguageContext, useT } from "@/components/providers/language-provider";
@@ -123,19 +123,27 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
 
   return (
     <form className="modal transaction-form" onSubmit={form.handleSubmit(submit)} noValidate>
-      <div className="type" aria-label={tr ? "İşlem türü" : "Transaction type"}>
+      <fieldset className="transaction-type-picker">
+        <legend>{tr ? "İşlem türünü seçin" : "Choose transaction type"}</legend>
         {(["expense", "income"] as const).map((value) => (
           <button
             aria-pressed={type === value}
-            className={type === value ? "active" : ""}
+            className={`${value} ${type === value ? "active" : ""}`}
             key={value}
             onClick={() => { setType(value); setCategory(""); form.setValue("type", value, { shouldValidate: true }); form.setValue("category", "", { shouldValidate: true }); }}
             type="button"
           >
-            {value === "expense" ? (tr ? "Gider" : "Expense") : (tr ? "Gelir" : "Income")}
+            <i>{value === "expense" ? <Minus /> : <Plus />}</i>
+            <span>
+              <strong>{value === "expense" ? (tr ? "Gider" : "Expense") : (tr ? "Gelir" : "Income")}</strong>
+              <small>{value === "expense" ? (tr ? "Bakiyeden düşülür" : "Subtracts from balance") : (tr ? "Bakiyeye eklenir" : "Adds to balance")}</small>
+            </span>
           </button>
         ))}
-      </div>
+      </fieldset>
+      <p className={`transaction-type-result ${type}`} role="status">
+        {type === "expense" ? (tr ? "− Bu işlem harcama olarak sayılacak." : "− This transaction will count as spending.") : (tr ? "+ Bu işlem kazanç olarak sayılacak." : "+ This transaction will count as income.")}
+      </p>
 
       <label>
         {tr ? "Tutar" : "Amount"}
@@ -183,7 +191,7 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
       </label>
       {optionsError && <p className="field-error" role="alert">{optionsError}</p>}
       <Button disabled={isSubmitting} type="submit">
-        {isSubmitting ? (tr ? "Kaydediliyor…" : "Saving…") : transaction ? (tr ? "Değişiklikleri kaydet" : "Save changes") : (tr ? "İşlem ekle" : "Add transaction")}
+        {isSubmitting ? (tr ? "Kaydediliyor…" : "Saving…") : transaction ? (tr ? "Değişiklikleri kaydet" : "Save changes") : type === "expense" ? (tr ? "− Gider ekle" : "− Add expense") : (tr ? "+ Gelir ekle" : "+ Add income")}
       </Button>
     </form>
   );
