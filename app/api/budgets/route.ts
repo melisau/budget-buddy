@@ -57,17 +57,20 @@ async function requireExpenseCategory(userId: string, categoryId: string) {
   if (!data) throw new AccessError("Select one of your expense categories.", 404);
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const user = await requireAppUser();
     await ensureDefaultCategories(user.id);
     const supabase = getSupabaseServerClient();
+    const requestedMonth = new URL(request.url).searchParams.get("month") ?? new Date().toISOString().slice(0, 7);
+    const selectedRange = monthRange(requestedMonth) ?? monthRange(new Date().toISOString().slice(0, 7))!;
     const [{ data: budgets, error: budgetsError }, { data: categories, error: categoriesError }] = await Promise.all([
       supabase
         .from("budgets")
         .select("id, category_id, amount_limit, start_date, end_date, category:categories(id, name)")
         .eq("user_id", user.id)
         .is("family_group_id", null)
+        .eq("start_date", selectedRange.startDate)
         .order("start_date", { ascending: false }),
       supabase
         .from("categories")
@@ -118,7 +121,7 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json({ budgets: summaries, categories: categories ?? [] });
+    return NextResponse.json({ budgets: summaries, categories: categories ?? [], month: selectedRange.startDate.slice(0, 7) });
   } catch (error) {
     return errorResponse(error);
   }
