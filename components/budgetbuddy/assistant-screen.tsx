@@ -1,7 +1,7 @@
 "use client";
 
 import { useContext, useEffect, useRef, useState } from "react";
-import { Eye, EyeOff, Mic, Plus, Send, Sparkles } from "lucide-react";
+import { Eye, EyeOff, Mic, Plus, Send, Sparkles, Trash2 } from "lucide-react";
 import { LanguageContext, useT } from "@/components/providers/language-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +38,12 @@ declare global {
 
 function initialMessages(turkish: boolean): Message[] { return [["ai", turkish ? "Merhaba — yetkili finans verilerini inceleyerek nasıl yardımcı olabilirim?" : "Hi — how can I help you understand your authorized financial data?"]]; }
 
+function conversationMessages(sessions: AssistantSession[], id: string): Message[] {
+  return sessions.filter((item) => item.conversation_id === id)
+    .sort((left, right) => left.created_at.localeCompare(right.created_at))
+    .flatMap((item) => [["user", item.question] as Message, ["ai", item.response] as Message]);
+}
+
 function transactionDraftFromSpeech(transcript: string, turkish: boolean): VoiceTransactionDraft | null {
   const normalized = transcript.toLocaleLowerCase(turkish ? "tr-TR" : "en-US");
   const draftIntent = turkish
@@ -67,7 +73,7 @@ export function AssistantScreen() {
   const [value, setValue] = useState("");
   const [messages, setMessages] = useState<Message[]>(() => initialMessages(turkish));
   const [sessions, setSessions] = useState<AssistantSession[]>([]);
-  const [conversationId, setConversationId] = useState(() => crypto.randomUUID());
+  const [conversationId, setConversationId] = useState("");
   const [historyVisible, setHistoryVisible] = useState(true);
   const [voiceDraft, setVoiceDraft] = useState<VoiceTransactionDraft | null>(null);
   const [isSending, setIsSending] = useState(false);
@@ -84,7 +90,20 @@ export function AssistantScreen() {
     setHistoryVisible(window.localStorage.getItem("budgetbuddy:show-ai-history") !== "false");
     void fetch("/api/assistant")
       .then(async (response) => response.ok ? response.json() as Promise<{ sessions?: AssistantSession[] }> : { sessions: [] })
-      .then((payload) => setSessions(payload.sessions ?? []))
+      .then((payload) => {
+        const loaded = payload.sessions ?? [];
+        setSessions(loaded);
+        const savedId = window.localStorage.getItem("budgetbuddy:active-ai-conversation");
+        const activeId = savedId && loaded.some((item) => item.conversation_id === savedId) ? savedId : loaded[0]?.conversation_id;
+        if (activeId) {
+          setConversationId(activeId);
+          setMessages(conversationMessages(loaded, activeId));
+        } else {
+          const nextId = crypto.randomUUID();
+          setConversationId(nextId);
+          window.localStorage.setItem("budgetbuddy:active-ai-conversation", nextId);
+        }
+      })
       .catch(() => setSessions([]));
   }, []);
 
@@ -93,11 +112,42 @@ export function AssistantScreen() {
     window.localStorage.setItem("budgetbuddy:show-ai-history", String(visible));
   };
 
+  const startConversation = () => {
+    const nextId = crypto.randomUUID();
+    setConversationId(nextId);
+    setMessages(initialMessages(turkish));
+    setValue("");
+    window.localStorage.setItem("budgetbuddy:active-ai-conversation", nextId);
+  };
+
+  const openConversation = (id: string) => {
+    setConversationId(id);
+    setMessages(conversationMessages(sessions, id));
+    window.localStorage.setItem("budgetbuddy:active-ai-conversation", id);
+  };
+
+  const deleteConversation = async (id: string) => {
+    const response = await fetch(`/api/assistant?conversationId=${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (!response.ok) return;
+    const remaining = sessions.filter((item) => item.conversation_id !== id);
+    setSessions(remaining);
+    if (conversationId === id) {
+      const nextId = remaining[0]?.conversation_id;
+      if (nextId) {
+        setConversationId(nextId);
+        setMessages(conversationMessages(remaining, nextId));
+        window.localStorage.setItem("budgetbuddy:active-ai-conversation", nextId);
+      } else startConversation();
+    }
+  };
+
   const send = async (question = value) => {
     const normalizedQuestion = question.trim();
     if (!normalizedQuestion) return;
+    const activeId = conversationId || crypto.randomUUID();
+    if (!conversationId) { setConversationId(activeId); window.localStorage.setItem("budgetbuddy:active-ai-conversation", activeId); }
     setMessages((current) => [...current, ["user", normalizedQuestion]]); setValue(""); setIsSending(true);
-    try { const response = await fetch("/api/assistant", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: normalizedQuestion, language, conversationId }) }); const payload = await response.json() as { answer?: string; error?: string; session?: AssistantSession }; if (!response.ok || !payload.answer) throw new Error(payload.error); setMessages((current) => [...current, ["ai", payload.answer!]]); if (payload.session) setSessions((current) => [payload.session!, ...current]); } catch (error) { setMessages((current) => [...current, ["ai", error instanceof Error && error.message ? error.message : (turkish ? "Yanıt alınamadı." : "Unable to get an answer.")]]); } finally { setIsSending(false); }
+    try { const response = await fetch("/api/assistant", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: normalizedQuestion, language, conversationId: activeId }) }); const payload = await response.json() as { answer?: string; error?: string; session?: AssistantSession }; if (!response.ok || !payload.answer) throw new Error(payload.error); setMessages((current) => [...current, ["ai", payload.answer!]]); if (payload.session) setSessions((current) => [payload.session!, ...current]); } catch (error) { setMessages((current) => [...current, ["ai", error instanceof Error && error.message ? error.message : (turkish ? "Yanıt alınamadı." : "Unable to get an answer.")]]); } finally { setIsSending(false); }
   };
 
   const toggleListening = () => {
@@ -146,9 +196,9 @@ export function AssistantScreen() {
 
   return <div className="assistant">
     <aside>
-      <Button onClick={() => { setMessages(initialMessages(turkish)); setValue(""); setConversationId(crypto.randomUUID()); }}><Plus />{t("New conversation")}</Button>
+      <Button onClick={startConversation}><Plus />{t("New conversation")}</Button>
       <div className="assistant-history-head"><h3>{t("Recent")}</h3><button type="button" aria-label={historyVisible ? (turkish ? "Konuşma geçmişini gizle" : "Hide conversation history") : (turkish ? "Konuşma geçmişini göster" : "Show conversation history")} onClick={() => setHistoryVisibility(!historyVisible)}>{historyVisible ? <EyeOff /> : <Eye />}</button></div>
-      {historyVisible && [...new Map(sessions.map((session) => [session.conversation_id, session])).values()].slice(0, 5).map((session) => <button type="button" onClick={() => { setConversationId(session.conversation_id); setMessages(sessions.filter((item) => item.conversation_id === session.conversation_id).flatMap((item) => [["user", item.question] as Message, ["ai", item.response] as Message])); }} key={session.conversation_id}><Sparkles />{session.question}</button>)}
+      {historyVisible && [...new Map([...sessions].reverse().map((session) => [session.conversation_id, session])).values()].reverse().slice(0, 5).map((session) => <div className={`assistant-history-item ${conversationId === session.conversation_id ? "active" : ""}`} key={session.conversation_id}><button type="button" onClick={() => openConversation(session.conversation_id)}><Sparkles />{session.question}</button><button type="button" aria-label={turkish ? "Sohbeti sil" : "Delete conversation"} onClick={() => void deleteConversation(session.conversation_id)}><Trash2 /></button></div>)}
       {historyVisible && sessions.length === 0 && <p className="assistant-history-empty">{turkish ? "Henüz konuşma yok." : "No conversations yet."}</p>}
       <small>{t("AI explains your tracked data. It is not investment advice.")}</small>
     </aside>

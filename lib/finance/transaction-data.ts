@@ -46,7 +46,7 @@ export async function listTransactionData(user: AppUser) {
     familyIds.length
       ? supabase.from("transactions").select(transactionSelect).in("family_group_id", familyIds).order("transaction_date", { ascending: false }).order("created_at", { ascending: false })
       : Promise.resolve({ data: [], error: null }),
-    supabase.from("accounts").select("id, name").eq("user_id", user.id).order("name"),
+    supabase.from("accounts").select("id, name").eq("user_id", user.id).is("archived_at", null).order("name"),
     supabase.from("categories").select("id, name, type").eq("user_id", user.id).order("name"),
   ]);
 

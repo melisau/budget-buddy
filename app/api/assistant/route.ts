@@ -35,6 +35,22 @@ export async function GET() {
   }
 }
 
+export async function DELETE(request: Request) {
+  try {
+    const user = await requireAppUser();
+    const conversationId = new URL(request.url).searchParams.get("conversationId")?.trim();
+    if (!conversationId) return NextResponse.json({ error: "Conversation is required." }, { status: 400 });
+    const { error } = await getSupabaseServerClient().from("ai_sessions").delete()
+      .eq("user_id", user.id).eq("conversation_id", conversationId);
+    if (error) throw new Error(`Unable to delete AI conversation: ${error.message}`);
+    return new NextResponse(null, { status: 204 });
+  } catch (error) {
+    if (error instanceof AccessError) return NextResponse.json({ error: error.message }, { status: error.status });
+    console.error("[assistant] delete failed", error);
+    return NextResponse.json({ error: "Unable to delete the conversation." }, { status: 500 });
+  }
+}
+
 function requestsCurrentEurTryRate(question: string) {
   const normalized = question.toLocaleLowerCase("tr-TR");
   const mentionsEuro = /\b(euro|eur)\b/.test(normalized);
@@ -78,17 +94,24 @@ export async function POST(request: Request) {
     }
 
     const selectedLanguage = language === "tr" ? "tr" : "en";
+    const activeConversationId = typeof conversationId === "string" && conversationId.trim() ? conversationId.trim() : crypto.randomUUID();
     if (requestsCurrentEurTryRate(question)) {
       const answer = await getCurrentEurTryAnswer(selectedLanguage);
       const { data: session, error } = await getSupabaseServerClient().from("ai_sessions").insert({
-        user_id: user.id, conversation_id: typeof conversationId === "string" ? conversationId : crypto.randomUUID(), question: question.trim(), response: answer,
+        user_id: user.id, conversation_id: activeConversationId, question: question.trim(), response: answer,
         context_summary: { language: selectedLanguage, provider: "frankfurter", currencyPair: "EUR/TRY" },
       }).select("id, conversation_id, question, response, created_at").single();
       if (error) throw new Error(`Unable to save AI history: ${error.message}`);
       return NextResponse.json({ answer, session });
     }
 
-    const data = await listTransactionData(user);
+    const [data, historyResult] = await Promise.all([
+      listTransactionData(user),
+      getSupabaseServerClient().from("ai_sessions").select("question, response, created_at")
+        .eq("user_id", user.id).eq("conversation_id", activeConversationId)
+        .order("created_at", { ascending: false }).limit(10),
+    ]);
+    if (historyResult.error) throw new Error(`Unable to load conversation context: ${historyResult.error.message}`);
     const transactions = data.transactions.slice(0, 100).map((item) => ({
       date: item.transaction_date,
       type: item.type,
@@ -128,6 +151,10 @@ export async function POST(request: Request) {
           max_completion_tokens: 700,
           messages: [
             { role: "system", content: systemPrompt },
+            ...(historyResult.data ?? []).reverse().flatMap((item) => [
+              { role: "user", content: item.question },
+              { role: "assistant", content: item.response },
+            ]),
             { role: "user", content: question.trim() },
           ],
         }),
@@ -143,7 +170,7 @@ export async function POST(request: Request) {
     if (!answer) throw new Error("Groq returned no assistant answer.");
 
     const { data: session, error } = await getSupabaseServerClient().from("ai_sessions").insert({
-      user_id: user.id, conversation_id: typeof conversationId === "string" ? conversationId : crypto.randomUUID(),
+      user_id: user.id, conversation_id: activeConversationId,
       question: question.trim(),
       response: answer,
       context_summary: { transactionCount: transactions.length, language: selectedLanguage, provider: "groq", model },

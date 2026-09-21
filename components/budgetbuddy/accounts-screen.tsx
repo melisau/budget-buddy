@@ -1,23 +1,54 @@
 "use client";
 
-import { Landmark, MoreHorizontal, PiggyBank, WalletCards, type LucideIcon } from "lucide-react";
-import { PageHead } from "@/components/budgetbuddy/shared";
-import { useT } from "@/components/providers/language-provider";
+import { useContext, useEffect, useMemo, useState } from "react";
+import { Archive, ArchiveRestore, ArrowRightLeft, Landmark, Pencil, PiggyBank, Plus, WalletCards } from "lucide-react";
+import { toast } from "sonner";
+import { LanguageContext, useT } from "@/components/providers/language-provider";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { formatCurrency } from "@/lib/finance/currency";
+import type { Currency } from "@/types/finance";
 
-type AccountCard = readonly [string, string, string, LucideIcon];
-
-const accounts = [
-  ["Everyday account", "Checking · TRY", "₺38,450", Landmark],
-  ["Savings", "Savings · TRY", "₺24,790", PiggyBank],
-  ["Cash wallet", "Cash · TRY", "₺2,400", WalletCards],
-  ["Travel card", "Credit Card · EUR", "€68", WalletCards],
-] as const satisfies ReadonlyArray<AccountCard>;
+type AccountType = "cash" | "checking" | "savings" | "credit_card" | "digital_wallet";
+type Account = { id: string; name: string; type: AccountType; currency: Currency; initialBalance: number; balance: number; archivedAt: string | null };
+type AccountDraft = { name: string; type: AccountType; currency: Currency; initialBalance: string };
+const emptyDraft: AccountDraft = { name: "", type: "checking", currency: "TRY", initialBalance: "0" };
+const accountTypes: AccountType[] = ["checking", "savings", "cash", "credit_card", "digital_wallet"];
+const icons = { savings: PiggyBank, cash: WalletCards, checking: Landmark, credit_card: WalletCards, digital_wallet: WalletCards };
 
 export function AccountsScreen() {
-  const t = useT();
+  const t = useT(); const { language } = useContext(LanguageContext); const tr = language === "tr";
+  const [accounts, setAccounts] = useState<Account[]>([]); const [loading, setLoading] = useState(true); const [showArchived, setShowArchived] = useState(false);
+  const [dialog, setDialog] = useState<"account" | "transfer" | null>(null); const [editing, setEditing] = useState<Account | null>(null); const [draft, setDraft] = useState<AccountDraft>(emptyDraft); const [saving, setSaving] = useState(false);
+  const [transfer, setTransfer] = useState({ fromAccountId: "", toAccountId: "", amount: "", receivedAmount: "", date: new Date().toISOString().slice(0, 10) });
+  const activeAccounts = accounts.filter((item) => !item.archivedAt);
+  const totals = useMemo(() => activeAccounts.reduce<Record<string, number>>((result, account) => ({ ...result, [account.currency]: (result[account.currency] ?? 0) + account.balance }), {}), [activeAccounts]);
+  const load = async () => { setLoading(true); try { const response = await fetch("/api/accounts?archived=true", { cache: "no-store" }); const payload = await response.json() as { accounts?: Account[]; error?: string }; if (!response.ok) throw new Error(payload.error); setAccounts(payload.accounts ?? []); } catch (error) { toast.error(error instanceof Error ? error.message : (tr ? "Hesaplar yüklenemedi." : "Unable to load accounts.")); } finally { setLoading(false); } };
+  useEffect(() => {
+    let active = true;
+    void fetch("/api/accounts?archived=true", { cache: "no-store" }).then(async (response) => {
+      const payload = await response.json() as { accounts?: Account[]; error?: string };
+      if (!response.ok) throw new Error(payload.error);
+      if (active) setAccounts(payload.accounts ?? []);
+    }).catch((error) => { if (active) toast.error(error instanceof Error ? error.message : (tr ? "Hesaplar yüklenemedi." : "Unable to load accounts.")); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [tr]);
+  const openCreate = () => { setEditing(null); setDraft(emptyDraft); setDialog("account"); };
+  const openEdit = (account: Account) => { setEditing(account); setDraft({ name: account.name, type: account.type, currency: account.currency, initialBalance: String(account.initialBalance) }); setDialog("account"); };
+  const saveAccount = async () => { setSaving(true); try { const response = await fetch(editing ? `/api/accounts/${editing.id}` : "/api/accounts", { method: editing ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(draft) }); const payload = await response.json().catch(() => ({})) as { error?: string }; if (!response.ok) throw new Error(payload.error); setDialog(null); toast.success(tr ? "Hesap kaydedildi." : "Account saved."); await load(); } catch (error) { toast.error(error instanceof Error ? error.message : (tr ? "Hesap kaydedilemedi." : "Unable to save account.")); } finally { setSaving(false); } };
+  const setArchived = async (account: Account, archived: boolean) => { const response = await fetch(`/api/accounts/${account.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ archived }) }); if (response.ok) { toast.success(archived ? (tr ? "Hesap arşivlendi." : "Account archived.") : (tr ? "Hesap yeniden etkin." : "Account restored.")); await load(); } else { const payload = await response.json().catch(() => ({})) as { error?: string }; toast.error(payload.error ?? (tr ? "Hesap güncellenemedi." : "Unable to update account.")); } };
+  const source = activeAccounts.find((item) => item.id === transfer.fromAccountId); const target = activeAccounts.find((item) => item.id === transfer.toAccountId); const crossCurrency = Boolean(source && target && source.currency !== target.currency);
+  const saveTransfer = async () => { setSaving(true); try { const response = await fetch("/api/accounts/transfer", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...transfer, receivedAmount: crossCurrency ? transfer.receivedAmount : transfer.amount }) }); const payload = await response.json().catch(() => ({})) as { error?: string }; if (!response.ok) throw new Error(payload.error); setDialog(null); setTransfer({ fromAccountId: "", toAccountId: "", amount: "", receivedAmount: "", date: new Date().toISOString().slice(0, 10) }); toast.success(tr ? "Transfer kaydedildi." : "Transfer saved."); await load(); } catch (error) { toast.error(error instanceof Error ? error.message : (tr ? "Transfer kaydedilemedi." : "Unable to save transfer.")); } finally { setSaving(false); } };
+  const visibleAccounts = showArchived ? accounts : activeAccounts;
+
   return <>
-    <PageHead title="Your accounts" sub="Track every place you keep or spend money." button="Add account" />
-    <div className="account-total"><span>{t("Total balance")}<strong>₺68,240</strong><small>{t("Across 4 active accounts")}</small></span><WalletCards /></div>
-    <div className="card-grid">{accounts.map(([name, kind, balance, Icon]) => <article className="panel account" key={name}><i><Icon /></i><MoreHorizontal /><h3>{t(name)}</h3><p>{t(kind)}</p><strong>{balance}</strong><small>{t("Current balance")}</small></article>)}</div>
+    <div className="page-head"><div><h2>{t("Your accounts")}</h2><p>{t("Track every place you keep or spend money.")}</p></div><Button variant="outline" onClick={() => setShowArchived((value) => !value)}>{showArchived ? (tr ? "Aktif hesaplar" : "Active accounts") : (tr ? "Arşiv" : "Archive")}</Button><Button variant="outline" disabled={activeAccounts.length < 2} onClick={() => setDialog("transfer")}><ArrowRightLeft />Transfer</Button><Button onClick={openCreate}><Plus />{t("Add account")}</Button></div>
+    <div className="account-total"><span>{t("Total balance")}<div className="account-currency-totals">{Object.entries(totals).map(([currency, total]) => <strong key={currency}>{formatCurrency(total, currency as Currency)}</strong>)}</div><small>{tr ? `${activeAccounts.length} aktif hesapta, para birimine göre` : `Across ${activeAccounts.length} active accounts, grouped by currency`}</small></span><WalletCards /></div>
+    {loading ? <div className="panel">{tr ? "Hesaplar yükleniyor…" : "Loading accounts…"}</div> : visibleAccounts.length ? <div className="card-grid">{visibleAccounts.map((account) => { const Icon = icons[account.type]; return <article className={`panel account ${account.archivedAt ? "archived" : ""}`} key={account.id}><i><Icon /></i><div className="account-actions"><button type="button" aria-label={tr ? "Hesabı düzenle" : "Edit account"} onClick={() => openEdit(account)}><Pencil /></button><button type="button" aria-label={account.archivedAt ? (tr ? "Hesabı etkinleştir" : "Restore account") : (tr ? "Hesabı arşivle" : "Archive account")} onClick={() => void setArchived(account, !account.archivedAt)}>{account.archivedAt ? <ArchiveRestore /> : <Archive />}</button></div><h3>{t(account.name)}</h3><p>{t(account.type)} · {account.currency}</p><strong>{formatCurrency(account.balance, account.currency)}</strong><small>{account.archivedAt ? (tr ? "Arşivlenmiş" : "Archived") : t("Current balance")}</small></article>; })}</div> : <div className="panel empty-accounts"><Landmark /><h3>{tr ? "Henüz hesap yok" : "No accounts yet"}</h3><p>{tr ? "Para hareketlerini izlemek için ilk hesabını oluştur." : "Create your first account to track money movements."}</p><Button onClick={openCreate}><Plus />{t("Add account")}</Button></div>}
+    <Dialog open={dialog === "account"} onOpenChange={(open) => { if (!open) setDialog(null); }}><DialogContent><DialogHeader><DialogTitle>{editing ? (tr ? "Hesabı düzenle" : "Edit account") : t("Add account")}</DialogTitle><DialogDescription>{tr ? "Hesabın türünü, para birimini ve başlangıç bakiyesini belirle." : "Set the account type, currency, and opening balance."}</DialogDescription></DialogHeader><div className="account-form"><label>{tr ? "Hesap adı" : "Account name"}<Input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label><div className="form-grid"><label>{tr ? "Hesap türü" : "Account type"}<Select value={draft.type} onValueChange={(value) => setDraft({ ...draft, type: value as AccountType })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{accountTypes.map((type) => <SelectItem value={type} key={type}>{t(type)}</SelectItem>)}</SelectContent></Select></label><label>{t("Currency")}<Select value={draft.currency} onValueChange={(value) => setDraft({ ...draft, currency: value as Currency })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{["TRY", "EUR", "USD", "GBP"].map((value) => <SelectItem value={value} key={value}>{value}</SelectItem>)}</SelectContent></Select></label></div><label>{tr ? "Başlangıç bakiyesi" : "Opening balance"}<Input inputMode="decimal" value={draft.initialBalance} onChange={(event) => setDraft({ ...draft, initialBalance: event.target.value })} /></label><Button disabled={saving} onClick={() => void saveAccount()}>{saving ? t("Saving…") : t("Save changes")}</Button></div></DialogContent></Dialog>
+    <Dialog open={dialog === "transfer"} onOpenChange={(open) => { if (!open) setDialog(null); }}><DialogContent><DialogHeader><DialogTitle>{tr ? "Hesaplar arası transfer" : "Transfer between accounts"}</DialogTitle><DialogDescription>{tr ? "Bu işlem kaynak hesaptan düşülür ve hedef hesaba eklenir." : "This subtracts from the source account and adds to the destination account."}</DialogDescription></DialogHeader><div className="account-form"><label>{tr ? "Kaynak hesap" : "From account"}<Select value={transfer.fromAccountId} onValueChange={(value) => setTransfer({ ...transfer, fromAccountId: value })}><SelectTrigger><SelectValue placeholder={tr ? "Hesap seç" : "Select account"} /></SelectTrigger><SelectContent>{activeAccounts.map((account) => <SelectItem value={account.id} key={account.id}>{t(account.name)} · {account.currency}</SelectItem>)}</SelectContent></Select></label><label>{tr ? "Hedef hesap" : "To account"}<Select value={transfer.toAccountId} onValueChange={(value) => setTransfer({ ...transfer, toAccountId: value })}><SelectTrigger><SelectValue placeholder={tr ? "Hesap seç" : "Select account"} /></SelectTrigger><SelectContent>{activeAccounts.filter((account) => account.id !== transfer.fromAccountId).map((account) => <SelectItem value={account.id} key={account.id}>{t(account.name)} · {account.currency}</SelectItem>)}</SelectContent></Select></label><div className="form-grid"><label>{tr ? `Gönderilen tutar${source ? ` (${source.currency})` : ""}` : `Amount sent${source ? ` (${source.currency})` : ""}`}<Input inputMode="decimal" value={transfer.amount} onChange={(event) => setTransfer({ ...transfer, amount: event.target.value })} /></label>{crossCurrency && <label>{tr ? `Alınan tutar (${target?.currency})` : `Amount received (${target?.currency})`}<Input inputMode="decimal" value={transfer.receivedAmount} onChange={(event) => setTransfer({ ...transfer, receivedAmount: event.target.value })} /></label>}<label>{t("Date")}<Input type="date" value={transfer.date} onChange={(event) => setTransfer({ ...transfer, date: event.target.value })} /></label></div><Button disabled={saving} onClick={() => void saveTransfer()}><ArrowRightLeft />{saving ? t("Saving…") : (tr ? "Transferi kaydet" : "Save transfer")}</Button></div></DialogContent></Dialog>
   </>;
 }
