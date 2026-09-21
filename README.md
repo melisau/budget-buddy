@@ -60,21 +60,7 @@ node node_modules/typescript/bin/tsc --noEmit
 pnpm build
 ```
 
-## Environment variables
 
-Keep real values in `.env.local`; it is ignored by Git. `.env.example` documents the variable names without secrets.
-
-| Variable | Purpose |
-| --- | --- |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk browser key |
-| `CLERK_SECRET_KEY` | Clerk server key |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
-| `SUPABASE_SECRET_KEY` | Supabase server key |
-| `GROQ_API_KEY` | Server-only Groq API key |
-| `GROQ_MODEL` | Groq model ID; defaults to `openai/gpt-oss-20b` |
-| `STRIPE_SECRET_KEY` | Stripe server key |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signature secret |
-| `STRIPE_CORE_PRICE_ID` / `STRIPE_PRO_PRICE_ID` | Stripe recurring price IDs |
 
 Use separate Clerk, Supabase, Stripe, and Groq configuration for development and production.
 
@@ -93,3 +79,117 @@ The application stores trial and subscription status, provides Stripe Checkout a
 ## License
 
 This project is private and not licensed for redistribution.
+
+
+# Budget Buddy
+
+&gt; **A modern, bilingual (Turkish &amp; English) personal finance and budget management application powered by AI, family sharing, and secure cloud storage.**
+
+[\--Image of: --Next.js](https://www.google.com/url?sa=E&amp;q=https%3A%2F%2Fnextjs.org%2F) [\--Image of: --React](https://www.google.com/url?sa=E&amp;q=https%3A%2F%2Freact.dev%2F) [\--Image of: --TypeScript](https://www.google.com/url?sa=E&amp;q=https%3A%2F%2Fwww.typescriptlang.org%2F) [\--Image of: --Supabase](https://www.google.com/url?sa=E&amp;q=https%3A%2F%2Fsupabase.com%2F) [\--Image of: --Clerk](https://www.google.com/url?sa=E&amp;q=https%3A%2F%2Fclerk.com%2F) [\--Image of: --Groq AI](https://www.google.com/url?sa=E&amp;q=https%3A%2F%2Fgroq.com%2F) [\--Image of: --Tailwind CSS](https://www.google.com/url?sa=E&amp;q=https%3A%2F%2Ftailwindcss.com%2F)
+
+---
+
+## 📖 About The Project
+
+**Budget Buddy** is an intuitive, secure, and bilingual personal finance application built to help individuals and families track income, manage expenses, and achieve savings goals effortlessly.
+
+It provides complete control over bank accounts, cash balances, savings, and credit cards, while introducing advanced features like multi-user family budget management, secure receipt scanning and storage, CSV data import/export, and cloud-powered AI financial advisory.
+
+---
+
+## ✨ Key Features
+
+* 🔐 **Authentication &amp; Security:** Clerk integration featuring server-side session validation, OAuth (Google) social logins, and secure user profiles.
+* 👨‍👩‍👧‍👦 **Personal &amp; Family Finances:** Role-based access control (**Admin**, **Member**, **Viewer**) with shared household expense tracking, invitation flows, and activity feeds.
+* 💳 **Account Management &amp; Transfers:** Create bank, cash, savings, credit card, and digital wallet accounts, track live balances, and record inter-account transfers seamlessly.
+* 🧾 **Secure Receipt Storage:** Upload receipt images (JPG, PNG, WEBP up to 5 MB) stored in private Supabase Storage buckets and served via short-lived signed URLs.
+* ⚡ **Groq Cloud AI Assistant:** Ultra-fast streaming financial analysis, spending advice, and voice-assisted transaction draft confirmations powered by Groq API (`@ai-sdk/groq` / Vercel AI SDK).
+* 🌐 **Bilingual Support (i18n):** Real-time Turkish and English UI toggling with persistent user language preferences across sessions and browser tabs.
+* 📊 **Budgets &amp; Savings Goals:** Category-specific monthly spending limits, threshold alerts, interactive progress indicators, and goal tracking.
+* 📈 **Analytics &amp; CSV Import/Export:** Recharts-driven 6-month cash flow visualizations, category breakdown charts, and dual-language CSV data export/import.
+* 💎 **Subscription Architecture:** Free, Core, and Pro plan tiers backed by Stripe Checkout and Webhook signature verification groundwork.
+
+---
+
+## 🛠 Tech Stack
+
+* **Framework &amp; Runtime:** Next.js 16 (App Router), React 19, TypeScript, Vinext &amp; Cloudflare Workers runtime.
+* **Styling &amp; UI Components:** Tailwind CSS v4, shadcn/ui, Lucide Icons, Recharts.
+* **Database &amp; Storage:** Supabase (PostgreSQL, Row Level Security, Migrations, Private Storage Buckets).
+* **Authentication:** Clerk (`@clerk/nextjs`).
+* **AI Engine:** Groq Cloud API (`@ai-sdk/groq` / Vercel AI SDK).
+* **Payments:** Stripe Checkout &amp; Webhook Verification.
+* **Package Manager:** `pnpm`.
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+Ensure you have the following installed on your local machine:
+
+* **Node.js** v22.13 or later
+* **pnpm** v11 or later
+* A **Supabase** account &amp; project
+* A **Clerk** application
+* A **Groq API Key** (for free AI assistant features)
+
+### Installation Steps
+
+1. **Clone the repository:**  
+```  
+git clone https://github.com/melisau/budget-buddy.git  
+cd budget-buddy  
+```
+2. **Install dependencies:**  
+```  
+pnpm install  
+```
+3. **Configure environment variables:**Copy `.env.example` to `.env.local` and fill in your API credentials:  
+```  
+cp .env.example .env.local  
+```
+4. **Apply Database Migrations:**Open the **SQL Editor** in your Supabase Dashboard and run the migration files located in `supabase/migrations/` in order:
+
+  1. `0001_budgetbuddy_foundation.sql`
+  2. `0002_new_user_starter_data.sql`
+5. **Run the development server:**  
+```  
+pnpm dev  
+```  
+Open `http://localhost:5173` (or the URL outputted in your console) to view the app in your browser.
+
+---
+
+
+
+## 🧪 Quality &amp; Build Commands
+
+Run the following commands to check code style, TypeScript types, and production builds:
+
+```
+# Lint code formatting (ESLint)
+pnpm lint
+
+# TypeScript compilation and type check
+node node_modules/typescript/bin/tsc --noEmit
+
+# Production build
+pnpm build
+
+```
+
+---
+
+## 🛡 Security &amp; Architectural Principles
+
+* **Receipt Security:** Receipt files are stored in a private Supabase Storage bucket and accessed strictly via short-lived (60-second) signed URLs.
+* **Data Isolation:** Supabase Row Level Security (RLS) policies enforce strict data ownership; users can only read or write their own data or data shared within their accepted family group.
+* **AI Safety Boundaries:** The AI assistant operates strictly on authorized, sanitized financial summaries and cannot commit transactions without explicit user confirmation.
+
+---
+
+## 📜 License
+
+This project is private software and not licensed for public redistribution. All rights reserved.
