@@ -37,6 +37,10 @@ Requirements: Node.js 22.13 or later, pnpm 11, a Clerk application, a Supabase p
 
 3. Apply `supabase/migrations` through the Supabase SQL Editor, in filename order.
 
+   Existing deployments must also apply new migrations as they are added. Migration
+   `0008_repair_user_plan_constraint.sql` repairs legacy plan values that can block
+   Clerk user synchronization.
+
 4. Add `GROQ_API_KEY` to `.env.local`. The optional `GROQ_MODEL` defaults to `openai/gpt-oss-20b`.
 
 5. Start the application:
