@@ -64,7 +64,7 @@ export async function GET(request: Request) {
     const supabase = getSupabaseServerClient();
     const requestedMonth = new URL(request.url).searchParams.get("month") ?? new Date().toISOString().slice(0, 7);
     const selectedRange = monthRange(requestedMonth) ?? monthRange(new Date().toISOString().slice(0, 7))!;
-    const [{ data: budgets, error: budgetsError }, { data: categories, error: categoriesError }] = await Promise.all([
+    const [{ data: budgets, error: budgetsError }, { data: categories, error: categoriesError }, userResult] = await Promise.all([
       supabase
         .from("budgets")
         .select("id, category_id, amount_limit, start_date, end_date, category:categories(id, name)")
@@ -78,9 +78,10 @@ export async function GET(request: Request) {
         .eq("type", "expense")
         .or(`user_id.eq.${user.id},user_id.is.null`)
         .order("name"),
+      supabase.from("users").select("currency").eq("id", user.id).single(),
     ]);
 
-    if (budgetsError || categoriesError) throw budgetsError ?? categoriesError;
+    if (budgetsError || categoriesError || userResult.error) throw budgetsError ?? categoriesError ?? userResult.error;
 
     const earliestStart = budgets?.reduce<string | null>((earliest, budget) =>
       !earliest || budget.start_date < earliest ? budget.start_date : earliest, null) ?? null;
@@ -121,7 +122,7 @@ export async function GET(request: Request) {
       };
     });
 
-    return NextResponse.json({ budgets: summaries, categories: categories ?? [], month: selectedRange.startDate.slice(0, 7) });
+    return NextResponse.json({ budgets: summaries, categories: categories ?? [], month: selectedRange.startDate.slice(0, 7), currency: userResult.data.currency });
   } catch (error) {
     return errorResponse(error);
   }

@@ -7,8 +7,8 @@ const locales: Record<Currency, string> = {
   GBP: "en-GB",
 };
 
-export function formatCurrency(amount: number, currency: Currency = "TRY") {
-  return new Intl.NumberFormat(locales[currency], {
+export function formatCurrency(amount: number, currency: Currency = "TRY", language?: "en" | "tr") {
+  return new Intl.NumberFormat(language ? (language === "tr" ? "tr-TR" : "en-US") : locales[currency], {
     style: "currency",
     currency,
     maximumFractionDigits: 0,
