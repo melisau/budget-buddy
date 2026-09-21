@@ -4,8 +4,9 @@ import type {ReactNode} from "react";
 import {Bell,ChartNoAxesCombined,ChevronRight,Home,Landmark,LayoutDashboard,MoreHorizontal,PiggyBank,Plus,ReceiptText,Settings,Sparkles,Target,Users} from "lucide-react";
 import {Progress} from "@/components/ui/progress";
 import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from "@/components/ui/select";
-import {LanguageSelect,useT} from "@/components/providers/language-provider";
+import {LanguageContext,LanguageSelect,useT} from "@/components/providers/language-provider";
 import {Logo} from "@/components/layout/logo";
+import {useContext} from "react";
 
 export type AppView="dashboard"|"family"|"transactions"|"budgets"|"accounts"|"goals"|"analytics"|"assistant"|"settings";
 type Navigate=(view:AppView|"landing")=>void;
@@ -41,11 +42,21 @@ export function AppSidebar({view,go,prefetch}:{view:AppView;go:Navigate;prefetch
 
 export function AppHeader({view,quickAdd}:{view:AppView;quickAdd:ReactNode}){
  const t=useT();
+ const {language}=useContext(LanguageContext);
  const label=APP_NAVIGATION.find(([id])=>id===view)?.[1]??"Dashboard";
+ const locale=language==="tr"?"tr-TR":"en-US";
+ const today=new Intl.DateTimeFormat(locale,{weekday:"long",day:"numeric",month:"long",timeZone:"Europe/Istanbul"}).format(new Date());
+ const istanbulParts=new Intl.DateTimeFormat("en-CA",{year:"numeric",month:"2-digit",timeZone:"Europe/Istanbul"}).formatToParts(new Date());
+ const currentYear=Number(istanbulParts.find((part)=>part.type==="year")?.value);
+ const currentMonth=Number(istanbulParts.find((part)=>part.type==="month")?.value)-1;
+ const months=Array.from({length:3},(_,offset)=>{
+  const date=new Date(Date.UTC(currentYear,currentMonth-offset,1));
+  return {value:`${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,"0")}`,label:new Intl.DateTimeFormat(locale,{month:"long",year:"numeric",timeZone:"UTC"}).format(date)};
+ });
  return <header>
-  <div><h1>{t(label)}</h1><p>{view==="dashboard"?t("Thursday, September 10"):t("Manage your money with confidence.")}</p></div>
+  <div><h1>{t(label)}</h1><p>{view==="dashboard"?today:t("Manage your money with confidence.")}</p></div>
   <LanguageSelect/>
-  <Select defaultValue="sep"><SelectTrigger className="month-select" aria-label={t("Select month")}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="sep">{t("September 2026")}</SelectItem><SelectItem value="aug">{t("August 2026")}</SelectItem><SelectItem value="jul">{t("July 2026")}</SelectItem></SelectContent></Select>
+  <Select defaultValue={months[0].value}><SelectTrigger className="month-select" aria-label={t("Select month")}><SelectValue/></SelectTrigger><SelectContent>{months.map((month)=><SelectItem value={month.value} key={month.value}>{month.label}</SelectItem>)}</SelectContent></Select>
   <button type="button" aria-label={t("Notifications")}><Bell/></button>
   {quickAdd}
  </header>;
