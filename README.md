@@ -111,7 +111,7 @@ Run the following commands to check code style, TypeScript types, and production
 pnpm lint
 
 # TypeScript compilation and type check
-node node_modules/typescript/bin/tsc --noEmit
+pnpm typecheck
 
 # Finance calculation unit tests
 pnpm test
@@ -120,6 +120,18 @@ pnpm test
 pnpm build
 
 ```
+
+## Team workflow
+
+Active product and engineering work is tracked in Linear. Every change should start from a Linear Issue, use a dedicated branch, and reach `main` through a reviewed Pull Request with passing CI and a verified Vercel Preview.
+
+- Read [CONTRIBUTING.md](./CONTRIBUTING.md) before starting work.
+- Codex and other coding agents must follow [AGENTS.md](./AGENTS.md).
+- Durable system boundaries are documented in [docs/architecture.md](./docs/architecture.md).
+- Environment, migration, release, and rollback steps are documented in [docs/deployment.md](./docs/deployment.md).
+- Security incidents follow [SECURITY.md](./SECURITY.md) and are not filed as public GitHub Issues.
+
+`TASKS.md` and `PHASES.md` are historical implementation snapshots. Linear is the source of truth for new work and current status.
 
 ---
 
