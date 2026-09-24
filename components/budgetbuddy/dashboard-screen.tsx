@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useContext, useEffect, useMemo, useState } from "react";
 import { ArrowDownRight, ArrowUpRight, PiggyBank, WalletCards } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -11,6 +12,7 @@ import { LanguageContext, useT } from "@/components/providers/language-provider"
 import type { Currency } from "@/types/finance";
 
 type DashboardData = {
+  hasGoals: boolean;
   filters: { month: string; scope: string; accountId: string; currency: Currency; accounts: { id: string; name: string; currency: Currency }[]; familyGroups: { id: string; name: string }[]; currencies: Currency[] };
   summary: { balance: number; income: number; expenses: number; savingsRate: number };
   categories: { name: string; value: number }[];
@@ -54,6 +56,7 @@ export function DashboardScreen({ go }: { go: Navigate }) {
   const chartData = (data?.cashFlow ?? []).map((item) => ({ ...item, label: new Intl.DateTimeFormat(locale, { month: "short", timeZone: "UTC" }).format(new Date(`${item.month}-01T00:00:00Z`)) }));
 
   return <>
+    {data && !data.hasGoals && data.filters.accounts.length === 0 && data.recent.length === 0 && <div className="mb-5 rounded-2xl bg-gradient-to-r from-[#172340] to-[#344d99] p-6 text-white sm:p-8"><span className="text-xs font-bold uppercase tracking-widest text-[#b9c5ff]">{language === "tr" ? "İlk adım" : "First step"}</span><h2 className="mt-2 text-2xl font-bold">{language === "tr" ? "İlk hedefinle başla" : "Start with your first goal"}</h2><p className="mt-2 max-w-xl text-sm leading-6 text-[#d7dff3]">{language === "tr" ? "Banka hesabı bağlamana veya eski harcamalarını girmene gerek yok. Bir hedef seç, tutarını yaz ve ilerlemeni takip et." : "No bank account or past spending required. Pick a goal and start tracking progress."}</p><Link href="/goals?create=1" className="mt-5 inline-flex rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-[#263b8f] hover:bg-[#eef0ff]">{language === "tr" ? "Hedefimi oluştur" : "Create my goal"}</Link></div>}
     <div className="dashboard-filters panel" aria-label={t("Dashboard filters")}>
       <label><span>{t("Month")}</span><Select value={month} onValueChange={setMonth}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{months.map((item) => <SelectItem value={item.value} key={item.value}>{item.label}</SelectItem>)}</SelectContent></Select></label>
       <label><span>{t("Scope")}</span><Select value={scope} onValueChange={(value) => { setScope(value); setAccountId("all"); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="personal">{t("Personal")}</SelectItem>{data?.filters.familyGroups.map((group) => <SelectItem value={`family:${group.id}`} key={group.id}>{group.name}</SelectItem>)}</SelectContent></Select></label>

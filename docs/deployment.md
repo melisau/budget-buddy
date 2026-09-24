@@ -45,6 +45,12 @@ For the Supabase Auth cutover, follow [the migration runbook](./supabase-auth-mi
 for development credentials, email templates, callback URLs and explicit legacy
 identity mapping. Migration 0010 must precede the new auth application release.
 
+Migration 0011 adds private allowance plans, opt-in goal shares, group shopping
+lists/notes, and gift wishlists. Apply it to an isolated development project
+before testing these routes. New users then start without sample accounts or
+transactions. Existing finance rows are preserved. Do not point Local or
+Preview at production to test family collaboration or surprise mode.
+
 When application code depends on a schema change:
 
 1. Apply all migrations from a clean local database.

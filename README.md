@@ -7,6 +7,8 @@ Budget Buddy is a bilingual personal-finance application for tracking income, ex
 - Supabase Auth authentication with server-side authorization
 - Supabase/PostgreSQL persistence and starter data for new users
 - Personal and family transactions with role-aware access control
+- Private allowance planning, opt-in goal progress sharing, and a shared family shopping list and note
+- Free occasion wishlists with duplicate-proof gift reservations and optional surprise mode
 - Secure receipt uploads for JPG, PNG, and WEBP files up to 5 MB
 - Accounts, budgets, CSV import/export, and financial reports
 - Turkish and English user interfaces

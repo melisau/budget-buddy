@@ -83,7 +83,7 @@ test("admin mapping preserves finance and refuses a conflicting identity", async
   assert.equal(rows[0].title, "Keep me");
 });
 
-test("new identity creates one app user and seeds once; metadata cannot assign a plan", async () => {
+test("new identity creates one empty app workspace; metadata cannot assign a plan", async () => {
   await db.query(`update auth.users set raw_user_meta_data='{"full_name":"New Person","plan":"pro","auth_user_id":"${authId}"}' where id=$1`, [otherId]);
   await asUser(otherId, async () => {
     const a = await db.query("select public.sync_authenticated_user()");
@@ -96,7 +96,27 @@ test("new identity creates one app user and seeds once; metadata cannot assign a
   assert.equal(users.rows.length, 1);
   assert.equal(users.rows[0].name, "New Person");
   assert.equal(users.rows[0].plan, "free");
-  assert.equal((await db.query("select * from public.transactions where user_id=$1", [users.rows[0].id])).rows.length, 4);
+  assert.equal((await db.query("select * from public.transactions where user_id=$1", [users.rows[0].id])).rows.length, 0);
+  assert.equal((await db.query("select * from public.accounts where user_id=$1", [users.rows[0].id])).rows.length, 0);
+  await db.query("insert into public.goals(user_id, name, target_amount) values ($1, 'First goal', 100)", [users.rows[0].id]);
+  assert.equal((await db.query("select * from public.goals where user_id=$1", [users.rows[0].id])).rows.length, 1);
+});
+
+test("family shopping and gift reservations are private and prevent duplicate claims", async () => {
+  const memberId = (await db.query<{ id: string }>("select id from public.users where auth_user_id=$1", [otherId])).rows[0].id;
+  const groupId = (await db.query<{ id: string }>("insert into public.family_groups(owner_user_id, name) values ($1, 'Family') returning id", [legacyId])).rows[0].id;
+  await db.query("insert into public.family_members(family_group_id, user_id, role) values ($1, $2, 'owner'), ($1, $3, 'member')", [groupId, legacyId, memberId]);
+  await db.query("insert into public.family_shopping_items(family_group_id, name, requested_by_user_id) values ($1, 'Milk', $2)", [groupId, memberId]);
+  const wishlistId = (await db.query<{ id: string }>("insert into public.wishlists(family_group_id, owner_user_id, title, occasion, surprise) values ($1, $2, 'Birthday', 'birthday', true) returning id", [groupId, legacyId])).rows[0].id;
+  const itemId = (await db.query<{ id: string }>("insert into public.wishlist_items(wishlist_id, name) values ($1, 'Book') returning id", [wishlistId])).rows[0].id;
+  const first = await db.query("update public.wishlist_items set reserved_by_user_id=$1, reserved_at=now() where id=$2 and reserved_by_user_id is null returning id", [memberId, itemId]);
+  const second = await db.query("update public.wishlist_items set reserved_by_user_id=$1, reserved_at=now() where id=$2 and reserved_by_user_id is null returning id", [legacyId, itemId]);
+  assert.equal(first.rows.length, 1);
+  assert.equal(second.rows.length, 0);
+  await asUser(otherId, async () => {
+    assert.equal((await db.query("select * from public.family_shopping_items")).rows.length, 0);
+    assert.equal((await db.query("select * from public.wishlist_items")).rows.length, 0);
+  });
 });
 
 test("unverified, banned, anonymous and deleted identities cannot provision an app user", async () => {
@@ -121,5 +141,5 @@ test("Auth deletion cascades only that user's data and rollback preserves both i
   assert.equal((await db.query("select * from public.transactions where user_id=$1", [legacyId])).rows.length, 1);
   await db.query("delete from auth.users where id=$1", [authId]);
   assert.equal((await db.query("select * from public.users where auth_user_id=$1", [otherId])).rows.length, 1);
-  assert.equal((await db.query("select * from public.transactions")).rows.length, 4);
+  assert.equal((await db.query("select * from public.transactions")).rows.length, 0);
 });

@@ -52,6 +52,20 @@ privileged data client is server-only. Proxy refreshes cookies; every protected
 page and API verifies identity using `getUser()` before applying ownership/role
 checks. RLS remains deny-by-default for direct browser table access.
 
+New identities start with an empty finance workspace; no bank account or
+historical transaction is needed to create a personal goal. Existing starter
+or real rows are never removed by this onboarding change.
+
+Family collaboration is stored separately from personal finance: shopping items
+and the shared note are available to accepted group members, while allowance
+plans remain private to their owner. Goal sharing is opt-in and exposes only the
+goal name and progress percentage to accepted members. Wishlists are group
+scoped and available on the Free plan. Gift reservations use an atomic
+unreserved-row update to prevent duplicate claims. In surprise mode the server
+omits reservation state from the list owner's response. Owners who leave a
+group no longer have their lists or goal shares returned to its members;
+stored data is retained.
+
 - Make persistent schema changes only through SQL files under `supabase/migrations/`.
 - Migrations must be ordered, repeatable where practical, and backward-compatible whenever possible.
 - Split breaking changes across releases with expand-contract: add the new structure, deploy compatible code, migrate data, then remove the old structure in a later release.
