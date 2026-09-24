@@ -1,148 +1,124 @@
 # Budget Buddy
 
-Budget Buddy is a bilingual personal-finance application for tracking income, expenses, accounts, budgets, savings goals, family finances, receipts, and AI-assisted financial explanations.
+Budget Buddy is a bilingual personal-finance app for individuals and families. It helps people track money, make shared plans, and turn everyday financial habits into goals that are easy to start and maintain.
 
-## Highlights
+The application uses **Supabase Auth** for authentication and Supabase/PostgreSQL for application data. Clerk has been removed from the running application.
 
-- Clerk authentication with server-side authorization
-- Supabase/PostgreSQL persistence and starter data for new users
-- Personal and family transactions with role-aware access control
-- Secure receipt uploads for JPG, PNG, and WEBP files up to 5 MB
-- Accounts, budgets, CSV import/export, and financial reports
-- Turkish and English user interfaces
-- Groq-powered cloud assistant with optional live EUR/TRY reference rates
-- Conversation history, voice input, and confirmed voice transaction drafts
-- Free family invitations through copyable links and WhatsApp sharing
-- Free, Core, and Pro plan definitions with Stripe Checkout groundwork
+## What you can do
 
-## Local setup
+- Create a password-based account, confirm an email address, recover a password, sign out, and optionally use Google sign-in.
+- Track income, expenses, transfers, balances, budgets, financial reports, and savings goals.
+- Start with a goal in minutes: a bank account or historical transaction is not required.
+- Share selected goal progress with a family group without exposing private transactions.
+- Create a private monthly allowance plan with a savings percentage.
+- Manage family groups, invitations, roles, shared transactions, a shared shopping note, and a live shopping checklist.
+- Build occasion wishlists for birthdays, housewarmings, New Year, and other events. Family members can reserve a gift so it is not bought twice.
+- Choose surprise mode for a wishlist: the owner cannot see reservations, while other family members can.
+- Upload private receipt images, import/export CSV data, and use the Groq-powered financial assistant and voice transaction drafts.
+- Use the interface in Turkish or English.
 
-Requirements: Node.js 22.13 or later, pnpm 11, a Clerk application, a Supabase project, and a Groq API key for AI features.
+## Plans
 
----
+The Free plan includes manual tracking, personal goals, family wishlists, the shared shopping list, and allowance planning. Core and Pro provide additional account, reporting, and AI capabilities; Stripe support is included as payment infrastructure but requires separate Stripe configuration before it is enabled.
 
-## 🚀 Getting Started
+## Local development
 
-### Prerequisites
+### Requirements
 
-Ensure you have the following installed on your local machine:
+- Node.js 22.13 or newer
+- pnpm 11 or newer
+- A **development** Supabase project
+- A Groq API key for AI features
 
-* **Node.js** v22.13 or later
-* **pnpm** v11 or later
-* A **Supabase** account &amp; project
-* A **Clerk** application
-* A **Groq API Key** (for free AI assistant features)
+### Set up
 
-### Installation Steps
+1. Clone the repository and install dependencies.
 
-1. **Clone the repository:**  
-```  
-git clone https://github.com/melisau/budget-buddy.git  
-cd budget-buddy  
-```
-2. **Install dependencies:**  
-```  
-pnpm install  
-```
-3. **Configure environment variables:**Copy `.env.example` to `.env.local` and fill in your API credentials:  
-```  
-cp .env.example .env.local  
-```
-4. **Apply database migrations:** Open the **SQL Editor** in your Supabase dashboard and run every SQL file in `supabase/migrations/` in numeric order. Do this for each environment before deploying application code that depends on a new migration.
-5. **Run the development server:**  
-```  
-pnpm dev  
-```  
-Open `http://localhost:5173` (or the URL outputted in your console) to view the app in your browser.
+   ```bash
+   git clone https://github.com/melisau/budget-buddy.git
+   cd budget-buddy
+   pnpm install
+   ```
 
----
+2. Create a local environment file. Never commit real keys.
 
+   ```powershell
+   Copy-Item .env.example .env.local
+   ```
 
+   On macOS or Linux, use `cp .env.example .env.local`.
 
+3. Set the Supabase values from the **same development project** in `.env.local`:
 
+   ```dotenv
+   NEXT_PUBLIC_SUPABASE_URL=https://YOUR-DEV-PROJECT.supabase.co
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=YOUR-DEV-PUBLISHABLE-KEY
+   SUPABASE_SECRET_KEY=YOUR-DEV-SECRET-KEY
+   ```
 
-Use separate Clerk, Supabase, Stripe, and Groq configuration for development and production.
+   `SUPABASE_SECRET_KEY` is server-only. Do not use a production project or put this key in a `NEXT_PUBLIC_*` variable.
 
-## Billing status
+4. In the Supabase SQL Editor for the development project, apply every file in `supabase/migrations/` in numeric order. Do not rerun migrations that are already recorded as applied.
 
-The application stores trial and subscription status, provides Stripe Checkout and Customer Portal routes, records invoices, and verifies Stripe webhook signatures. Apply every migration, configure Stripe product prices, and register `POST /api/billing/webhook` in Stripe before enabling payments. New accounts retain full application access throughout their 14-day trial.
+5. Configure Supabase Auth before testing registration:
 
+   - Enable Email/Password and Confirm email.
+   - Set Site URL to `http://localhost:5173`.
+   - Add `http://localhost:5173/auth/callback` to the redirect allow-list.
+   - Configure email templates and SMTP when testing with real recipients. Details are in the migration runbook below.
 
-## 📖 About The Project
+6. Start the development server.
 
-**Budget Buddy** is an intuitive, secure, and bilingual personal finance application built to help individuals and families track income, manage expenses, and achieve savings goals effortlessly.
+   ```bash
+   pnpm dev
+   ```
 
-It provides complete control over bank accounts, cash balances, savings, and credit cards, while introducing advanced features like multi-user family budget management, secure receipt scanning and storage, CSV data import/export, and cloud-powered AI financial advisory.
+   Visit [http://localhost:5173](http://localhost:5173).
 
----
+Use separate Supabase, Stripe, and Groq projects/keys for development, preview, and production.
 
-## ✨ Key Features
+## Migrating from Clerk
 
-* 🔐 **Authentication &amp; Security:** Clerk integration featuring server-side session validation, OAuth (Google) social logins, and secure user profiles.
-* 👨‍👩‍👧‍👦 **Personal &amp; Family Finances:** Role-based access control (**Admin**, **Member**, **Viewer**) with shared household expense tracking, invitation flows, and activity feeds.
-* 💳 **Account Management &amp; Transfers:** Create bank, cash, savings, credit card, and digital wallet accounts, track live balances, and record inter-account transfers seamlessly.
-* 🧾 **Secure Receipt Storage:** Upload receipt images (JPG, PNG, WEBP up to 5 MB) stored in private Supabase Storage buckets and served via short-lived signed URLs.
-* ⚡ **Groq Cloud AI Assistant:** Fast financial explanations and voice-assisted transaction draft confirmations through Groq's OpenAI-compatible API.
-* 🌐 **Bilingual Support (i18n):** Real-time Turkish and English UI toggling with persistent user language preferences across sessions and browser tabs.
-* 📊 **Budgets &amp; Savings Goals:** Category-specific monthly spending limits, threshold alerts, interactive progress indicators, and goal tracking.
-* 📈 **Analytics &amp; CSV Import/Export:** Recharts-driven 6-month cash flow visualizations, category breakdown charts, and dual-language CSV data export/import.
-* 💎 **Subscription Architecture:** Free, Core, and Pro plan tiers backed by Stripe Checkout and Webhook signature verification groundwork.
+Clerk is not used for current sign-in or authorization. Migration `0010_supabase_auth.sql` keeps the old `clerk_user_id` only as a legacy audit/mapping field; it is not a credential and is not used at runtime.
 
----
+Existing financial rows are preserved and are **not** automatically matched solely by email. Before an existing user can access legacy data, an administrator must independently verify and explicitly link the old app identity with the confirmed Supabase Auth identity. Follow the complete safety checklist in [docs/supabase-auth-migration.md](docs/supabase-auth-migration.md). Apply and test migrations in development first; do not use this setup guide to change production data.
 
-## 🛠 Tech Stack
+## Quality checks
 
-* **Framework &amp; Runtime:** Next.js 16 (App Router), React 19, TypeScript, Vinext &amp; Cloudflare Workers runtime.
-* **Styling &amp; UI Components:** Tailwind CSS v4, shadcn/ui, Lucide Icons, Recharts.
-* **Database &amp; Storage:** Supabase (PostgreSQL, Row Level Security, Migrations, Private Storage Buckets).
-* **Authentication:** Clerk (`@clerk/nextjs`).
-* **AI Engine:** Groq Cloud API.
-* **Payments:** Stripe Checkout &amp; Webhook Verification.
-* **Package Manager:** `pnpm`.
-
-
-
-## 🧪 Quality &amp; Build Commands
-
-Run the following commands to check code style, TypeScript types, and production builds:
-
-```
-# Lint code formatting (ESLint)
+```bash
 pnpm lint
-
-# TypeScript compilation and type check
 pnpm typecheck
-
-# Finance calculation unit tests
 pnpm test
-
-# Production build
 pnpm build
-
 ```
 
-## Team workflow
+## Technology
 
-Active product and engineering work is tracked in Linear. Every change should start from a Linear Issue, use a dedicated branch, and reach `main` through a reviewed Pull Request with passing CI and a verified Vercel Preview.
+- **App:** Next.js 16, React 19, TypeScript
+- **UI:** Tailwind CSS, shadcn/ui, Lucide, Recharts
+- **Data and authentication:** Supabase PostgreSQL, Supabase Auth, `@supabase/ssr`, Row Level Security, private Storage buckets
+- **AI:** Groq API
+- **Payments:** Stripe Checkout and webhook verification groundwork
+- **Deployment runtime:** Vinext and Cloudflare Workers
 
-- Read [CONTRIBUTING.md](./CONTRIBUTING.md) before starting work.
-- Codex and other coding agents must follow [AGENTS.md](./AGENTS.md).
-- Durable system boundaries are documented in [docs/architecture.md](./docs/architecture.md).
-- Environment, migration, release, and rollback steps are documented in [docs/deployment.md](./docs/deployment.md).
-- Security incidents follow [SECURITY.md](./SECURITY.md) and are not filed as public GitHub Issues.
+## Security model
 
-`TASKS.md` and `PHASES.md` are historical implementation snapshots. Linear is the source of truth for new work and current status.
+- Supabase Auth sessions use SSR cookies; server routes verify the signed-in user before accessing application data.
+- Browser clients do not receive privileged database credentials. Server routes perform ownership and family-role checks before using the server-only Supabase key.
+- New family collaboration tables are protected with RLS; the server enforces membership and surprise-wishlist visibility.
+- Receipts live in a private Storage bucket and are served through short-lived signed URLs.
+- The AI assistant receives authorized, sanitized financial summaries and cannot create a transaction without an explicit confirmation step.
 
----
+## Project documentation
 
-## 🛡 Security &amp; Architectural Principles
+- [Supabase Auth migration runbook](docs/supabase-auth-migration.md)
+- [Architecture](docs/architecture.md)
+- [Deployment and release process](docs/deployment.md)
+- [Contributing guide](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
 
-* **Receipt Security:** Receipt files are stored in a private Supabase Storage bucket and accessed strictly via short-lived (60-second) signed URLs.
-* **Data Isolation:** Browser access is blocked by Supabase RLS. Trusted server routes validate Clerk identity, record ownership, and accepted family membership before using the Supabase secret key.
-* **AI Safety Boundaries:** The AI assistant operates strictly on authorized, sanitized financial summaries and cannot commit transactions without explicit user confirmation.
+Active work is tracked in Linear. Changes should be developed in a dedicated branch and reach `main` through a reviewed pull request with passing checks.
 
----
+## License
 
-## 📜 License
-
-This project is private software and not licensed for public redistribution. All rights reserved.
+Private software. All rights reserved.

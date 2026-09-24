@@ -4,7 +4,7 @@ This document describes durable system boundaries. Application behavior belongs 
 
 ## System overview
 
-Budget Buddy is a bilingual personal-finance application built with Next.js 16 App Router and React 19. Vercel hosts the application, Clerk manages identity, Supabase stores data and files, and Stripe handles payments.
+Budget Buddy is a bilingual personal-finance application built with Next.js 16 App Router and React 19. Vercel hosts the application, Supabase manages identity and stores data and files, and Stripe handles payments.
 
 ```text
 Browser
@@ -12,7 +12,7 @@ Browser
   └─ HTTPS requests
         ↓
 Next.js server routes
-  ├─ Clerk session verification
+  ├─ Supabase Auth session verification
   ├─ authorization and validation
   ├─ Supabase/PostgreSQL + private Storage
   ├─ Stripe Checkout/Portal/Webhooks
@@ -25,7 +25,7 @@ Next.js server routes
 | --- | --- |
 | `app/` | Pages, layouts, and server route handlers |
 | `components/` | Product screens, layouts, and reusable UI |
-| `lib/auth/` | Clerk sessions, user mapping, and authorization |
+| `lib/auth/` | Supabase Auth sessions, user mapping, and authorization |
 | `lib/finance/` | Financial calculations, transformations, and import/export |
 | `lib/billing/` | Stripe client, plans, and subscription rules |
 | `lib/supabase/` | Server-side Supabase access |
@@ -34,13 +34,37 @@ Next.js server routes
 
 ## Identity and authorization
 
-- Verify Clerk sessions on the server.
+- Verify Supabase Auth sessions on the server.
 - Route handlers derive the acting user from the verified session and never trust a user ID supplied by the client.
 - Ownership protects personal records; active membership and roles protect family records.
 - Hiding an action in the UI is not an authorization control. The server must enforce the same rule.
 - Supabase secret or service-role credentials remain server-only. RLS provides an additional layer of defense.
 
 ## Data and migrations
+
+The stable application user ID (`public.users.id`) owns financial records. The
+unique `auth_user_id` links that row to Supabase Auth; legacy `clerk_user_id`
+values remain solely for migration/audit. No automatic email-based account linking
+is allowed. See [the auth runbook](./supabase-auth-migration.md).
+
+The browser/SSR Auth clients use a publishable key and cookie sessions. The
+privileged data client is server-only. Proxy refreshes cookies; every protected
+page and API verifies identity using `getUser()` before applying ownership/role
+checks. RLS remains deny-by-default for direct browser table access.
+
+New identities start with an empty finance workspace; no bank account or
+historical transaction is needed to create a personal goal. Existing starter
+or real rows are never removed by this onboarding change.
+
+Family collaboration is stored separately from personal finance: shopping items
+and the shared note are available to accepted group members, while allowance
+plans remain private to their owner. Goal sharing is opt-in and exposes only the
+goal name and progress percentage to accepted members. Wishlists are group
+scoped and available on the Free plan. Gift reservations use an atomic
+unreserved-row update to prevent duplicate claims. In surprise mode the server
+omits reservation state from the list owner's response. Owners who leave a
+group no longer have their lists or goal shares returned to its members;
+stored data is retained.
 
 - Make persistent schema changes only through SQL files under `supabase/migrations/`.
 - Migrations must be ordered, repeatable where practical, and backward-compatible whenever possible.

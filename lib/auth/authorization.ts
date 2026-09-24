@@ -1,5 +1,5 @@
-import { getCurrentClerkUser, getClerkAuth } from "@/lib/auth/clerk-server";
-import { syncAppUser, toAppUserIdentity } from "@/lib/auth/app-user";
+import { getCurrentUser } from "@/lib/auth/supabase-server";
+import { syncAppUser } from "@/lib/auth/app-user";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export class AccessError extends Error {
@@ -13,7 +13,7 @@ export class AccessError extends Error {
 
 export type AppUser = {
   id: string;
-  clerkUserId: string;
+  authUserId: string;
   email: string | null;
   name: string | null;
 };
@@ -21,16 +21,16 @@ export type AppUser = {
 export type FamilyRole = "owner" | "member" | "viewer";
 
 export async function requireAppUser(): Promise<AppUser> {
-  const { isAuthenticated, userId } = await getClerkAuth();
-  if (!isAuthenticated || !userId) {
+  const user = await getCurrentUser();
+  if (!user) {
     throw new AccessError("Sign in is required.", 401);
   }
 
   const supabase = getSupabaseServerClient();
   const lookup = await supabase
     .from("users")
-    .select("id, clerk_user_id, email, name")
-    .eq("clerk_user_id", userId)
+    .select("id, auth_user_id, email, name")
+    .eq("auth_user_id", user.id)
     .maybeSingle();
 
   if (lookup.error) throw new Error(`Unable to look up the signed-in user: ${lookup.error.message}`);
@@ -38,19 +38,18 @@ export async function requireAppUser(): Promise<AppUser> {
   let appUser = lookup.data;
 
   if (!appUser) {
-    const clerkUser = await getCurrentClerkUser(userId);
-    await syncAppUser(toAppUserIdentity(clerkUser));
+    await syncAppUser();
     const retry = await supabase
       .from("users")
-      .select("id, clerk_user_id, email, name")
-      .eq("clerk_user_id", userId)
+      .select("id, auth_user_id, email, name")
+      .eq("auth_user_id", user.id)
       .single();
 
     if (retry.error) throw new Error(`Unable to create the signed-in user: ${retry.error.message}`);
     appUser = retry.data;
   }
 
-  return { id: appUser.id, clerkUserId: appUser.clerk_user_id, email: appUser.email, name: appUser.name };
+  return { id: appUser.id, authUserId: appUser.auth_user_id, email: appUser.email, name: appUser.name };
 }
 
 export async function getAcceptedFamilyRole(userId: string, familyGroupId: string): Promise<FamilyRole | null> {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireAppUser } from "@/lib/auth/authorization";
-import { deleteClerkUser } from "@/lib/auth/clerk-server";
+import { AccessError, requireAppUser } from "@/lib/auth/authorization";
+import { createSupabaseAuthClient } from "@/lib/supabase/auth-server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 const supportedCurrencies = new Set(["TRY", "EUR", "USD", "GBP"]);
@@ -18,7 +18,7 @@ export async function GET() {
     return NextResponse.json(data);
   } catch (error) {
     console.error("[account] preferences could not be loaded", error);
-    return NextResponse.json({ error: "Unable to load account preferences." }, { status: 500 });
+    return NextResponse.json({ error: "Unable to load account preferences." }, { status: error instanceof AccessError ? error.status : 500 });
   }
 }
 
@@ -42,19 +42,25 @@ export async function PATCH(request: Request) {
     return NextResponse.json(data);
   } catch (error) {
     console.error("[account] preferences could not be updated", error);
-    return NextResponse.json({ error: "Unable to update account preferences." }, { status: 500 });
+    return NextResponse.json({ error: "Unable to update account preferences." }, { status: error instanceof AccessError ? error.status : 500 });
   }
 }
 
-export async function DELETE() {
+export async function DELETE(request: Request) {
   try {
+    if (request.headers.get("origin") !== new URL(request.url).origin) {
+      return NextResponse.json({ error: "Same-origin request required." }, { status: 403 });
+    }
     const user = await requireAppUser();
-    const { error } = await getSupabaseServerClient().from("users").delete().eq("id", user.id);
+    // Auth deletion and app-row cascades commit atomically in PostgreSQL.
+    // If Auth deletion fails, financial records remain intact.
+    const { error } = await getSupabaseServerClient().auth.admin.deleteUser(user.authUserId);
     if (error) throw error;
-    await deleteClerkUser(user.clerkUserId);
+    const client = await createSupabaseAuthClient();
+    await client.auth.signOut({ scope: "local" });
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     console.error("[account] deletion failed", error);
-    return NextResponse.json({ error: "Unable to delete the account." }, { status: 500 });
+    return NextResponse.json({ error: "Unable to delete the account." }, { status: error instanceof AccessError ? error.status : 500 });
   }
 }

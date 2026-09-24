@@ -89,6 +89,58 @@ body {
     min-width: 0;
   }
 
+  .mobile-more-sheet {
+    max-height: min(82dvh, 620px);
+    padding: 8px 16px calc(16px + env(safe-area-inset-bottom));
+    border-radius: 22px 22px 0 0;
+    overflow-y: auto;
+  }
+
+  .mobile-more-list {
+    display: grid;
+    gap: 8px;
+  }
+
+  .mobile-more-list button {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr) 18px;
+    align-items: center;
+    gap: 12px;
+    min-height: 52px;
+    padding: 10px 12px;
+    border: 1px solid #e2e5ee;
+    border-radius: 13px;
+    background: white;
+    color: #242a38;
+    font-weight: 700;
+    text-align: left;
+  }
+
+  .mobile-more-list button.active {
+    border-color: #7565d6;
+    background: #f4f1ff;
+    color: #5a49c6;
+  }
+
+  .mobile-more-list svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  .mobile-more-list button svg:last-child {
+    color: #8991a3;
+  }
+
+  .mobile-more-close {
+    min-height: 44px;
+    margin-top: 4px;
+    border: 0;
+    border-radius: 12px;
+    background: #f1f3f7;
+    color: #353c4c;
+    font-weight: 800;
+  }
+
   .content,
   .section,
   .hero,
