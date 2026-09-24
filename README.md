@@ -4,7 +4,7 @@ Budget Buddy is a bilingual personal-finance application for tracking income, ex
 
 ## Highlights
 
-- Clerk authentication with server-side authorization
+- Supabase Auth authentication with server-side authorization
 - Supabase/PostgreSQL persistence and starter data for new users
 - Personal and family transactions with role-aware access control
 - Secure receipt uploads for JPG, PNG, and WEBP files up to 5 MB
@@ -17,7 +17,10 @@ Budget Buddy is a bilingual personal-finance application for tracking income, ex
 
 ## Local setup
 
-Requirements: Node.js 22.13 or later, pnpm 11, a Clerk application, a Supabase project, and a Groq API key for AI features.
+For Supabase Auth setup and existing-user mapping, follow
+[the migration runbook](docs/supabase-auth-migration.md) before starting the app.
+
+Requirements: Node.js 22.13 or later, pnpm 11, a Supabase project, and a Groq API key for AI features.
 
 ---
 
@@ -30,7 +33,6 @@ Ensure you have the following installed on your local machine:
 * **Node.js** v22.13 or later
 * **pnpm** v11 or later
 * A **Supabase** account &amp; project
-* A **Clerk** application
 * A **Groq API Key** (for free AI assistant features)
 
 ### Installation Steps
@@ -61,7 +63,7 @@ Open `http://localhost:5173` (or the URL outputted in your console) to view the 
 
 
 
-Use separate Clerk, Supabase, Stripe, and Groq configuration for development and production.
+Use separate Supabase, Stripe, and Groq configuration for development and production.
 
 ## Billing status
 
@@ -78,7 +80,7 @@ It provides complete control over bank accounts, cash balances, savings, and cre
 
 ## ✨ Key Features
 
-* 🔐 **Authentication &amp; Security:** Clerk integration featuring server-side session validation, OAuth (Google) social logins, and secure user profiles.
+* 🔐 **Authentication &amp; Security:** Supabase Auth integration featuring server-side session validation, OAuth (Google) social logins, and secure user profiles.
 * 👨‍👩‍👧‍👦 **Personal &amp; Family Finances:** Role-based access control (**Admin**, **Member**, **Viewer**) with shared household expense tracking, invitation flows, and activity feeds.
 * 💳 **Account Management &amp; Transfers:** Create bank, cash, savings, credit card, and digital wallet accounts, track live balances, and record inter-account transfers seamlessly.
 * 🧾 **Secure Receipt Storage:** Upload receipt images (JPG, PNG, WEBP up to 5 MB) stored in private Supabase Storage buckets and served via short-lived signed URLs.
@@ -95,7 +97,7 @@ It provides complete control over bank accounts, cash balances, savings, and cre
 * **Framework &amp; Runtime:** Next.js 16 (App Router), React 19, TypeScript, Vinext &amp; Cloudflare Workers runtime.
 * **Styling &amp; UI Components:** Tailwind CSS v4, shadcn/ui, Lucide Icons, Recharts.
 * **Database &amp; Storage:** Supabase (PostgreSQL, Row Level Security, Migrations, Private Storage Buckets).
-* **Authentication:** Clerk (`@clerk/nextjs`).
+* **Authentication:** Supabase Auth (`@supabase/ssr`).
 * **AI Engine:** Groq Cloud API.
 * **Payments:** Stripe Checkout &amp; Webhook Verification.
 * **Package Manager:** `pnpm`.
@@ -138,7 +140,7 @@ Active product and engineering work is tracked in Linear. Every change should st
 ## 🛡 Security &amp; Architectural Principles
 
 * **Receipt Security:** Receipt files are stored in a private Supabase Storage bucket and accessed strictly via short-lived (60-second) signed URLs.
-* **Data Isolation:** Browser access is blocked by Supabase RLS. Trusted server routes validate Clerk identity, record ownership, and accepted family membership before using the Supabase secret key.
+* **Data Isolation:** Browser access is blocked by Supabase RLS. Trusted server routes validate Supabase Auth identity, record ownership, and accepted family membership before using the Supabase secret key.
 * **AI Safety Boundaries:** The AI assistant operates strictly on authorized, sanitized financial summaries and cannot commit transactions without explicit user confirmation.
 
 ---

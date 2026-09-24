@@ -2,11 +2,11 @@
 
 ## Environment model
 
-| Environment | Branch | Supabase | Clerk | Stripe | Deployment |
-| --- | --- | --- | --- | --- | --- |
-| Local | Personal feature branch | Local or Dev | Development | Sandbox/Test | Developer machine |
-| Preview | Pull request branch | Dev | Development | Sandbox/Test | Vercel Preview |
-| Production | `main` | Prod | Production | Live | Vercel Production |
+| Environment | Branch | Supabase (data + Auth) | Stripe | Deployment |
+| --- | --- | --- | --- | --- |
+| Local | Personal feature branch | Local or Dev | Sandbox/Test | Developer machine |
+| Preview | Pull request branch | Dev | Sandbox/Test | Vercel Preview |
+| Production | `main` | Prod | Live | Vercel Production |
 
 Preview must never connect to the production Supabase project or use Stripe live keys.
 
@@ -16,8 +16,8 @@ Store real values only in a developer's `.env.local`, the appropriate Vercel env
 
 | Variable | Scope | Secret? |
 | --- | --- | --- |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Browser + server | No |
-| `CLERK_SECRET_KEY` | Server | Yes |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Browser + server | No |
+| `NEXT_PUBLIC_AUTH_GOOGLE_ENABLED` | Browser | No |
 | `NEXT_PUBLIC_SUPABASE_URL` | Browser + server | No |
 | `SUPABASE_SECRET_KEY` | Server | Yes |
 | `GROQ_API_KEY` | Server | Yes |
@@ -40,6 +40,10 @@ If a secret is committed accidentally, removing it from the repository is not en
 6. Squash-merge only after approval from the other team member and resolution of all review conversations.
 
 ## Migration order
+
+For the Supabase Auth cutover, follow [the migration runbook](./supabase-auth-migration.md)
+for development credentials, email templates, callback URLs and explicit legacy
+identity mapping. Migration 0010 must precede the new auth application release.
 
 When application code depends on a schema change:
 

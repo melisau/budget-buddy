@@ -1,48 +1,30 @@
-import { clerkMiddleware } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
+import { getSupabasePublicConfig } from "@/lib/supabase/config";
 
-// Authentication and authorization are enforced next to each protected
-// resource. The proxy attaches Clerk's request context to every application
-// route without relying on a second, path-based access-control list.
-export default clerkMiddleware(
-  async (auth, request) => {
-    const authState = await auth();
-    const requestHeaders = new Headers(request.headers);
+export async function proxy(request: NextRequest) {
+  const { url, key } = getSupabasePublicConfig();
+  let response = NextResponse.next({ request });
+  const supabase = createServerClient(url, key, {
+    cookies: {
+      getAll: () => request.cookies.getAll(),
+      setAll(values, headers) {
+        values.forEach(({ name, value }) => request.cookies.set(name, value));
+        const previous = response.cookies.getAll();
+        response = NextResponse.next({ request });
+        previous.forEach((cookie) => response.cookies.set(cookie));
+        values.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+        Object.entries(headers).forEach(([name, value]) => response.headers.set(name, value));
+      },
+    },
+  });
+  await supabase.auth.getUser();
+  response.headers.set("Cache-Control", "private, no-store");
+  response.headers.set("Vary", "Cookie");
+  return response;
+}
 
-    requestHeaders.set(
-      "x-clerk-auth-status",
-      authState.isAuthenticated ? "signed-in" : "signed-out",
-    );
-
-    if (authState.isAuthenticated && authState.userId) {
-      requestHeaders.set("x-budget-buddy-user-id", authState.userId);
-    } else {
-      requestHeaders.delete("x-budget-buddy-user-id");
-    }
-
-    return NextResponse.next({ request: { headers: requestHeaders } });
-  },
-  {
-    frontendApiProxy: { enabled: true },
-  },
-);
-
+// Authorization is also checked beside every protected resource.
 export const config = {
-  matcher: [
-    "/__clerk/(.*)",
-    "/",
-    "/sign-in(.*)",
-    "/sign-up(.*)",
-    "/auth/complete(.*)",
-    "/dashboard(.*)",
-    "/accounts(.*)",
-    "/analytics(.*)",
-    "/assistant(.*)",
-    "/budgets(.*)",
-    "/family(.*)",
-    "/goals(.*)",
-    "/settings(.*)",
-    "/transactions(.*)",
-    "/(api|trpc)(.*)",
-  ],
+  matcher: ["/sign-in", "/sign-up", "/auth/:path*", "/forgot-password", "/update-password", "/dashboard/:path*", "/accounts/:path*", "/analytics/:path*", "/assistant/:path*", "/budgets/:path*", "/family/:path*", "/goals/:path*", "/settings/:path*", "/transactions/:path*", "/api/:path*"],
 };

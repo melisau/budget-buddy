@@ -22,9 +22,9 @@
 ## Architecture
 
 - Next.js App Router owns pages, layouts, and route handlers under `app/`.
-- Authentication and user sessions are managed by Clerk.
+- Authentication and user sessions are managed by Supabase Auth.
 - Supabase/PostgreSQL stores application data and receipt files.
-- Server routes must derive the acting user from the verified Clerk session; never trust a client-provided user ID.
+- Server routes must derive the acting user from the verified Supabase Auth session; never trust a client-provided user ID.
 - Payments are managed by Stripe. Subscription state must be verified from signed, idempotent webhooks.
 - Database changes must be forward-only SQL migrations in `supabase/migrations/`.
 - Keep server-only credentials and privileged clients out of client components and public environment variables.
@@ -32,7 +32,7 @@
 ## Safety
 
 - Never commit `.env` files, secrets, credentials, personal financial data, or production exports.
-- Never expose Clerk secret keys, Supabase secret/service-role keys, Stripe secret keys, or webhook secrets to the client.
+- Never expose Supabase secret/service-role keys, Stripe secret keys, or webhook secrets to the client.
 - Local and Preview environments must not use production Supabase projects or Stripe live keys.
 - Do not read, write, or migrate production data without explicit user approval.
 - Do not push directly to `main` or rewrite another contributor's branch.
