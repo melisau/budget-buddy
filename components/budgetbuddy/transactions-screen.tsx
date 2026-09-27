@@ -34,6 +34,7 @@ export function TransactionsScreen() {
   const [typeFilter, setTypeFilter] = useState<"all" | TransactionType>("all");
   const [accountFilter, setAccountFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [exportScope, setExportScope] = useState<"personal" | "family">("personal");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
@@ -78,10 +79,13 @@ export function TransactionsScreen() {
       <div><Search /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("Search transactions")} aria-label={t("Search transactions")} /></div>
       <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as "all" | TransactionType)}><SelectTrigger aria-label={t("Transaction type")}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t("All types")}</SelectItem><SelectItem value="expense">{t("Expense")}</SelectItem><SelectItem value="income">{t("Income")}</SelectItem></SelectContent></Select>
       <Select value={accountFilter} onValueChange={setAccountFilter}><SelectTrigger aria-label={t("Account")}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t("All accounts")}</SelectItem>{data.accounts.map((account) => <SelectItem value={account.id} key={account.id}>{t(account.name)}</SelectItem>)}</SelectContent></Select>
-      <Select value={categoryFilter} onValueChange={setCategoryFilter}><SelectTrigger aria-label={t("Category")}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t("All categories")}</SelectItem>{data.categories.map((category) => <SelectItem value={category.id} key={category.id}>{t(category.name)}</SelectItem>)}</SelectContent></Select>
+      <div className="transaction-filter-row">
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}><SelectTrigger aria-label={t("Category")}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t("All categories")}</SelectItem>{data.categories.map((category) => <SelectItem value={category.id} key={category.id}>{t(category.name)}</SelectItem>)}</SelectContent></Select>
+        <Select value={exportScope} onValueChange={(value) => setExportScope(value as "personal" | "family")}><SelectTrigger className="transaction-export-scope" aria-label={language === "tr" ? "Dışa aktarma kapsamı" : "Export scope"}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="personal">{language === "tr" ? "Kişisel" : "Personal"}</SelectItem><SelectItem value="family">{language === "tr" ? "Aile" : "Family"}</SelectItem></SelectContent></Select>
+      </div>
       <Input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} aria-label={t("From date")} />
       <Input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} aria-label={t("To date")} />
-      <CsvExport />
+      <CsvExport scope={exportScope} />
       <CsvImport onImported={loadTransactions} />
       <AddTransaction onCreated={() => void loadTransactions()} />
     </div>
@@ -98,9 +102,8 @@ export function TransactionsScreen() {
   </>;
 }
 
-function CsvExport() {
+function CsvExport({ scope }: { scope: "personal" | "family" }) {
   const { language } = useContext(LanguageContext);
-  const [scope, setScope] = useState<"personal" | "family">("personal");
   const [isDownloading, setIsDownloading] = useState(false);
   const download = async () => {
     setIsDownloading(true);
@@ -110,7 +113,7 @@ function CsvExport() {
       const blob = await response.blob(); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `budgetbuddy-${scope}-transactions.csv`; link.click(); URL.revokeObjectURL(url);
     } catch (error) { toast.error(error instanceof Error && error.message ? error.message : (language === "tr" ? "CSV dışa aktarılamadı." : "Unable to export CSV.")); } finally { setIsDownloading(false); }
   };
-  return <div className="csv-export"><Select value={scope} onValueChange={(value) => setScope(value as "personal" | "family")}><SelectTrigger aria-label={language === "tr" ? "Dışa aktarma kapsamı" : "Export scope"}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="personal">{language === "tr" ? "Kişisel" : "Personal"}</SelectItem><SelectItem value="family">{language === "tr" ? "Aile" : "Family"}</SelectItem></SelectContent></Select><Button variant="outline" disabled={isDownloading} onClick={() => void download()}><Download />{language === "tr" ? "CSV dışa aktar" : "Export CSV"}</Button></div>;
+  return <div className="csv-export"><Button variant="outline" disabled={isDownloading} onClick={() => void download()}><Download />{language === "tr" ? "CSV dışa aktar" : "Export CSV"}</Button></div>;
 }
 
 function TransactionActions({ transaction, onChanged }: { transaction: StoredTransaction; onChanged: () => Promise<void> }) {
