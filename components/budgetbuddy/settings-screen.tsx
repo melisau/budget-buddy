@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 export function SettingsScreen() {
   const t = useT();
   const { language } = useContext(LanguageContext);
-  const { openUserProfile } = useClerk();
+  const { openUserProfile, signOut } = useClerk();
   const { user } = useUser();
   const displayName = user?.fullName || "";
   const email = user?.primaryEmailAddress?.emailAddress || "";
@@ -34,7 +34,10 @@ export function SettingsScreen() {
         <h3>{t("Profile")}</h3><p>{t("Update your personal details.")}</p>
         <div className="avatar"><span>{initials}</span><Button type="button" variant="outline" onClick={() => openUserProfile()}>{t("Change photo")}</Button></div>
         <div className="form-grid"><label>{t("Full name")}<Input value={displayName} readOnly /></label><label>{t("Email")}<Input value={email} readOnly /></label></div>
-        <Button type="button" onClick={() => openUserProfile()}>{t("Manage account")}</Button>
+        <div className="profile-actions">
+          <Button type="button" onClick={() => openUserProfile()}>{t("Manage account")}</Button>
+          <Button type="button" variant="outline" onClick={() => void signOut({ redirectUrl: "/" })}>{language === "tr" ? "Çıkış yap" : "Sign out"}</Button>
+        </div>
       </article>
       <article className="panel settings-card" id="settings-preferences">
         <h3>{t("Preferences")}</h3><p>{t("Customize your default currency.")}</p>
