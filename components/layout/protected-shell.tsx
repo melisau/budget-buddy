@@ -10,7 +10,6 @@ import { AppHeader, AppSidebar, MobileNavigation, type AppView } from "@/compone
 const PATH_VIEWS: Record<string, AppView> = {
   "/dashboard": "dashboard",
   "/family": "family",
-  "/wishlists": "wishlists",
   "/transactions": "transactions",
   "/budgets": "budgets",
   "/accounts": "accounts",
