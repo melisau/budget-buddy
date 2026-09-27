@@ -4,7 +4,6 @@ export type View =
   | "signup"
   | "dashboard"
   | "family"
-  | "wishlists"
   | "transactions"
   | "budgets"
   | "accounts"
