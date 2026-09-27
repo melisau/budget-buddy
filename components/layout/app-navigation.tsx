@@ -1,11 +1,12 @@
 "use client";
 import { useAuthUser } from "@/components/providers/auth-provider";
 import {useContext,useState,type ReactNode} from "react";
-import {ChartNoAxesCombined,ChevronRight,Gift,Home,Landmark,LayoutDashboard,MoreHorizontal,PiggyBank,Plus,ReceiptText,Settings,Sparkles,Target,Users} from "lucide-react";
+import {ChartNoAxesCombined,ChevronRight,Gift,Home,Landmark,LayoutDashboard,MoreHorizontal,Plus,ReceiptText,Settings,Sparkles,Target,Users,WalletCards} from "lucide-react";
 import {Progress} from "@/components/ui/progress";
 import {Sheet,SheetClose,SheetContent,SheetDescription,SheetHeader,SheetTitle,SheetTrigger} from "@/components/ui/sheet";
 import {LanguageContext,LanguageSelect,useT} from "@/components/providers/language-provider";
 import {Logo} from "@/components/layout/logo";
+import { SavingsJarIcon } from "@/components/budgetbuddy/savings-jar-icon";
 
 export type AppView="dashboard"|"family"|"wishlists"|"transactions"|"budgets"|"accounts"|"goals"|"analytics"|"assistant"|"settings";
 type Navigate=(view:AppView|"landing")=>void;
@@ -16,7 +17,7 @@ export const APP_NAVIGATION=[
  ["family","Family Group",Users],
  ["wishlists","Wishlists",Gift],
  ["transactions","Transactions",ReceiptText],
- ["budgets","Budgets",PiggyBank],
+ ["budgets","Budgets",SavingsJarIcon],
  ["accounts","Accounts",Landmark],
  ["goals","Goals",Target],
  ["analytics","Analytics",ChartNoAxesCombined],
@@ -47,7 +48,8 @@ export function AppHeader({view,quickAdd}:{view:AppView;quickAdd:ReactNode}){
  const locale=language==="tr"?"tr-TR":"en-US";
  const today=new Intl.DateTimeFormat(locale,{weekday:"long",day:"numeric",month:"long",timeZone:"Europe/Istanbul"}).format(new Date());
  return <header>
-  <div><h1>{t(label)}</h1><p>{view==="dashboard"?today:t("Manage your money with confidence.")}</p></div>
+  <div className="header-page-title"><h1>{t(label)}</h1><p>{view==="dashboard"?today:t("Manage your money with confidence.")}</p></div>
+  <div className="mobile-header-brand"><span className="mobile-header-icon"><WalletCards aria-hidden="true"/></span><span>Budget<b>Buddy</b></span></div>
   <LanguageSelect/>
   {quickAdd}
  </header>;

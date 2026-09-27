@@ -23,8 +23,10 @@ export function ProfileEditor() {
   }}>
     <label className="block">Ad soyad<Input key={user?.updated_at} name="name" defaultValue={typeof user?.user_metadata.full_name === "string" ? user.user_metadata.full_name : ""} maxLength={100} required disabled={loading || busy} /></label>
     <label className="block">E-posta<Input value={user?.email ?? ""} readOnly /></label>
-    <Button type="submit" disabled={loading || busy}>Profili kaydet</Button>
+    <div className="profile-actions">
+      <Button type="submit" disabled={loading || busy}>Profili kaydet</Button>
+      <Button type="button" variant="outline" disabled={busy} onClick={() => { setBusy(true); void signOut().catch(() => { toast.error("Çıkış yapılamadı."); setBusy(false); }); }}>Çıkış yap</Button>
+    </div>
     <Link href="/update-password" className="block underline">Şifreyi değiştir</Link>
-    <Button type="button" variant="outline" disabled={busy} onClick={() => { setBusy(true); void signOut().catch(() => { toast.error("Çıkış yapılamadı."); setBusy(false); }); }}>Çıkış yap</Button>
   </form>;
 }

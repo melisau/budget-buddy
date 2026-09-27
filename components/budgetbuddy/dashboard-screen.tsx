@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useContext, useEffect, useMemo, useState } from "react";
-import { ArrowDownRight, ArrowUpRight, PiggyBank, WalletCards } from "lucide-react";
+import { useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { ArrowDownRight, ArrowUpRight, WalletCards } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
+import { SavingsJarIcon } from "@/components/budgetbuddy/savings-jar-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatCurrency } from "@/lib/finance/currency";
 import type { Navigate } from "@/components/budgetbuddy/view-types";
@@ -20,7 +21,10 @@ type DashboardData = {
   cashFlow: { month: string; income: number; expense: number }[];
 };
 
-const Stat = ({ name, value, Icon }: { name: string; value: string; Icon: typeof WalletCards }) => <article className="stat"><i><Icon /></i><span>{name}</span><strong>{value}</strong></article>;
+
+const Stat = ({ name, value, icon }: { name: string; value: string; icon: ReactNode }) => (
+  <article className="stat"><i aria-hidden="true">{icon}</i><span>{name}</span><strong>{value}</strong></article>
+);
 const currentMonth = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", timeZone: "Europe/Istanbul" }).format(new Date());
 
 export function DashboardScreen({ go }: { go: Navigate }) {
@@ -65,7 +69,12 @@ export function DashboardScreen({ go }: { go: Navigate }) {
     </div>
     {error && <p className="form-error" role="alert">{error}</p>}
     <div className={`dashboard-results ${loading ? "loading" : ""}`} aria-busy={loading} aria-live="polite">
-      <div className="stats"><Stat name={t("Total balance")} value={money(data?.summary.balance ?? 0)} Icon={WalletCards} /><Stat name={t("Monthly income")} value={money(data?.summary.income ?? 0)} Icon={ArrowUpRight} /><Stat name={t("Monthly expenses")} value={money(data?.summary.expenses ?? 0)} Icon={ArrowDownRight} /><Stat name={t("Savings rate")} value={`${(data?.summary.savingsRate ?? 0).toFixed(1)}%`} Icon={PiggyBank} /></div>
+      <div className="stats">
+        <Stat name={t("Total balance")} value={money(data?.summary.balance ?? 0)} icon={<WalletCards />} />
+        <Stat name={t("Monthly income")} value={money(data?.summary.income ?? 0)} icon={<ArrowUpRight />} />
+        <Stat name={t("Monthly expenses")} value={money(data?.summary.expenses ?? 0)} icon={<ArrowDownRight />} />
+        <Stat name={t("Savings rate")} value={`${(data?.summary.savingsRate ?? 0).toFixed(1)}%`} icon={<SavingsJarIcon />} />
+      </div>
       <div className="dash">
         <article className="panel dashboard-cashflow"><div className="panel-head"><div><h3>{t("Cash flow")}</h3><p>{t("Income and expenses · Last 6 months")}</p></div></div><div className="chart" role="img" aria-label={language === "tr" ? "Son altı ayın gelir ve gider grafiği" : "Income and expenses chart for the last six months"}><ResponsiveContainer><AreaChart data={chartData}><CartesianGrid vertical={false} /><XAxis dataKey="label" /><YAxis /><Tooltip formatter={(value) => money(Number(value))} /><Area dataKey="income" name={t("Income")} stroke="#249779" fill="#24977922" /><Area dataKey="expense" name={t("Expenses")} stroke="#f18470" fill="#f1847018" /></AreaChart></ResponsiveContainer></div><ul className="sr-only">{chartData.map((item) => <li key={item.month}>{item.label}: {t("Income")} {money(item.income)}, {t("Expenses")} {money(item.expense)}</li>)}</ul></article>
         <article className="panel"><div className="panel-head"><div><h3>{t("Spending by category")}</h3><p>{monthLabel}</p></div></div><div className="live-list">{data?.categories.length ? data.categories.map((item, index) => <div key={item.name}><i style={{ background: ["#5267df", "#249779", "#f18470", "#d7a33c"][index % 4] }} />{t(item.name)}<b>{money(item.value)}</b></div>) : <p>{t("No expenses this month.")}</p>}</div></article>

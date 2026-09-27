@@ -1,7 +1,8 @@
 "use client";
 
 import { useContext, useEffect, useMemo, useState } from "react";
-import { Archive, ArchiveRestore, ArrowRightLeft, Landmark, Pencil, PiggyBank, Plus, WalletCards } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowRightLeft, Landmark, Pencil, Plus, WalletCards } from "lucide-react";
+import { SavingsJarIcon } from "@/components/budgetbuddy/savings-jar-icon";
 import { toast } from "sonner";
 import { LanguageContext, useT } from "@/components/providers/language-provider";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,7 @@ type Account = { id: string; name: string; type: AccountType; currency: Currency
 type AccountDraft = { name: string; type: AccountType; currency: Currency; initialBalance: string };
 const emptyDraft: AccountDraft = { name: "", type: "checking", currency: "TRY", initialBalance: "0" };
 const accountTypes: AccountType[] = ["checking", "savings", "cash", "credit_card", "digital_wallet"];
-const icons = { savings: PiggyBank, cash: WalletCards, checking: Landmark, credit_card: WalletCards, digital_wallet: WalletCards };
+const icons = { savings: SavingsJarIcon, cash: WalletCards, checking: Landmark, credit_card: WalletCards, digital_wallet: WalletCards };
 
 export function AccountsScreen() {
   const t = useT(); const { language } = useContext(LanguageContext); const tr = language === "tr";
