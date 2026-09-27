@@ -1,19 +1,20 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAuthClient } from "@/lib/supabase/auth-server";
 import { authDestination } from "@/lib/auth/redirect";
+import { sameOriginFormOrigin } from "@/lib/auth/request-origin";
 import { authErrorCode, isAuthMode, type AuthMode } from "@/lib/auth/form";
 
 // Native POST works before hydration and when JavaScript is disabled.
 // Never reflect form fields, credentials or upstream errors into URLs or logs.
 export async function POST(request: Request) {
-  const origin = new URL(request.url).origin;
+  const origin = sameOriginFormOrigin(request);
+  if (!origin) return new NextResponse("Forbidden", { status: 403 });
   const respond = (path: string) => {
     const response = NextResponse.redirect(new URL(path, origin), 303);
     response.headers.set("Cache-Control", "private, no-store");
     response.headers.set("Referrer-Policy", "no-referrer");
     return response;
   };
-  if (request.headers.get("origin") !== origin) return new NextResponse("Forbidden", { status: 403 });
   let mode: AuthMode = "sign-in";
   let next = "/dashboard";
   const failure = (code: string) => respond(`/${mode}?error=${code}&redirect=${encodeURIComponent(next)}`);
