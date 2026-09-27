@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getClerkAuth } from "@/lib/auth/clerk-server";
+import { getCurrentUser } from "@/lib/auth/supabase-server";
 import { requireAppUser } from "@/lib/auth/authorization";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -10,8 +10,7 @@ const trim = (value: unknown, limit: number) => typeof value === "string" ? valu
 
 export async function POST(request: Request) {
   try {
-    const auth = await getClerkAuth();
-    if (!auth.isAuthenticated) return new NextResponse(null, { status: 204 });
+    if (!await getCurrentUser()) return new NextResponse(null, { status: 204 });
     const user = await requireAppUser();
     const limit = checkRateLimit(`error-report:${user.id}`, 20, 60_000);
     if (!limit.allowed) return new NextResponse(null, { status: 204 });

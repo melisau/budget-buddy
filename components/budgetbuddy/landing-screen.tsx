@@ -195,15 +195,16 @@ export function LandingScreen({ go }: { go: Navigate }) {
 function Pricing() {
   const t = useT();
   const plans = [
-    { name: "Free", price: "₺0", description: "Start with your full trial access.", features: ["Manual tracking", "Basic dashboard", "Core categories", "Basic budgets"] },
-    { name: "Core", price: "₺149", description: "For connected money management.", features: ["Everything in Free", "Accounts and receipt uploads", "CSV import and export", "Goals and family groups"], featured: true },
+    { name: "Free", price: "₺0", description: "Start with your full trial access.", features: ["Personal goals", "Family wishlists", "Shared shopping list", "Allowance plan"] },
+    { name: "Core", price: "₺149", description: "For connected money management.", features: ["Everything in Free", "Accounts and receipt uploads", "CSV import and export", "Advanced reports"] , featured: true },
     { name: "Pro", price: "₺299", description: "For deeper analysis and guidance.", features: ["Everything in Core", "AI Assistant", "Voice questions", "Advanced reports"] },
   ];
   const comparisons = [
     ["Income and expense tracking", "included", "included", "included"],
     ["Basic dashboard and budgets", "included", "included", "included"],
     ["Accounts and receipt uploads", "trial", "included", "included"],
-    ["Savings goals and family groups", "trial", "included", "included"],
+    ["Savings goals and family groups", "included", "included", "included"],
+    ["Gift wishlists and shared shopping list", "included", "included", "included"],
     ["CSV import and data export", "trial", "included", "included"],
     ["Advanced reports and filters", "trial", "included", "included"],
     ["AI Assistant and insights", "trial", "trial", "included"],

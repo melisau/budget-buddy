@@ -25,11 +25,12 @@ export async function GET(request: Request) {
     const currency: Currency = requestedCurrency && currencies.includes(requestedCurrency) ? requestedCurrency : "TRY";
     const requestedAccountId = params.get("account") ?? "all";
     const supabase = getSupabaseServerClient();
-    const [accountsResult, membershipsResult] = await Promise.all([
+    const [accountsResult, membershipsResult, goalsResult] = await Promise.all([
       supabase.from("accounts").select("id, name, currency, initial_balance").eq("user_id", user.id).is("archived_at", null).order("name"),
       supabase.from("family_members").select("family_group_id, group:family_groups(id, name)").eq("user_id", user.id).eq("invitation_status", "accepted"),
+      supabase.from("goals").select("id", { count: "exact", head: true }).eq("user_id", user.id).is("family_group_id", null),
     ]);
-    if (accountsResult.error || membershipsResult.error) throw accountsResult.error ?? membershipsResult.error;
+    if (accountsResult.error || membershipsResult.error || goalsResult.error) throw accountsResult.error ?? membershipsResult.error ?? goalsResult.error;
     const ownAccounts = (accountsResult.data ?? []) as Account[];
     const familyGroups = (membershipsResult.data ?? []).map((membership) => relation(membership.group)).filter((group): group is { id: string; name: string } => Boolean(group));
     const familyId = scope.startsWith("family:") ? scope.slice(7) : null;
@@ -55,6 +56,6 @@ export async function GET(request: Request) {
     const categoryTotals = new Map<string, number>();
     for (const item of monthTransactions.filter((entry) => entry.type === "expense")) { const name = relation(item.category)?.name ?? "Uncategorized"; categoryTotals.set(name, (categoryTotals.get(name) ?? 0) + Number(item.amount)); }
     const cashFlow = previousMonths(month).map((value) => { const entries = filtered.filter((item) => item.transaction_date.startsWith(value)); return { month: value, income: entries.filter((item) => item.type === "income").reduce((sum, item) => sum + Number(item.amount), 0), expense: entries.filter((item) => item.type === "expense").reduce((sum, item) => sum + Number(item.amount), 0) }; });
-    return NextResponse.json({ filters: { month, scope: familyId ? scope : "personal", accountId: selectedAccount?.id ?? "all", currency: effectiveCurrency, accounts: availableAccounts, familyGroups, currencies }, summary: { balance, income, expenses, savingsRate: calculateSavingsRate(income, expenses) }, categories: [...categoryTotals].map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value), recent: monthTransactions.slice(0, 5), cashFlow });
+    return NextResponse.json({ hasGoals: (goalsResult.count ?? 0) > 0, filters: { month, scope: familyId ? scope : "personal", accountId: selectedAccount?.id ?? "all", currency: effectiveCurrency, accounts: availableAccounts, familyGroups, currencies }, summary: { balance, income, expenses, savingsRate: calculateSavingsRate(income, expenses) }, categories: [...categoryTotals].map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value), recent: monthTransactions.slice(0, 5), cashFlow });
   } catch (error) { return errorResponse(error); }
 }
