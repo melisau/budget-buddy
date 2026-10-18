@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAppUser } from "@/lib/auth/authorization";
+import { BILLING_ENABLED } from "@/lib/billing/launch";
 import { isFullAccess, toSubscriptionStatus } from "@/lib/billing/subscription";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -17,12 +18,14 @@ export async function GET() {
 
     const status = toSubscriptionStatus(userResult.data.subscription_status);
     return NextResponse.json({
+      billingEnabled: BILLING_ENABLED,
       subscription: {
         plan: userResult.data.subscription_plan,
         status,
         trialEndsAt: userResult.data.trial_ends_at,
         endsAt: userResult.data.subscription_ends_at,
-        fullAccess: isFullAccess(status, userResult.data.trial_ends_at),
+        // Everyone has full access while paid plans are switched off.
+        fullAccess: !BILLING_ENABLED || isFullAccess(status, userResult.data.trial_ends_at),
         canManage: Boolean(userResult.data.stripe_customer_id),
       },
       invoices: invoicesResult.data,

@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { CreditCard, ExternalLink, ReceiptText, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/components/providers/language-provider";
 
 type BillingDetails = {
+  billingEnabled?: boolean;
   subscription: {
     plan: "free" | "core" | "pro";
     status: "inactive" | "trialing" | "active" | "past_due" | "canceled" | "unpaid";
@@ -35,6 +37,7 @@ function formatAmount(amount: number, currency: string) {
 }
 
 export function SubscriptionCard() {
+  const t = useT();
   const [billing, setBilling] = useState<BillingDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -87,6 +90,12 @@ export function SubscriptionCard() {
   if (!billing) return <article className="panel subscription-card"><h3>Subscription</h3><p className="form-error">{error ?? "Billing details are unavailable."}</p></article>;
 
   const { subscription, invoices } = billing;
+  if (!billing.billingEnabled && !subscription.canManage) {
+    return <article className="panel subscription-card">
+      <div className="subscription-card-header"><div><span><CreditCard aria-hidden="true" />{t("Subscription")}</span><h3>{t("Free during launch")}</h3></div></div>
+      <p className="trial-note"><Sparkles aria-hidden="true" />{t("Every feature is free during launch")}. {t("We will announce pricing before any paid plan starts.")}</p>
+    </article>;
+  }
   return <article className="panel subscription-card">
     <div className="subscription-card-header"><div><span><CreditCard aria-hidden="true" />Subscription</span><h3>{planLabels[subscription.plan]} plan</h3></div><b className={subscription.fullAccess ? "access-active" : "access-limited"}>{subscription.fullAccess ? "Full access" : subscription.status}</b></div>
     {subscription.status === "trialing" && <p className="trial-note"><Sparkles aria-hidden="true" />All features are available during your trial{subscription.trialEndsAt ? ` until ${formatDate(subscription.trialEndsAt)}` : ""}.</p>}

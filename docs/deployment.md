@@ -26,7 +26,8 @@ Store real values only in a developer's `.env.local`, the appropriate Vercel env
 | `STRIPE_WEBHOOK_SECRET` | Server | Yes |
 | `STRIPE_CORE_PRICE_ID` | Server | No |
 | `STRIPE_PRO_PRICE_ID` | Server | No |
-| `NEXT_PUBLIC_ERROR_REPORTING_DSN` | Browser + server | No, but keep it environment-specific |
+| `SENTRY_DSN` | Server | No, but keep it environment-specific |
+| `NEXT_PUBLIC_BILLING_ENABLED` | Browser + server | No. `true` turns paid plans and Stripe Checkout on |
 
 If a secret is committed accidentally, removing it from the repository is not enough. Rotate it immediately at the provider.
 
