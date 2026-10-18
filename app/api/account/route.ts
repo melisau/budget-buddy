@@ -3,6 +3,7 @@ import { requireAppUser } from "@/lib/auth/authorization";
 import { deleteClerkUser } from "@/lib/auth/clerk-server";
 import { getStripe } from "@/lib/billing/stripe";
 import { deleteStoredReceipts } from "@/lib/finance/receipt-storage";
+import { captureException } from "@/lib/monitoring/sentry";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 const supportedCurrencies = new Set(["TRY", "EUR", "USD", "GBP"]);
@@ -61,6 +62,7 @@ function isSameOrigin(request: Request): boolean {
 async function logDeletionFailure(userId: string, step: string, error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
   console.error(`[account] deletion step "${step}" failed for app user ${userId}`, message);
+  await captureException(error, { source: "server", path: "/api/account", userId, tags: { step } });
   try {
     await getSupabaseServerClient().from("error_events").insert({
       user_id: null,
