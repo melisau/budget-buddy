@@ -1,6 +1,7 @@
 "use client";
 
 import { useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useFinanceDataVersion } from "@/lib/finance/data-events";
 import { ArrowDownRight, ArrowUpRight, WalletCards } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
@@ -35,6 +36,7 @@ export function DashboardScreen({ go }: { go: Navigate }) {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const dataVersion = useFinanceDataVersion();
   const locale = language === "tr" ? "tr-TR" : "en-US";
   const months = useMemo(() => Array.from({ length: 18 }, (_, index) => { const [year, number] = currentMonth.split("-").map(Number); const date = new Date(Date.UTC(year, number - 1 - index, 1)); return { value: `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`, label: new Intl.DateTimeFormat(locale, { month: "long", year: "numeric", timeZone: "UTC" }).format(date) }; }), [locale]);
 
@@ -50,7 +52,7 @@ export function DashboardScreen({ go }: { go: Navigate }) {
       if (payload.filters.currency !== currency) setCurrency(payload.filters.currency);
     }).catch((reason) => { if (!(reason instanceof DOMException && reason.name === "AbortError")) setError(reason instanceof Error ? reason.message : "Unable to load your dashboard."); }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [accountId, currency, month, scope]);
+  }, [accountId, currency, dataVersion, month, scope]);
 
   if (loading && !data) return <DashboardSkeleton />;
   const money = (amount: number) => formatCurrency(amount, data?.filters.currency ?? currency);

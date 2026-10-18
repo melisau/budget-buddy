@@ -70,7 +70,7 @@ const howSteps = [
 
 const faqs = [
   ["Do I need a CSV?", "No. Manual transaction entry is always available."],
-  ["Does BudgetBuddy move money?", "No. This demo organizes information and cannot move funds."],
+  ["Does BudgetBuddy move money?", "No. BudgetBuddy organizes your information and cannot move funds."],
   ["Is AI financial advice?", "No. It summarizes your tracked data and budgeting patterns."],
   ["Does it work on mobile?", "Yes. Every view adapts to mobile screens."],
 ] as const;
@@ -187,7 +187,7 @@ export function LandingScreen({ go }: { go: Navigate }) {
         </section>
       </main>
 
-      <footer id="about"><Logo /><p>{t("Personal finance clarity, without the clutter.")}</p><span><a href="/privacy">{t("Privacy")}</a> · <a href="/terms">{t("Terms")}</a></span><small>{t("© 2026 BudgetBuddy. Demo experience.")}</small></footer>
+      <footer id="about"><Logo /><p>{t("Personal finance clarity, without the clutter.")}</p><span><a href="/privacy">{t("Privacy")}</a> · <a href="/terms">{t("Terms")}</a></span><small>{`© ${new Date().getFullYear()} BudgetBuddy`}</small></footer>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useContext, useEffect, useMemo, useState } from "react";
+import { useFinanceDataVersion } from "@/lib/finance/data-events";
 import { Archive, ArchiveRestore, ArrowRightLeft, Landmark, Pencil, Plus, WalletCards } from "lucide-react";
 import { SavingsJarIcon } from "@/components/budgetbuddy/savings-jar-icon";
 import { toast } from "sonner";
@@ -27,6 +28,7 @@ export function AccountsScreen() {
   const activeAccounts = accounts.filter((item) => !item.archivedAt);
   const totals = useMemo(() => activeAccounts.reduce<Record<string, number>>((result, account) => ({ ...result, [account.currency]: (result[account.currency] ?? 0) + account.balance }), {}), [activeAccounts]);
   const load = async () => { setLoading(true); try { const response = await fetch("/api/accounts?archived=true", { cache: "no-store" }); const payload = await response.json() as { accounts?: Account[]; error?: string }; if (!response.ok) throw new Error(payload.error); setAccounts(payload.accounts ?? []); } catch (error) { toast.error(error instanceof Error ? error.message : (tr ? "Hesaplar yüklenemedi." : "Unable to load accounts.")); } finally { setLoading(false); } };
+  const dataVersion = useFinanceDataVersion();
   useEffect(() => {
     let active = true;
     void fetch("/api/accounts?archived=true", { cache: "no-store" }).then(async (response) => {
@@ -36,7 +38,7 @@ export function AccountsScreen() {
     }).catch((error) => { if (active) toast.error(error instanceof Error ? error.message : (tr ? "Hesaplar yüklenemedi." : "Unable to load accounts.")); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [tr]);
+  }, [dataVersion, tr]);
   const openCreate = () => { setEditing(null); setDraft(emptyDraft); setDialog("account"); };
   const openEdit = (account: Account) => { setEditing(account); setDraft({ name: account.name, type: account.type, currency: account.currency, initialBalance: String(account.initialBalance) }); setDialog("account"); };
   const saveAccount = async () => { setSaving(true); try { const response = await fetch(editing ? `/api/accounts/${editing.id}` : "/api/accounts", { method: editing ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(draft) }); const payload = await response.json().catch(() => ({})) as { error?: string }; if (!response.ok) throw new Error(payload.error); setDialog(null); toast.success(tr ? "Hesap kaydedildi." : "Account saved."); await load(); } catch (error) { toast.error(error instanceof Error ? error.message : (tr ? "Hesap kaydedilemedi." : "Unable to save account.")); } finally { setSaving(false); } };

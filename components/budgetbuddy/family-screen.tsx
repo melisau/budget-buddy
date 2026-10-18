@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useFinanceDataVersion } from "@/lib/finance/data-events";
 import { Check, Copy, Crown, MessageCircle, Plus, ReceiptText, ShieldCheck, Trash2, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 import { LanguageContext } from "@/components/providers/language-provider";
@@ -42,7 +43,8 @@ export function FamilyScreen() {
     } finally { setLoading(false); }
   }, [tr]);
 
-  useEffect(() => { const timer = window.setTimeout(() => void reload(), 0); return () => window.clearTimeout(timer); }, [reload]);
+  const dataVersion = useFinanceDataVersion();
+  useEffect(() => { const timer = window.setTimeout(() => void reload(), 0); return () => window.clearTimeout(timer); }, [dataVersion, reload]);
   const group = groups.find((item) => item.id === selectedGroupId) ?? null;
   const familyTransactions = useMemo(() => transactions.filter((item) => item.familyGroupId === group?.id), [transactions, group?.id]);
   const income = familyTransactions.filter((item) => item.type === "income").reduce((sum, item) => sum + item.amount, 0);
