@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     const auth = await getClerkAuth();
     if (!auth.isAuthenticated) return new NextResponse(null, { status: 204 });
     const user = await requireAppUser();
-    const limit = checkRateLimit(`error-report:${user.id}`, 20, 60_000);
+    const limit = await checkRateLimit(`error-report:${user.id}`, 20, 60_000);
     if (!limit.allowed) return new NextResponse(null, { status: 204 });
 
     const body = await request.json() as ErrorReport;

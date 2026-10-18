@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SubscriptionCard } from "@/components/billing/subscription-card";
+import { clearClerkSessionCookie } from "@/lib/auth/clerk-session-cookie";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export function SettingsScreen() {
@@ -26,7 +27,7 @@ export function SettingsScreen() {
   useEffect(() => { void fetch("/api/account", { cache: "no-store" }).then(async (response) => { if (!response.ok) throw new Error(); return await response.json() as { currency?: string }; }).then((data) => { if (data.currency) setCurrency(data.currency); }).catch(() => undefined); }, []);
   const saveCurrency = async (value: string) => { const previous = currency; setCurrency(value); setSavingCurrency(true); try { const response = await fetch("/api/account", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ currency: value }) }); if (!response.ok) throw new Error(); toast.success(t("Currency updated.")); } catch { setCurrency(previous); toast.error(t("Unable to update account preferences.")); } finally { setSavingCurrency(false); } };
   const exportData = async () => { setExporting(true); try { const response = await fetch("/api/transactions/export?scope=all"); if (!response.ok) throw new Error(); const url = URL.createObjectURL(await response.blob()); const link = document.createElement("a"); link.href = url; link.download = "budgetbuddy-transactions.csv"; link.click(); link.remove(); URL.revokeObjectURL(url); } catch { toast.error(language === "tr" ? "Veriler dışa aktarılamadı." : "Unable to export data."); } finally { setExporting(false); } };
-  const deleteAccount = async () => { setDeleting(true); try { const response = await fetch("/api/account", { method: "DELETE" }); if (!response.ok) throw new Error(); window.location.assign("/"); } catch { toast.error(language === "tr" ? "Hesap silinemedi." : "Unable to delete the account."); setDeleting(false); } };
+  const deleteAccount = async () => { setDeleting(true); try { const response = await fetch("/api/account", { method: "DELETE" }); if (!response.ok) throw new Error(); clearClerkSessionCookie(); await signOut().catch(() => undefined); window.location.assign("/"); } catch { toast.error(language === "tr" ? "Hesap silinemedi." : "Unable to delete the account."); setDeleting(false); } };
   return <div className="settings">
     <nav aria-label={t("Settings sections")}>{["Profile", "Preferences", "Subscription", "Data"].map((label) => <button type="button" key={label} onClick={() => document.getElementById(`settings-${label.toLowerCase()}`)?.scrollIntoView({ behavior: "smooth" })}>{t(label)}</button>)}</nav>
     <section>

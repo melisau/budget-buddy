@@ -58,7 +58,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const user = await requireAppUser();
-    const limit = checkRateLimit(`transactions:${user.id}`, 30, 60_000);
+    const limit = await checkRateLimit(`transactions:${user.id}`, 30, 60_000);
     if (!limit.allowed) return NextResponse.json({ error: "Too many transaction requests. Please try again shortly." }, { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } });
     const payload = transactionRequestSchema.parse(await request.json());
     const transaction = await createTransaction(user, {

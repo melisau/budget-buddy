@@ -54,3 +54,15 @@ export async function createReceiptUrl(path: string) {
   if (error || !data?.signedUrl) throw new Error(`Unable to create a receipt link: ${error?.message ?? "Unknown storage error"}`);
   return data.signedUrl;
 }
+
+/** Removes many receipt files. Storage accepts up to 1000 paths per call. */
+export async function deleteStoredReceipts(paths: ReadonlyArray<string>) {
+  const unique = [...new Set(paths.filter(Boolean))];
+  if (unique.length === 0) return;
+  await ensureBucket();
+  const storage = getSupabaseServerClient().storage.from(bucket);
+  for (let start = 0; start < unique.length; start += 1000) {
+    const { error } = await storage.remove(unique.slice(start, start + 1000));
+    if (error) throw new Error(`Unable to remove receipts: ${error.message}`);
+  }
+}
