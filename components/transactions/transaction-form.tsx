@@ -1,6 +1,7 @@
 "use client";
 
 import { useContext, useEffect, useState } from "react";
+import { notifyFinanceDataChanged } from "@/lib/finance/data-events";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -96,6 +97,7 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
         setReceipt(undefined);
         setReceiptInputKey((current) => current + 1);
       }
+      notifyFinanceDataChanged();
       onSuccess?.();
     } catch (error) {
       toast.error(error instanceof Error && error.message

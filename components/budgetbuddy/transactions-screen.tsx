@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { notifyFinanceDataChanged, useFinanceDataVersion } from "@/lib/finance/data-events";
 import { Check, Download, FileSpreadsheet, Pencil, ReceiptText, Search, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { AddTransaction } from "@/components/budgetbuddy/shared";
@@ -52,10 +53,11 @@ export function TransactionsScreen() {
     }
   }, [language]);
 
+  const dataVersion = useFinanceDataVersion();
   useEffect(() => {
     const timer = window.setTimeout(() => void loadTransactions(), 0);
     return () => window.clearTimeout(timer);
-  }, [loadTransactions]);
+  }, [dataVersion, loadTransactions]);
 
   const filteredTransactions = useMemo(() => {
     const locale = language === "tr" ? "tr-TR" : "en-US";
@@ -86,8 +88,8 @@ export function TransactionsScreen() {
       <Input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} aria-label={t("From date")} />
       <Input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} aria-label={t("To date")} />
       <CsvExport scope={exportScope} />
-      <CsvImport onImported={loadTransactions} />
-      <AddTransaction onCreated={() => void loadTransactions()} />
+      <CsvImport />
+      <AddTransaction />
     </div>
     {loadError && <div className="panel empty-state"><p role="alert">{loadError}</p><Button onClick={() => void loadTransactions()}>{t("Try again")}</Button></div>}
     {isLoading && <div className="panel empty-state" role="status" aria-live="polite"><p>{t("Loading transactions…")}</p></div>}
@@ -96,9 +98,9 @@ export function TransactionsScreen() {
       {filteredTransactions.map((transaction) => <div className="tx-row" role="row" key={transaction.id}>
         <b role="cell">{transaction.title}</b><span role="cell">{t(transaction.category)}</span><span role="cell">{formatTransactionDate(transaction.transactionDate, language)}</span><span role="cell">{t(transaction.accountName)}</span>
         <strong role="cell" className={transaction.type === "income" ? "pos" : "neg"}>{transaction.type === "income" ? "+" : "−"}₺{formatNumber(transaction.amount, language)}</strong>
-        <div role="cell"><TransactionActions transaction={transaction} onChanged={loadTransactions} /></div>
+        <div role="cell"><TransactionActions transaction={transaction} /></div>
       </div>)}
-    </article> : !isLoading && !loadError && <Empty className="panel empty-state"><EmptyHeader><EmptyMedia variant="icon"><Search /></EmptyMedia><EmptyTitle>{hasFilters ? t("No matching transactions") : t("No transactions yet")}</EmptyTitle><EmptyDescription>{hasFilters ? t("Try a different search, or add your first income or expense.") : t("Add your first income or expense to start tracking your money.")}</EmptyDescription></EmptyHeader><EmptyContent><AddTransaction onCreated={() => void loadTransactions()} /></EmptyContent></Empty>}
+    </article> : !isLoading && !loadError && <Empty className="panel empty-state"><EmptyHeader><EmptyMedia variant="icon"><Search /></EmptyMedia><EmptyTitle>{hasFilters ? t("No matching transactions") : t("No transactions yet")}</EmptyTitle><EmptyDescription>{hasFilters ? t("Try a different search, or add your first income or expense.") : t("Add your first income or expense to start tracking your money.")}</EmptyDescription></EmptyHeader><EmptyContent><AddTransaction /></EmptyContent></Empty>}
   </>;
 }
 
@@ -116,7 +118,7 @@ function CsvExport({ scope }: { scope: "personal" | "family" }) {
   return <div className="csv-export"><Button variant="outline" disabled={isDownloading} onClick={() => void download()}><Download />{language === "tr" ? "CSV dışa aktar" : "Export CSV"}</Button></div>;
 }
 
-function TransactionActions({ transaction, onChanged }: { transaction: StoredTransaction; onChanged: () => Promise<void> }) {
+function TransactionActions({ transaction }: { transaction: StoredTransaction }) {
   const t = useT();
   const { language } = useContext(LanguageContext);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -131,7 +133,7 @@ function TransactionActions({ transaction, onChanged }: { transaction: StoredTra
         throw new Error(payload.error);
       }
       toast.success(language === "tr" ? "İşlem silindi." : "Transaction deleted.");
-      await onChanged();
+      notifyFinanceDataChanged();
     } catch (error) {
       toast.error(error instanceof Error && error.message ? error.message : (language === "tr" ? "İşlem silinemedi." : "Unable to delete the transaction."));
     } finally {
@@ -141,7 +143,7 @@ function TransactionActions({ transaction, onChanged }: { transaction: StoredTra
 
   return <div className="tx-actions">
     {transaction.hasReceipt && <ReceiptLink transactionId={transaction.id} language={language} />}
-    <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}><DialogTrigger asChild><Button variant="ghost" size="sm" aria-label={t("Edit transaction")}><Pencil />{t("Edit")}</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>{t("Edit transaction")}</DialogTitle><DialogDescription>{t("Update the transaction details.")}</DialogDescription></DialogHeader><TransactionForm key={transaction.id} transaction={transaction} onSuccess={() => { setIsEditOpen(false); void onChanged(); }} /></DialogContent></Dialog>
+    <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}><DialogTrigger asChild><Button variant="ghost" size="sm" aria-label={t("Edit transaction")}><Pencil />{t("Edit")}</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>{t("Edit transaction")}</DialogTitle><DialogDescription>{t("Update the transaction details.")}</DialogDescription></DialogHeader><TransactionForm key={transaction.id} transaction={transaction} onSuccess={() => setIsEditOpen(false)} /></DialogContent></Dialog>
     <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="sm" disabled={isDeleting} aria-label={t("Delete transaction")}><Trash2 />{t("Delete")}</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{t("Delete this transaction?")}</AlertDialogTitle><AlertDialogDescription>{t("This action cannot be undone.")}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>{t("Cancel")}</AlertDialogCancel><AlertDialogAction variant="destructive" onClick={() => void removeTransaction()}>{t("Delete")}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </div>;
 }
@@ -166,7 +168,7 @@ function formatTransactionDate(value: string, language: "en" | "tr") {
   return new Intl.DateTimeFormat(language === "tr" ? "tr-TR" : "en-US", { day: "numeric", month: "short", year: "numeric" }).format(new Date(`${value}T00:00:00Z`));
 }
 
-function CsvImport({ onImported }: { onImported: () => Promise<void> }) {
+function CsvImport() {
   const t = useT();
   const { language } = useContext(LanguageContext);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -220,7 +222,7 @@ function CsvImport({ onImported }: { onImported: () => Promise<void> }) {
       const payload = await response.json() as { imported?: number; duplicates?: number; error?: string };
       if (!response.ok) throw new Error(payload.error);
       toast.success(language === "tr" ? `${payload.imported ?? 0} işlem aktarıldı${payload.duplicates ? `, ${payload.duplicates} mükerrer satır atlandı` : ""}.` : `${payload.imported ?? 0} transactions imported${payload.duplicates ? `, ${payload.duplicates} duplicates skipped` : ""}.`);
-      await onImported(); setStep(1); setParseResult(undefined); setFileName(undefined);
+      notifyFinanceDataChanged(); setStep(1); setParseResult(undefined); setFileName(undefined);
     } catch (error) { setFileError(error instanceof Error && error.message ? error.message : "Unable to import CSV."); } finally { setIsImporting(false); }
   }
 

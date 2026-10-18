@@ -1,6 +1,7 @@
 "use client";
 
 import { useContext, useEffect, useMemo, useState } from "react";
+import { useFinanceDataVersion } from "@/lib/finance/data-events";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { TrendingUp } from "lucide-react";
 import { LanguageContext, useT } from "@/components/providers/language-provider";
@@ -19,7 +20,8 @@ export function AnalyticsScreen() {
   const t = useT(); const { language } = useContext(LanguageContext); const tr = language === "tr"; const locale = tr ? "tr-TR" : "en-US";
   const [period, setPeriod] = useState("6"); const [month, setMonth] = useState(currentMonth); const [scope, setScope] = useState("personal"); const [accountId, setAccountId] = useState("all"); const [currency, setCurrency] = useState<Currency>("TRY");
   const [data, setData] = useState<AnalyticsData | null>(null); const [loading, setLoading] = useState(true); const [error, setError] = useState<string | null>(null);
-  useEffect(() => { const controller = new AbortController(); const params = new URLSearchParams({ period, month, scope, account: accountId, currency }); void fetch(`/api/analytics?${params}`, { cache: "no-store", signal: controller.signal }).then(async (response) => { const payload = await response.json() as AnalyticsData & { error?: string }; if (!response.ok) throw new Error(payload.error); setData(payload); setError(null); if (payload.filters.accountId !== accountId) setAccountId(payload.filters.accountId); if (payload.filters.currency !== currency) setCurrency(payload.filters.currency); }).catch((reason) => { if (!(reason instanceof DOMException && reason.name === "AbortError")) setError(tr ? "Analizler yüklenemedi." : (reason instanceof Error ? reason.message : "Unable to load analytics.")); }).finally(() => { if (!controller.signal.aborted) setLoading(false); }); return () => controller.abort(); }, [accountId, currency, month, period, scope, tr]);
+  const dataVersion = useFinanceDataVersion();
+  useEffect(() => { const controller = new AbortController(); const params = new URLSearchParams({ period, month, scope, account: accountId, currency }); void fetch(`/api/analytics?${params}`, { cache: "no-store", signal: controller.signal }).then(async (response) => { const payload = await response.json() as AnalyticsData & { error?: string }; if (!response.ok) throw new Error(payload.error); setData(payload); setError(null); if (payload.filters.accountId !== accountId) setAccountId(payload.filters.accountId); if (payload.filters.currency !== currency) setCurrency(payload.filters.currency); }).catch((reason) => { if (!(reason instanceof DOMException && reason.name === "AbortError")) setError(tr ? "Analizler yüklenemedi." : (reason instanceof Error ? reason.message : "Unable to load analytics.")); }).finally(() => { if (!controller.signal.aborted) setLoading(false); }); return () => controller.abort(); }, [accountId, currency, month, period, scope, tr, dataVersion]);
   const money = (value: number) => formatCurrency(value, data?.filters.currency ?? currency, language);
   const monthly = useMemo(() => (data?.monthly ?? []).map((item) => ({ ...item, label: new Intl.DateTimeFormat(locale, { month: "short", year: Number(period) > 6 ? "2-digit" : undefined, timeZone: "UTC" }).format(new Date(`${item.month}-01T00:00:00Z`)) })), [data?.monthly, locale, period]);
   const monthLabel = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${month}-01T00:00:00Z`));

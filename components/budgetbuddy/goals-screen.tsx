@@ -1,6 +1,7 @@
 "use client";
 
 import { useContext, useEffect, useState } from "react";
+import { useFinanceDataVersion } from "@/lib/finance/data-events";
 import { CheckCircle2, Pencil, Plus, Target, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { LanguageContext, useT } from "@/components/providers/language-provider";
@@ -22,7 +23,8 @@ export function GoalsScreen() {
   const [editorOpen, setEditorOpen] = useState(false); const [editing, setEditing] = useState<Goal | null>(null); const [draft, setDraft] = useState<GoalDraft>(emptyDraft);
   const [progressGoal, setProgressGoal] = useState<Goal | null>(null); const [progressAmount, setProgressAmount] = useState(""); const [deleteGoal, setDeleteGoal] = useState<Goal | null>(null);
 
-  useEffect(() => { let active = true; void fetch("/api/goals", { cache: "no-store" }).then(async (response) => { const payload = await response.json() as { goals?: Goal[]; currency?: Currency; error?: string }; if (!response.ok) throw new Error(payload.error); if (active) { setGoals(payload.goals ?? []); setCurrency(payload.currency ?? "TRY"); } }).catch(() => { if (active) setError(tr ? "Hedefler yüklenemedi. Lütfen tekrar deneyin." : "Unable to load goals. Please try again."); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, [tr]);
+  const dataVersion = useFinanceDataVersion();
+  useEffect(() => { let active = true; void fetch("/api/goals", { cache: "no-store" }).then(async (response) => { const payload = await response.json() as { goals?: Goal[]; currency?: Currency; error?: string }; if (!response.ok) throw new Error(payload.error); if (active) { setGoals(payload.goals ?? []); setCurrency(payload.currency ?? "TRY"); } }).catch(() => { if (active) setError(tr ? "Hedefler yüklenemedi. Lütfen tekrar deneyin." : "Unable to load goals. Please try again."); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, [dataVersion, tr]);
   const openCreate = () => { setEditing(null); setDraft(emptyDraft); setEditorOpen(true); };
   const openEdit = (goal: Goal) => { setEditing(goal); setDraft({ name: goal.name, targetAmount: String(goal.target_amount), deadline: goal.deadline ?? "" }); setEditorOpen(true); };
   const replaceGoal = (goal: Goal) => setGoals((current) => current.map((item) => item.id === goal.id ? goal : item));
