@@ -1,0 +1,32 @@
+name: Keep Supabase awake
+
+# Free Supabase projects pause after a week without activity, which takes the
+# app offline. This pings the production health check once a day; the check
+# runs a small database query that counts as activity. A failed check also
+# shows up as a failed run in the Actions tab.
+
+on:
+  schedule:
+    - cron: "17 6 * * *" # every day at 06:17 UTC (09:17 Istanbul)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping production health check
+        env:
+          HEALTH_URL: ${{ vars.HEALTH_CHECK_URL || 'https://budget-buddy-tau-mauve.vercel.app/api/health' }}
+        run: |
+          for attempt in 1 2 3; do
+            status=$(curl -sS -o response.json -w "%{http_code}" --max-time 30 "$HEALTH_URL" || echo "000")
+            echo "Attempt $attempt: HTTP $status $(cat response.json 2>/dev/null)"
+            if [ "$status" = "200" ]; then exit 0; fi
+            sleep 20
+          done
+          echo "::error::Health check failed. The database may be paused: open the Supabase dashboard and restore the project."
+          exit 1
