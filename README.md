@@ -48,7 +48,7 @@ pnpm install
 ```  
 cp .env.example .env.local  
 ```
-4. **Apply database migrations:** Open the **SQL Editor** in your Supabase dashboard and run every SQL file in `supabase/migrations/` in numeric order. Do this for each environment before deploying application code that depends on a new migration.
+4. **Apply database migrations:** Open the **SQL Editor** in your Supabase dashboard and run every SQL file in `supabase/migrations/` in numeric order. Do not run anything in `supabase/migrations-archive/`; those belong to a reverted change (see its README). Do this for each environment before deploying application code that depends on a new migration.
 5. **Run the development server:**  
 ```  
 pnpm dev  
