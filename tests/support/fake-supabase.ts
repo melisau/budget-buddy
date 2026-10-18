@@ -6,10 +6,12 @@ type Result = { data: unknown; error: { message: string } | null; count?: number
 
 const tables = new Map<string, Row[]>();
 let idCounter = 0;
+export const rpcCalls: { name: string; args: unknown }[] = [];
 
 export function resetDatabase(seed: Record<string, Row[]> = {}) {
   tables.clear();
   idCounter = 0;
+  rpcCalls.length = 0;
   for (const [name, rows] of Object.entries(seed)) tables.set(name, rows.map((row) => ({ ...row })));
 }
 
@@ -33,7 +35,13 @@ class Query implements PromiseLike<Result> {
 
   select() { if (this.mode !== "select") this.returning = true; return this; }
   insert(value: Row | Row[]) { this.mode = "insert"; this.payload = Array.isArray(value) ? value : [value]; return this; }
-  upsert(value: Row | Row[]) { this.mode = "upsert"; this.payload = Array.isArray(value) ? value : [value]; return this; }
+  private conflictColumn: string | null = null;
+  upsert(value: Row | Row[], options?: { onConflict?: string }) {
+    this.mode = "upsert";
+    this.payload = Array.isArray(value) ? value : [value];
+    this.conflictColumn = options?.onConflict && !options.onConflict.includes(",") ? options.onConflict : null;
+    return this;
+  }
   update(value: Row) { this.mode = "update"; this.patch = value; return this; }
   delete() { this.mode = "delete"; return this; }
   eq(column: string, value: unknown) { this.filters.push((row) => row[column] === value); return this; }
@@ -58,6 +66,9 @@ class Query implements PromiseLike<Result> {
     let result: Row[];
     if (this.mode === "insert" || this.mode === "upsert") {
       result = this.payload.map((value) => {
+        const key = this.conflictColumn;
+        const existing = key ? rows(this.table).find((row) => row[key] === value[key]) : undefined;
+        if (this.mode === "upsert" && existing) return Object.assign(existing, value);
         const row = { id: value.id ?? `${this.table}-${++idCounter}`, ...value };
         rows(this.table).push(row);
         return row;
@@ -91,7 +102,10 @@ class Query implements PromiseLike<Result> {
 
 const client = {
   from: (table: string) => new Query(table),
-  rpc: async () => ({ data: null, error: { message: "rpc not available in tests" } }),
+  rpc: async (name: string, args: unknown) => {
+    rpcCalls.push({ name, args });
+    return { data: true, error: null };
+  },
   storage: { from: () => ({ remove: async () => ({ error: null }) }) },
 };
 
