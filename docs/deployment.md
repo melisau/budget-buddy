@@ -52,6 +52,14 @@ When application code depends on a schema change:
 
 Do not run a production migration command or Dashboard operation without explicit team approval.
 
+## Migration 0012 — shared rate limits
+
+`0012_rate_limits.sql` adds the `rate_limit_buckets` table and the service-role-only
+`check_rate_limit()` function used by the transaction, assistant and error-report APIs.
+The application falls back to a per-instance in-memory limit (and logs
+`[rate-limit] shared limiter unavailable`) until the migration is applied, so it is safe
+to deploy the code first. Apply it to Dev, verify, then apply it to Prod.
+
 ## Production smoke test
 
 After every production deployment, verify that:

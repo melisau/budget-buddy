@@ -1,5 +1,6 @@
 import { createClerkClient, verifyToken, type User } from "@clerk/backend";
 import { cookies, headers } from "next/headers";
+import { AUTH_IDENTITY_HEADER, verifyAuthIdentity } from "@/lib/auth/auth-header-signature";
 import { CLERK_SESSION_COOKIE } from "@/lib/auth/clerk-session-cookie";
 
 export type ClerkAuthState = {
@@ -16,11 +17,11 @@ function clerkSecretKey(): string {
 }
 
 export async function getClerkAuth(): Promise<ClerkAuthState> {
+  // Only an identity signed by proxy.ts is trusted. Unsigned or forged
+  // headers fall through to the verified Clerk session cookie below.
   const requestHeaders = await headers();
-  const isAuthenticated = requestHeaders.get("x-clerk-auth-status") === "signed-in";
-  const userId = requestHeaders.get("x-budget-buddy-user-id")?.trim() || null;
-
-  if (isAuthenticated && userId) return { isAuthenticated: true, userId };
+  const signedUserId = await verifyAuthIdentity(requestHeaders.get(AUTH_IDENTITY_HEADER));
+  if (signedUserId) return { isAuthenticated: true, userId: signedUserId };
 
   const token = (await cookies()).get(CLERK_SESSION_COOKIE)?.value;
   if (!token) return { isAuthenticated: false, userId: null };
@@ -52,6 +53,13 @@ export async function getCurrentClerkUser(userId: string): Promise<User> {
   return createClerkClient({ secretKey: clerkSecretKey() }).users.getUser(userId);
 }
 
+/** Deletes the Clerk user. A user that is already gone counts as deleted so retries succeed. */
 export async function deleteClerkUser(userId: string): Promise<void> {
-  await createClerkClient({ secretKey: clerkSecretKey() }).users.deleteUser(userId);
+  try {
+    await createClerkClient({ secretKey: clerkSecretKey() }).users.deleteUser(userId);
+  } catch (error) {
+    const status = error && typeof error === "object" && "status" in error ? Number(error.status) : undefined;
+    if (status === 404) return;
+    throw error;
+  }
 }

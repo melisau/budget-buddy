@@ -86,7 +86,7 @@ async function getCurrentEurTryAnswer(language: "tr" | "en") {
 export async function POST(request: Request) {
   try {
     const user = await requireAppUser();
-    const limit = checkRateLimit(`assistant:${user.id}`, 12, 60_000);
+    const limit = await checkRateLimit(`assistant:${user.id}`, 12, 60_000);
     if (!limit.allowed) return NextResponse.json({ error: "Too many assistant requests. Please try again shortly." }, { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } });
     const { question, language, conversationId } = (await request.json()) as { question?: unknown; language?: unknown; conversationId?: unknown };
     if (typeof question !== "string" || question.trim().length < 2 || question.length > 800) {
