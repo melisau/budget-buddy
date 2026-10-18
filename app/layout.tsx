@@ -6,20 +6,35 @@ import {LanguageProvider} from "@/components/providers/language-provider";
 import {ErrorReportingProvider} from "@/components/providers/error-reporting-provider";
 import {Toaster} from "@/components/ui/sonner";
 import {SkipLink} from "@/components/layout/skip-link";
+import { BRAND_COLOR, SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "BudgetBuddy — Personal finance, made clear",
-  description: "Track spending, plan budgets, grow savings goals, and understand your finances with simple AI-powered insights.",
-  icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
+  metadataBase: new URL(SITE_URL),
+  title: { default: SITE_TITLE, template: `%s · ${SITE_NAME}` },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  keywords: ["personal finance", "budget app", "expense tracker", "savings goals", "family budget", "bütçe uygulaması", "harcama takibi", "gelir gider takibi", "aile bütçesi", "birikim hedefi"],
+  authors: [{ name: "Melisa Uyar" }],
+  alternates: { canonical: "/" },
+  icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
+  openGraph: {
+    type: "website",
+    url: "/",
+    siteName: SITE_NAME,
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    locale: "en_US",
+    alternateLocale: ["tr_TR"],
   },
+  twitter: { card: "summary_large_image", title: SITE_TITLE, description: SITE_DESCRIPTION },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: BRAND_COLOR,
 };
 
 export default function RootLayout({
