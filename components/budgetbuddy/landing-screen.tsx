@@ -135,7 +135,7 @@ export function LandingScreen({ go }: { go: Navigate }) {
           <div className="hero-ui">
             <div className="balance"><span>{t("Total balance")}<small>{t("All accounts")}</small></span><strong>₺82,600</strong></div>
             <div className="hero-chart">
-              <ResponsiveContainer>
+              <ResponsiveContainer minWidth={0} initialDimension={{ width: 320, height: 220 }}>
                 <AreaChart data={flow}>
                   <defs><linearGradient id="landing-balance-gradient"><stop stopColor="#5367df" stopOpacity=".3" /><stop offset="1" stopColor="#5367df" stopOpacity="0" /></linearGradient></defs>
                   <Area dataKey="income" stroke="#5367df" strokeWidth={3} fill="url(#landing-balance-gradient)" />
