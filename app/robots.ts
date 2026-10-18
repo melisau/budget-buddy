@@ -3,7 +3,8 @@ import { SITE_URL } from "@/lib/site";
 
 const PRIVATE_PATHS = [
   "/api/",
-  "/__clerk/",
+  "/forgot-password",
+  "/update-password",
   "/auth/",
   "/dashboard",
   "/accounts",

@@ -7,7 +7,7 @@ const fakes = new URL("./", import.meta.url);
 // Modules that talk to external services are replaced in tests.
 const overrides = {
   "@/lib/supabase/server": new URL("fake-supabase.ts", fakes).href,
-  "@/lib/auth/clerk-server": new URL("fake-clerk.ts", fakes).href,
+  "@/lib/auth/supabase-server": new URL("fake-auth.ts", fakes).href,
   "@/lib/auth/app-user": new URL("fake-app-user.ts", fakes).href,
 };
 
