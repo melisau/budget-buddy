@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { requireAppUser } from "@/lib/auth/authorization";
-import { deleteClerkUser } from "@/lib/auth/clerk-server";
+import { AccessError, requireAppUser } from "@/lib/auth/authorization";
+import { sameOriginFormOrigin } from "@/lib/auth/request-origin";
 import { getStripe } from "@/lib/billing/stripe";
 import { deleteStoredReceipts } from "@/lib/finance/receipt-storage";
 import { captureException } from "@/lib/monitoring/sentry";
+import { createSupabaseAuthClient } from "@/lib/supabase/auth-server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 const supportedCurrencies = new Set(["TRY", "EUR", "USD", "GBP"]);
@@ -21,7 +22,7 @@ export async function GET() {
     return NextResponse.json(data);
   } catch (error) {
     console.error("[account] preferences could not be loaded", error);
-    return NextResponse.json({ error: "Unable to load account preferences." }, { status: 500 });
+    return NextResponse.json({ error: "Unable to load account preferences." }, { status: error instanceof AccessError ? error.status : 500 });
   }
 }
 
@@ -45,17 +46,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json(data);
   } catch (error) {
     console.error("[account] preferences could not be updated", error);
-    return NextResponse.json({ error: "Unable to update account preferences." }, { status: 500 });
-  }
-}
-
-function isSameOrigin(request: Request): boolean {
-  const origin = request.headers.get("origin");
-  if (!origin) return request.headers.get("sec-fetch-site") === "same-origin";
-  try {
-    return new URL(origin).host === new URL(request.url).host;
-  } catch {
-    return false;
+    return NextResponse.json({ error: "Unable to update account preferences." }, { status: error instanceof AccessError ? error.status : 500 });
   }
 }
 
@@ -78,27 +69,23 @@ async function logDeletionFailure(userId: string, step: string, error: unknown) 
 /**
  * Deletes the signed-in user's account.
  *
- * Order matters:
  * 1. Cancel any Stripe subscription first, so a deleted user is never billed.
- *    If this fails, nothing else is touched and the user can retry.
- * 2. Delete the Clerk identity. After this the user can no longer sign in, so
- *    a later failure cannot cause the account to be silently recreated with
- *    starter data on next sign-in. A Clerk failure also stops here.
- * 3. Delete the application row; foreign keys cascade to personal records.
- *    Failures are retried once and logged with the app user ID for cleanup.
- * 4. Remove receipt files, which are not covered by SQL cascades.
+ *    If this fails, nothing is deleted and the user can retry.
+ * 2. Delete the Supabase Auth identity. The users row references auth.users
+ *    with ON DELETE CASCADE, so the identity and all personal finance records
+ *    are removed in one PostgreSQL transaction: either everything or nothing.
+ * 3. Remove receipt files from Storage (not covered by SQL cascades).
  */
 export async function DELETE(request: Request) {
-  if (!isSameOrigin(request)) {
-    return NextResponse.json({ error: "Cross-site requests are not allowed." }, { status: 403 });
+  if (!sameOriginFormOrigin(request)) {
+    return NextResponse.json({ error: "Same-origin request required." }, { status: 403 });
   }
 
   let user: Awaited<ReturnType<typeof requireAppUser>>;
   try {
     user = await requireAppUser();
   } catch (error) {
-    console.error("[account] deletion rejected", error);
-    return NextResponse.json({ error: "Sign in is required." }, { status: 401 });
+    return NextResponse.json({ error: "Sign in is required." }, { status: error instanceof AccessError ? error.status : 500 });
   }
 
   const supabase = getSupabaseServerClient();
@@ -141,18 +128,10 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Unable to delete the account." }, { status: 500 });
   }
 
-  try {
-    await deleteClerkUser(user.clerkUserId);
-  } catch (error) {
-    await logDeletionFailure(user.id, "delete-identity", error);
+  const { error: deleteError } = await supabase.auth.admin.deleteUser(user.authUserId);
+  if (deleteError) {
+    await logDeletionFailure(user.id, "delete-identity", deleteError);
     return NextResponse.json({ error: "Unable to delete the account." }, { status: 500 });
-  }
-
-  let dataDeleted = false;
-  for (let attempt = 0; attempt < 2 && !dataDeleted; attempt += 1) {
-    const { error } = await supabase.from("users").delete().eq("id", user.id);
-    if (!error) dataDeleted = true;
-    else if (attempt === 1) await logDeletionFailure(user.id, "delete-app-data", error);
   }
 
   try {
@@ -161,7 +140,11 @@ export async function DELETE(request: Request) {
     await logDeletionFailure(user.id, "delete-receipts", error);
   }
 
-  // The identity is gone either way, so the user is signed out. Remaining data
-  // has been logged above for operator cleanup.
+  try {
+    const client = await createSupabaseAuthClient();
+    await client.auth.signOut({ scope: "local" });
+  } catch {
+    // The identity no longer exists; clearing local cookies is best effort.
+  }
   return new NextResponse(null, { status: 204 });
 }

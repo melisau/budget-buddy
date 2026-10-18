@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, test } from "node:test";
 import { resetDatabase, rows } from "./support/fake-supabase.ts";
-import { setSignedInClerkUser } from "./support/fake-clerk.ts";
+import { setSignedInAuthUser } from "./support/fake-auth.ts";
 import {
   AccessError,
   getAcceptedFamilyRole,
@@ -19,7 +19,7 @@ import { createTransaction, listTransactionData, type TransactionPayload } from 
 //   dave:  accepted viewer of "home" (read-only)
 //   erin:  invited to "home" but has not accepted
 //   mallory: unrelated user
-const user = (id: string): AppUser => ({ id, clerkUserId: `clerk_${id}`, email: `${id}@example.com`, name: id });
+const user = (id: string): AppUser => ({ id, authUserId: `auth-${id}`, email: `${id}@example.com`, name: id });
 const alice = user("alice");
 const bob = user("bob");
 const dave = user("dave");
@@ -28,7 +28,7 @@ const mallory = user("mallory");
 
 function seed() {
   resetDatabase({
-    users: [alice, bob, dave, erin, mallory].map((u) => ({ id: u.id, clerk_user_id: u.clerkUserId, email: u.email, name: u.name })),
+    users: [alice, bob, dave, erin, mallory].map((u) => ({ id: u.id, auth_user_id: u.authUserId, email: u.email, name: u.name })),
     family_groups: [{ id: "home", owner_user_id: "alice", name: "Home" }],
     family_members: [
       { id: "m1", family_group_id: "home", user_id: "alice", role: "owner", invitation_status: "accepted" },
@@ -79,7 +79,7 @@ const payload = (overrides: Partial<TransactionPayload> = {}): TransactionPayloa
 
 beforeEach(() => {
   seed();
-  setSignedInClerkUser(null);
+  setSignedInAuthUser(null);
 });
 
 describe("sign-in", () => {
@@ -87,8 +87,8 @@ describe("sign-in", () => {
     await rejectsWith(requireAppUser(), 401);
   });
 
-  test("the signed-in Clerk user maps to their own app user", async () => {
-    setSignedInClerkUser("clerk_bob");
+  test("the verified Supabase Auth user maps to their own app user", async () => {
+    setSignedInAuthUser("auth-bob");
     const appUser = await requireAppUser();
     assert.equal(appUser.id, "bob");
   });

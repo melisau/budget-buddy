@@ -6,6 +6,7 @@ export const VIEW_PATHS: Record<View, string> = {
   signup: "/sign-up",
   dashboard: "/dashboard",
   family: "/family",
+  wishlists: "/wishlists",
   transactions: "/transactions",
   budgets: "/budgets",
   accounts: "/accounts",

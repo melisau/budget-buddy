@@ -1,14 +1,16 @@
+-- Supabase Auth cutover (originally 0010, archived while Clerk was in use).
+-- Idempotent: safe to run on a database that already ran the old 0010.
 -- Expand-only identity migration. Do not rewrite users.id or any financial FK.
 -- Existing Clerk identifiers remain as audit/migration data, not credentials.
 begin;
 
 alter table public.users alter column clerk_user_id drop not null;
-alter table public.users add column auth_user_id uuid unique
+alter table public.users add column if not exists auth_user_id uuid unique
   references auth.users(id) on delete cascade;
 
 -- Explicit identity mapping only. No automatic email-based account takeover.
 -- This RPC is restricted to the service role; use after verifying both identities.
-create function public.link_legacy_auth_user(p_app_user_id uuid, p_auth_user_id uuid)
+create or replace function public.link_legacy_auth_user(p_app_user_id uuid, p_auth_user_id uuid)
 returns void language plpgsql security definer set search_path = '' as $$
 declare
   target public.users%rowtype;
@@ -39,7 +41,7 @@ $$;
 revoke all on function public.link_legacy_auth_user(uuid, uuid) from public, anon, authenticated;
 grant execute on function public.link_legacy_auth_user(uuid, uuid) to service_role;
 
-create function public.sync_authenticated_user()
+create or replace function public.sync_authenticated_user()
 returns uuid language plpgsql security definer set search_path = '' as $$
 declare
   identity auth.users%rowtype;
@@ -84,5 +86,8 @@ grant execute on function public.seed_user_starter_data(uuid) to service_role;
 -- RLS remains deny-by-default. APIs verify identity, ownership and family role
 -- before using the server-only privileged data client.
 comment on column public.users.auth_user_id is 'Verified Supabase Auth identity; users.id remains the stable finance owner';
-comment on column public.users.clerk_user_id is 'Legacy migration/audit identifier only; no runtime authentication';
+comment on column public.users.clerk_user_id is 'Legacy Clerk identifier kept for audit only; no runtime authentication';
+-- 0013 closed browser access while Clerk was active; Supabase Auth needs it again.
+revoke all on function public.sync_authenticated_user() from public, anon;
+grant execute on function public.sync_authenticated_user() to authenticated;
 commit;

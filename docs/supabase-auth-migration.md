@@ -18,7 +18,7 @@ derives its identity from `auth.uid()` and requires a confirmed active account.
 ## Development setup (no production operations)
 
 1. In a **development** Supabase project, apply pending migrations in order,
-   including `0010_supabase_auth.sql`. Never rerun already-applied migrations.
+   including `0014_supabase_auth.sql`. Never rerun already-applied migrations.
 2. Set these variables in that checkout's ignored `.env.local`:
 
    ```dotenv
@@ -59,7 +59,7 @@ derives its identity from `auth.uid()` and requires a confirmed active account.
 
 ## Existing users: preserve data and explicitly map identity
 
-Migration 0010 keeps `public.users.id` and every financial foreign key unchanged.
+Migration 0014 keeps `public.users.id` and every financial foreign key unchanged.
 It adds a unique nullable `auth_user_id` referencing `auth.users`, and makes the
 legacy `clerk_user_id` nullable. No user/finance rows are deleted or reassigned.
 Old Clerk sessions/passwords are not automatically converted to Supabase sessions.
@@ -119,4 +119,4 @@ Production migration, data changes and deployment require a separate release ste
 
 Rollback application code only while Clerk credentials and legacy IDs still exist;
 new Supabase-only accounts will not be able to log in to the old Clerk build.
-Keep migration 0010 in place; use a forward fix rather than dropping data columns.
+Keep Migration 0014 in place; use a forward fix rather than dropping data columns.

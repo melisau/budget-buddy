@@ -1,20 +1,22 @@
 "use client";
-import { UserButton, useUser } from "@clerk/react";
+import { useAuthUser } from "@/components/providers/auth-provider";
 import {useContext,useState,type ReactNode} from "react";
-import {ChartNoAxesCombined,ChevronRight,Home,Landmark,LayoutDashboard,MoreHorizontal,Plus,ReceiptText,Settings,Sparkles,Target,Users,WalletCards} from "lucide-react";
+import {ChartNoAxesCombined,ChevronRight,Gift,Home,Landmark,LayoutDashboard,MoreHorizontal,Plus,ReceiptText,Settings,Sparkles,Target,Users,WalletCards} from "lucide-react";
 import {Progress} from "@/components/ui/progress";
 import {Sheet,SheetClose,SheetContent,SheetDescription,SheetHeader,SheetTitle,SheetTrigger} from "@/components/ui/sheet";
 import {LanguageContext,LanguageSelect,useT} from "@/components/providers/language-provider";
 import {Logo} from "@/components/layout/logo";
 import { SavingsJarIcon } from "@/components/budgetbuddy/savings-jar-icon";
+import { BILLING_ENABLED } from "@/lib/billing/launch";
 
-export type AppView="dashboard"|"family"|"transactions"|"budgets"|"accounts"|"goals"|"analytics"|"assistant"|"settings";
+export type AppView="dashboard"|"family"|"wishlists"|"transactions"|"budgets"|"accounts"|"goals"|"analytics"|"assistant"|"settings";
 type Navigate=(view:AppView|"landing")=>void;
 type Prefetch=(view:AppView)=>void;
 
 export const APP_NAVIGATION=[
  ["dashboard","Dashboard",LayoutDashboard],
  ["family","Family Group",Users],
+ ["wishlists","Wishlists",Gift],
  ["transactions","Transactions",ReceiptText],
  ["budgets","Budgets",SavingsJarIcon],
  ["accounts","Accounts",Landmark],
@@ -26,17 +28,19 @@ export const APP_NAVIGATION=[
 
 export function AppSidebar({view,go,prefetch}:{view:AppView;go:Navigate;prefetch?:Prefetch}){
  const t=useT();
- const {user}=useUser();
- const displayName=user?.fullName||user?.primaryEmailAddress?.emailAddress||"BudgetBuddy";
- const email=user?.primaryEmailAddress?.emailAddress||"";
+ const {user}=useAuthUser();
+ const displayName=typeof user?.user_metadata.full_name === "string" ? user.user_metadata.full_name : user?.email||"BudgetBuddy";
+ const email=user?.email||"";
  return <aside className="sidebar">
   <Logo go={()=>go("landing")}/>
   <small>{t("WORKSPACE")}</small>
   <nav aria-label={t("Main navigation")}>{APP_NAVIGATION.map(([id,label,Icon])=>
    <button type="button" className={view===id?"active":""} aria-current={view===id?"page":undefined} onClick={()=>go(id)} onMouseEnter={()=>prefetch?.(id)} onFocus={()=>prefetch?.(id)} key={id}><Icon aria-hidden="true"/>{t(label)}{id==="assistant"&&<em>AI</em>}</button>
   )}</nav>
-  <div className="plan"><b><Sparkles aria-hidden="true"/>{t("Core plan")}</b><small>{t("12 days in trial")}</small><Progress value={60} aria-label={t("Trial progress")} /><button type="button" onClick={()=>go("settings")}>{t("View plan")}<ChevronRight aria-hidden="true"/></button></div>
-  <div className="profile"><UserButton/><b>{displayName}<small>{email}</small></b><MoreHorizontal aria-hidden="true"/></div>
+  {BILLING_ENABLED
+   ? <div className="plan"><b><Sparkles aria-hidden="true"/>{t("Core plan")}</b><small>{t("12 days in trial")}</small><Progress value={60} aria-label={t("Trial progress")} /><button type="button" onClick={()=>go("settings")}>{t("View plan")}<ChevronRight aria-hidden="true"/></button></div>
+   : <div className="plan"><b><Sparkles aria-hidden="true"/>{t("Free during launch")}</b><small>{t("Every feature is free during launch")}</small></div>}
+  <div className="profile"><button type="button" onClick={()=>go("settings")} aria-label={t("Manage account")}><Settings aria-hidden="true"/></button><b>{displayName}<small>{email}</small></b></div>
  </aside>;
 }
 

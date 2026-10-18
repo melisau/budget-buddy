@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getClerkAuth } from "@/lib/auth/clerk-server";
+import { getCurrentUser } from "@/lib/auth/supabase-server";
 import { requireAppUser } from "@/lib/auth/authorization";
 import { captureException } from "@/lib/monitoring/sentry";
 import { checkRateLimit } from "@/lib/security/rate-limit";
@@ -29,8 +29,7 @@ export async function POST(request: Request) {
     const stack = trim(body.stack, 4_000);
     const path = trim(body.path, 500);
 
-    const auth = await getClerkAuth();
-    if (!auth.isAuthenticated) {
+    if (!await getCurrentUser()) {
       const limit = await checkRateLimit(`error-report:anon:${clientAddress(request)}`, 10, 60_000);
       if (limit.allowed) {
         const error = new Error(message);
