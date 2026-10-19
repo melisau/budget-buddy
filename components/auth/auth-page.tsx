@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useContext, useState } from "react";
+import { LanguageContext } from "@/components/providers/language-provider";
 import { ArrowRight, Check, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, Sparkles, WalletCards } from "lucide-react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ const copy: Record<AuthMode, { eyebrow: string; title: string; description: stri
 
 export function AuthPage({ mode, redirectTo = "/dashboard", errorCode = "", status = "" }: { mode: AuthMode; redirectTo?: "/dashboard" | "/family"; errorCode?: string; status?: string }) {
   const [busy, setBusy] = useState(false);
+  const { language } = useContext(LanguageContext);
   const [showPassword, setShowPassword] = useState(false);
   const [googleError, setError] = useState("");
   const message = typeof authMessages[status] === "string" ? authMessages[status] : "";
@@ -71,6 +73,7 @@ export function AuthPage({ mode, redirectTo = "/dashboard", errorCode = "", stat
           <form method="post" action="/auth/submit" onSubmit={() => setBusy(true)} className="space-y-5">
             <input type="hidden" name="mode" value={mode} />
             <input type="hidden" name="redirect" value={redirectTo} />
+            <input type="hidden" name="language" value={language} />
             {mode === "sign-up" && <label className="block text-sm font-semibold text-[#34415f]">Ad soyad<Input name="name" autoComplete="name" maxLength={100} placeholder="Adınız ve soyadınız" className="mt-2 h-12 rounded-xl bg-white px-4 text-sm shadow-none" required /></label>}
             {mode !== "update-password" && <div><label htmlFor="auth-email" className="text-sm font-semibold text-[#34415f]">E-posta adresi</label><div className="relative mt-2"><Mail className="pointer-events-none absolute left-4 top-3.5 size-5 text-[#9aa4b8]" aria-hidden="true" /><Input id="auth-email" name="email" type="email" autoComplete="email" placeholder="ornek@eposta.com" className="h-12 rounded-xl bg-white pl-12 pr-4 text-sm shadow-none" required /></div></div>}
             {mode !== "forgot-password" && <div><div className="flex items-center justify-between gap-3"><label htmlFor="auth-password" className="text-sm font-semibold text-[#34415f]">{mode === "update-password" ? "Yeni şifre" : "Şifre"}</label>{mode === "sign-in" && <Link href="/forgot-password" className="text-sm font-semibold text-[#5267df] hover:underline">Şifremi unuttum</Link>}</div><div className="relative mt-2"><LockKeyhole className="pointer-events-none absolute left-4 top-3.5 size-5 text-[#9aa4b8]" aria-hidden="true" /><Input id="auth-password" name="password" type={showPassword ? "text" : "password"} autoComplete={mode === "sign-in" ? "current-password" : "new-password"} minLength={mode === "sign-in" ? 1 : 8} maxLength={128} placeholder={mode === "sign-in" ? "Şifrenizi girin" : "En az 8 karakter"} className="h-12 rounded-xl bg-white pl-12 pr-12 text-sm shadow-none" required /><button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-3 top-2.5 grid size-7 place-items-center rounded-md text-[#8993a8] hover:text-[#4258d5]" aria-label={showPassword ? "Şifreyi gizle" : "Şifreyi göster"}>{showPassword ? <EyeOff className="size-5" aria-hidden="true" /> : <Eye className="size-5" aria-hidden="true" />}</button></div></div>}

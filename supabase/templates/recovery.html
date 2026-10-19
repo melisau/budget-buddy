@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>BudgetBuddy</title>
+</head>
+<body style="margin:0;padding:0;background:#f6f7fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#17213c">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f7fb;padding:32px 16px">
+  <tr><td align="center">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border:1px solid #e3e6ee;border-radius:16px">
+      <tr><td style="padding:28px 32px 0">
+        <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+          <td style="background:#4258d5;border-radius:10px;width:36px;height:36px;text-align:center;color:#ffffff;font-weight:800;font-size:18px">B</td>
+          <td style="padding-left:10px;font-size:20px;font-weight:800">Budget<span style="color:#4258d5">Buddy</span></td>
+        </tr></table>
+      </td></tr>
+      <tr><td style="padding:24px 32px 32px">
+{{ if eq .Data.language "en" }}
+<div style="display:none;max-height:0;overflow:hidden;opacity:0">Use this link to choose a new password.</div>
+<h1 style="margin:0 0 12px;font-size:22px;line-height:30px">Reset your password</h1>
+<p style="margin:0;font-size:15px;line-height:24px;color:#4a5570">We received a request to reset your BudgetBuddy password. Click the button below to choose a new one.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0"><tr><td style="background:#4258d5;border-radius:10px">
+  <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery" style="display:inline-block;padding:13px 24px;color:#ffffff;font-weight:700;font-size:15px;text-decoration:none">Choose a new password</a>
+</td></tr></table>
+<p style="margin:0 0 12px;font-size:13px;line-height:20px;color:#6b7590">If you didn't request this, you can ignore this email; your password won't change.</p>
+<p style="margin:0;font-size:12px;line-height:18px;color:#8a93a8">If the button doesn't work, paste this link into your browser:<br><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery" style="color:#4258d5;word-break:break-all">{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery</a></p>
+{{ else }}
+<div style="display:none;max-height:0;overflow:hidden;opacity:0">Yeni bir şifre belirlemek için bağlantıya tıkla.</div>
+<h1 style="margin:0 0 12px;font-size:22px;line-height:30px">Şifreni sıfırla</h1>
+<p style="margin:0;font-size:15px;line-height:24px;color:#4a5570">BudgetBuddy hesabın için şifre sıfırlama isteği aldık. Yeni bir şifre belirlemek için aşağıdaki butona tıkla.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0"><tr><td style="background:#4258d5;border-radius:10px">
+  <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery" style="display:inline-block;padding:13px 24px;color:#ffffff;font-weight:700;font-size:15px;text-decoration:none">Yeni şifre belirle</a>
+</td></tr></table>
+<p style="margin:0 0 12px;font-size:13px;line-height:20px;color:#6b7590">Bu isteği sen yapmadıysan bu e-postayı yok sayabilirsin; şifren değişmez.</p>
+<p style="margin:0;font-size:12px;line-height:18px;color:#8a93a8">Buton çalışmazsa bu bağlantıyı tarayıcına yapıştır:<br><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery" style="color:#4258d5;word-break:break-all">{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery</a></p>
+{{ end }}
+      </td></tr>
+    </table>
+    <p style="max-width:520px;margin:16px auto 0;font-size:12px;line-height:18px;color:#8a93a8;text-align:center">BudgetBuddy · <a href="{{ .SiteURL }}" style="color:#8a93a8">budgetbuddy.melisauyar.com</a></p>
+  </td></tr>
+</table>
+</body>
+</html>
