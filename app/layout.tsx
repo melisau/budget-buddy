@@ -3,6 +3,7 @@ import "./globals.css";
 import "./mobile.css";
 import {AuthProvider} from "@/components/providers/auth-provider";
 import {LanguageProvider} from "@/components/providers/language-provider";
+import {AuthLanguageSync} from "@/components/providers/auth-language-sync";
 import {ErrorReportingProvider} from "@/components/providers/error-reporting-provider";
 import {Toaster} from "@/components/ui/sonner";
 import {SkipLink} from "@/components/layout/skip-link";
@@ -49,7 +50,7 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <AuthProvider>
-          <LanguageProvider><SkipLink/><ErrorReportingProvider>{children}</ErrorReportingProvider><Toaster richColors/></LanguageProvider>
+          <LanguageProvider><AuthLanguageSync/><SkipLink/><ErrorReportingProvider>{children}</ErrorReportingProvider><Toaster richColors/></LanguageProvider>
         </AuthProvider>
       </body>
     </html>

@@ -32,7 +32,8 @@ export async function POST(request: Request) {
     if (mode === "sign-up") {
       const { data, error } = await client.auth.signUp({ email, password, options: {
         emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
-        data: { full_name: String(form.get("name") ?? "").trim().slice(0, 100) },
+        // Email templates read .Data.language; Turkish unless English was chosen.
+        data: { full_name: String(form.get("name") ?? "").trim().slice(0, 100), language: form.get("language") === "en" ? "en" : "tr" },
       } });
       if (error) return failure(authErrorCode(error));
       return respond(data.session ? next : "/sign-up?status=confirmation");
