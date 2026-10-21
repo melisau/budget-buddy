@@ -1,0 +1,80 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Single source of truth for the web app this package opens.
+def twa = [
+    applicationId   : 'com.melisauyar.budgetbuddy', // Must match lib/android/asset-links.ts
+    hostName        : 'budgetbuddy.melisauyar.com',
+    launchUrl       : '/dashboard?source=android',
+    name            : 'BudgetBuddy',
+    launcherName    : 'BudgetBuddy',
+    themeColor      : '#4258D5',
+    navigationColor : '#FFFFFF',
+    backgroundColor : '#F6F7FB',
+]
+
+// Release versions: bump versionCode for every upload to Google Play.
+// CI can override with -PversionCode=... -PversionName=...
+def appVersionCode = (project.findProperty('versionCode') ?: '1') as Integer
+def appVersionName = (project.findProperty('versionName') ?: '1.0.0') as String
+
+android {
+    namespace twa.applicationId
+    compileSdk 36
+
+    defaultConfig {
+        applicationId twa.applicationId
+        minSdk 26
+        targetSdk 36
+        versionCode appVersionCode
+        versionName appVersionName
+
+        resValue "string", "appName", twa.name
+        resValue "string", "launcherName", twa.launcherName
+        resValue "string", "hostName", twa.hostName
+        resValue "string", "launchUrl", "https://" + twa.hostName + twa.launchUrl
+        resValue "string", "providerAuthority", twa.applicationId + ".fileprovider"
+        resValue "color", "colorPrimary", twa.themeColor
+        resValue "color", "colorPrimaryDark", twa.themeColor
+        resValue "color", "navigationColor", twa.navigationColor
+        resValue "color", "navigationColorDark", "#17213C"
+        resValue "color", "backgroundColor", twa.backgroundColor
+    }
+
+    // The upload key is supplied by CI through environment variables and is
+    // never committed (the repository is public). Without it the release
+    // bundle is built unsigned, which is enough to verify the build.
+    def keystorePath = System.getenv('ANDROID_UPLOAD_KEYSTORE_PATH')
+    if (keystorePath) {
+        signingConfigs {
+            upload {
+                storeFile file(keystorePath)
+                storePassword System.getenv('ANDROID_UPLOAD_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ANDROID_UPLOAD_KEY_ALIAS') ?: 'upload'
+                keyPassword System.getenv('ANDROID_UPLOAD_KEY_PASSWORD') ?: System.getenv('ANDROID_UPLOAD_KEYSTORE_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+            if (keystorePath) signingConfig signingConfigs.upload
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        checkReleaseBuilds false
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.4'
+}

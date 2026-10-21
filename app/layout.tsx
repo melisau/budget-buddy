@@ -4,6 +4,7 @@ import "./mobile.css";
 import {AuthProvider} from "@/components/providers/auth-provider";
 import {LanguageProvider} from "@/components/providers/language-provider";
 import {AuthLanguageSync} from "@/components/providers/auth-language-sync";
+import {ServiceWorkerRegistration} from "@/components/providers/service-worker-registration";
 import {ErrorReportingProvider} from "@/components/providers/error-reporting-provider";
 import {Toaster} from "@/components/ui/sonner";
 import {SkipLink} from "@/components/layout/skip-link";
@@ -29,6 +30,7 @@ export const metadata: Metadata = {
   },
   twitter: { card: "summary_large_image", title: SITE_TITLE, description: SITE_DESCRIPTION },
   formatDetection: { telephone: false },
+  appleWebApp: { capable: true, title: SITE_NAME, statusBarStyle: "default" },
   // Optional: Search Console "HTML tag" verification. DNS verification needs no code.
   ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
 };
@@ -49,7 +51,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <AuthProvider>
-          <LanguageProvider><AuthLanguageSync/><SkipLink/><ErrorReportingProvider>{children}</ErrorReportingProvider><Toaster richColors/></LanguageProvider>
+          <LanguageProvider><AuthLanguageSync/><ServiceWorkerRegistration/><SkipLink/><ErrorReportingProvider>{children}</ErrorReportingProvider><Toaster richColors/></LanguageProvider>
         </AuthProvider>
       </body>
     </html>
