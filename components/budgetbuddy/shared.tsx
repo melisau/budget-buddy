@@ -3,7 +3,7 @@
 import { ChevronRight, Plus, type LucideIcon } from "lucide-react";
 import { TransactionForm } from "@/components/transactions/transaction-form";
 import { LanguageContext, useT } from "@/components/providers/language-provider";
-import { useContext } from "react";
+import { useContext, type ReactNode } from "react";
 import { calculateBudgetUsage } from "@/lib/finance/calculations";
 import { formatNumber } from "@/lib/finance/currency";
 import type { BudgetSummary } from "@/types/finance";
@@ -34,9 +34,9 @@ export function BudgetRow({ budget }: { budget: BudgetRowData }) {
   return <div className="budget-row"><div><b>{t(budget[0])}</b><span>₺{formatNumber(budget[1], language)} / ₺{formatNumber(budget[2], language)}</span></div><Progress value={Math.min(100, usage)} /><small className={budget[4]}>{t(budget[3])}</small><strong>{usage}%</strong></div>;
 }
 
-export function AddTransaction({ onCreated }: { onCreated?: () => void }) {
+export function AddTransaction({ onCreated, trigger }: { onCreated?: () => void; trigger?: ReactNode }) {
   const t = useT();
-  return <Dialog><DialogTrigger asChild><Button className="add-transaction-button"><Plus />{t("Add transaction")}</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>{t("Add transaction")}</DialogTitle><DialogDescription>{t("Record a new income or expense.")}</DialogDescription></DialogHeader><TransactionForm onSuccess={onCreated} /></DialogContent></Dialog>;
+  return <Dialog><DialogTrigger asChild>{trigger ?? <Button className="add-transaction-button"><Plus />{t("Add transaction")}</Button>}</DialogTrigger><DialogContent><DialogHeader><DialogTitle>{t("Add transaction")}</DialogTitle><DialogDescription>{t("Record a new income or expense.")}</DialogDescription></DialogHeader><TransactionForm onSuccess={onCreated} /></DialogContent></Dialog>;
 }
 
 export function PageHead({ title, sub, button }: { title: string; sub: string; button: string }) {
