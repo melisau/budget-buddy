@@ -1,6 +1,9 @@
 import { AccessError, type AppUser, type FamilyRole } from "@/lib/auth/authorization";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
+import { resolveAvatars } from "@/lib/profile/avatar-server";
+import type { ProfileAvatarData } from "@/lib/profile/avatar";
+
 const roles = ["owner", "member", "viewer"] as const;
 export type ManageableFamilyRole = Exclude<FamilyRole, "owner">;
 
@@ -11,6 +14,7 @@ export type FamilyMemberData = {
   email: string | null;
   role: FamilyRole;
   invitationStatus: "pending" | "accepted" | "declined";
+  avatar: ProfileAvatarData | null;
 };
 
 export type FamilyGroupData = {
@@ -62,10 +66,12 @@ async function loadMembers(familyGroupId: string): Promise<FamilyMemberData[]> {
 
   const ids = (memberRows ?? []).flatMap((member) => member.user_id ? [member.user_id] : []);
   const { data: users, error: usersError } = ids.length
-    ? await supabase.from("users").select("id, name, email").in("id", ids)
+    ? await supabase.from("users").select("id, name, email, avatar_icon, avatar_path").in("id", ids)
     : { data: [], error: null };
   if (usersError) throw new Error(`Unable to load family member profiles: ${usersError.message}`);
   const profiles = new Map((users ?? []).map((profile) => [profile.id, profile]));
+  const acceptedIds = new Set((memberRows ?? []).filter((member) => member.invitation_status === "accepted").map((member) => member.user_id));
+  const avatars = await resolveAvatars((users ?? []).filter((profile) => acceptedIds.has(profile.id)));
 
   return (memberRows ?? []).map((member) => {
     const profile = member.user_id ? profiles.get(member.user_id) : undefined;
@@ -76,6 +82,7 @@ async function loadMembers(familyGroupId: string): Promise<FamilyMemberData[]> {
       email: profile?.email || member.invited_email,
       role: member.role as FamilyRole,
       invitationStatus: member.invitation_status as FamilyMemberData["invitationStatus"],
+      avatar: member.invitation_status === "accepted" && member.user_id ? avatars.get(member.user_id) ?? null : null,
     };
   });
 }

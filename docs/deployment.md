@@ -90,3 +90,27 @@ Record the result in the related Linear issue or release note.
 - Do not automatically reverse a migration that risks data loss; create a forward-fix migration instead.
 - For a leaked secret, rotate the credential first, update the deployment, and review access logs.
 - Create an `Urgent`, `bug`-labelled Linear issue for a critical incident and record its impact, timeline, and permanent prevention.
+
+
+## Migration 0017 — profile avatars
+
+Apply `0017_profile_avatars.sql` to Dev before previewing this release. It adds
+`users.avatar_icon` (default: initials) and an optional owner-prefixed
+`users.avatar_path`; financial IDs and Auth identities are unchanged. Existing
+users RLS continues to deny direct browser updates. Run the migration in the
+controlled production migration step before deploying avatar-aware code.
+
+The first authorized photo upload creates the private `budgetbuddy-avatars`
+Storage bucket through the existing server-only Supabase client. It accepts
+JPEG/PNG/WebP up to 2 MB after the browser produces a 256px square thumbnail.
+No bucket is made public and no additional environment variables are required.
+The server validates the image signature and derives the owner from the session.
+Only confirmed family members' avatars are included in family responses, with
+private signed URLs valid for one hour. Pending members do not expose a photo.
+
+Verify in Dev: upload a photo, choose each default icon, reload, check another
+accepted family member can see it, check outsiders cannot access the family,
+and delete a test account. Replacing a photo or selecting an icon removes the
+previous object; a failed database update removes the new upload. Account
+deletion also removes the current avatar after identity deletion. Failed cleanup
+is logged and should be retried by an administrator.

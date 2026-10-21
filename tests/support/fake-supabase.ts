@@ -6,9 +6,16 @@ type Result = { data: unknown; error: { message: string } | null; count?: number
 
 const tables = new Map<string, Row[]>();
 let idCounter = 0;
+export const avatarStorage = new Map<string, ArrayBuffer>();
+export const avatarStorageCalls: { operation: string; paths: string[] }[] = [];
+let avatarWriteFailure = false;
+export function setAvatarWriteFailure(value: boolean) { avatarWriteFailure = value; }
 
 export function resetDatabase(seed: Record<string, Row[]> = {}) {
   tables.clear();
+  avatarStorage.clear();
+  avatarStorageCalls.length = 0;
+  avatarWriteFailure = false;
   idCounter = 0;
   for (const [name, rows] of Object.entries(seed)) tables.set(name, rows.map((row) => ({ ...row })));
 }
@@ -55,6 +62,7 @@ class Query implements PromiseLike<Result> {
   }
 
   private execute(): Result {
+    if (avatarWriteFailure && this.table === "users" && this.mode === "update" && "avatar_path" in this.patch) return { data: null, error: { message: "simulated avatar write failure" } };
     let result: Row[];
     if (this.mode === "insert" || this.mode === "upsert") {
       result = this.payload.map((value) => {
@@ -92,7 +100,15 @@ class Query implements PromiseLike<Result> {
 const client = {
   from: (table: string) => new Query(table),
   rpc: async () => ({ data: null, error: { message: "rpc not available in tests" } }),
-  storage: { from: () => ({ remove: async () => ({ error: null }) }) },
+  storage: {
+    getBucket: async () => ({ data: { public: false }, error: null }),
+    createBucket: async () => ({ error: null }),
+    from: () => ({
+      upload: async (path: string, bytes: ArrayBuffer) => { avatarStorageCalls.push({ operation: "upload", paths: [path] }); avatarStorage.set(path, bytes); return { error: null }; },
+      remove: async (paths: string[]) => { avatarStorageCalls.push({ operation: "remove", paths }); paths.forEach((path) => avatarStorage.delete(path)); return { error: null }; },
+      createSignedUrls: async (paths: string[]) => { avatarStorageCalls.push({ operation: "sign", paths }); return { error: null, data: paths.map((path) => ({ path, signedUrl: `https://storage.example.test/${path}`, error: null })) }; },
+    }),
+  },
 };
 
 export function isSupabaseConfigured() {

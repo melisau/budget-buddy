@@ -10,7 +10,7 @@ function errorResponse(error: unknown) {
 
 export async function GET() {
   try {
-    return NextResponse.json({ groups: await listFamilyGroups(await requireAppUser()) });
+    return NextResponse.json({ groups: await listFamilyGroups(await requireAppUser()) }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) { return errorResponse(error); }
 }
 
