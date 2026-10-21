@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { deleteAvatarFiles } from "@/lib/profile/avatar-server";
 import { AccessError, requireAppUser } from "@/lib/auth/authorization";
 import { sameOriginFormOrigin } from "@/lib/auth/request-origin";
 import { getStripe } from "@/lib/billing/stripe";
@@ -115,6 +116,7 @@ export async function DELETE(request: Request) {
 
   // Collect receipt paths before the cascade removes the rows that reference them.
   let receiptPaths: string[] = [];
+  let avatarPath: string | null = null;
   try {
     const { data, error } = await supabase
       .from("transactions")
@@ -123,6 +125,9 @@ export async function DELETE(request: Request) {
       .not("receipt_path", "is", null);
     if (error) throw error;
     receiptPaths = (data ?? []).map((row) => row.receipt_path as string).filter(Boolean);
+    const avatarProfile = await supabase.from("users").select("avatar_path").eq("id", user.id).single();
+    if (avatarProfile.error) throw avatarProfile.error;
+    avatarPath = avatarProfile.data?.avatar_path ?? null;
   } catch (error) {
     await logDeletionFailure(user.id, "list-receipts", error);
     return NextResponse.json({ error: "Unable to delete the account." }, { status: 500 });
@@ -138,6 +143,12 @@ export async function DELETE(request: Request) {
     await deleteStoredReceipts(receiptPaths);
   } catch (error) {
     await logDeletionFailure(user.id, "delete-receipts", error);
+  }
+
+  try {
+    if (avatarPath) await deleteAvatarFiles(user.id, [avatarPath]);
+  } catch (error) {
+    await logDeletionFailure(user.id, "delete-avatar", error);
   }
 
   try {

@@ -88,3 +88,14 @@ stored data is retained.
 ## Updating this document
 
 Update this file in the same pull request whenever a new service, persistent data model, security boundary, or deployment approach is introduced. Keep temporary implementation plans and active task details in Linear.
+
+
+### Profile avatars
+
+Profile presentation lives on the existing app user (`avatar_icon`, `avatar_path`).
+`/api/account/avatar` verifies Supabase Auth and can mutate only the acting app
+user. Browser metadata cannot assign an avatar to another app user. Photos are
+private Storage objects; the server signs only owner-prefixed paths for an
+accepted family membership or the user's own profile. No external avatar URL is
+accepted. Default icons and initials need no Storage object. Financial ownership,
+family roles, invitations and identity mappings are independent of avatar state.

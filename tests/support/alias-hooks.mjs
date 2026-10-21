@@ -6,6 +6,7 @@ const fakes = new URL("./", import.meta.url);
 
 // Modules that talk to external services are replaced in tests.
 const overrides = {
+  "next/server": new URL("../../node_modules/next/server.js", import.meta.url).href,
   "@/lib/supabase/server": new URL("fake-supabase.ts", fakes).href,
   "@/lib/auth/supabase-server": new URL("fake-auth.ts", fakes).href,
   "@/lib/auth/app-user": new URL("fake-app-user.ts", fakes).href,

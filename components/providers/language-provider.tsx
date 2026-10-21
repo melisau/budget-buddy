@@ -4,6 +4,7 @@ import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from "@/compo
 export type Language="en"|"tr";
 export const LanguageContext=createContext<{language:Language;setLanguage:(language:Language)=>void}>({language:"en",setLanguage:()=>{}});
 const translations:Record<string,string>={
+ "Active":"Aktif",
  "Features":"Özellikler","How it works":"Nasıl çalışır","Pricing":"Fiyatlandırma","About":"Hakkında","Sign in":"Giriş yap","Get started":"Başla","Open menu":"Menüyü aç","Close menu":"Menüyü kapat","Privacy":"Gizlilik","Terms":"Koşullar","Skip to main content":"Ana içeriğe geç","Trial progress":"Deneme süresi ilerlemesi",
  "Dashboard":"Genel Bakış","Family Group":"Aile Grubu","Wishlists":"Dilek Listeleri","Transactions":"İşlemler","Budgets":"Bütçeler","Accounts":"Hesaplar","Goals":"Hedefler","Analytics":"Analizler","AI Assistant":"AI Asistanı","Settings":"Ayarlar",
  "Total balance":"Toplam bakiye","Monthly income":"Aylık gelir","Monthly expenses":"Aylık gider","Savings rate":"Tasarruf oranı",

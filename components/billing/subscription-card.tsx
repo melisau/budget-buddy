@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { CreditCard, ExternalLink, ReceiptText, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useT } from "@/components/providers/language-provider";
+import { LanguageContext, useT } from "@/components/providers/language-provider";
 
 type BillingDetails = {
   billingEnabled?: boolean;
@@ -38,6 +38,7 @@ function formatAmount(amount: number, currency: string) {
 
 export function SubscriptionCard() {
   const t = useT();
+  const { language } = useContext(LanguageContext);
   const [billing, setBilling] = useState<BillingDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,9 +92,8 @@ export function SubscriptionCard() {
 
   const { subscription, invoices } = billing;
   if (!billing.billingEnabled && !subscription.canManage) {
-    return <article className="panel subscription-card">
-      <div className="subscription-card-header"><div><span><CreditCard aria-hidden="true" />{t("Subscription")}</span><h3>{t("Free during launch")}</h3></div></div>
-      <p className="trial-note"><Sparkles aria-hidden="true" />{t("Every feature is free during launch")}. {t("We will announce pricing before any paid plan starts.")}</p>
+    return <article className="panel subscription-card launch-membership">
+      <span className="settings-row-icon" aria-hidden="true"><Sparkles /></span><div><h3>{language === "tr" ? "Lansmana özel ücretsiz" : "Free during launch"}</h3><p>{language === "tr" ? "Şu anda tüm özellikler ücretsiz." : "All features are currently free."}</p></div><span className="launch-membership-status">{t("Active")}</span>
     </article>;
   }
   return <article className="panel subscription-card">
