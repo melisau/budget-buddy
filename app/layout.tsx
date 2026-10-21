@@ -29,6 +29,8 @@ export const metadata: Metadata = {
   },
   twitter: { card: "summary_large_image", title: SITE_TITLE, description: SITE_DESCRIPTION },
   formatDetection: { telephone: false },
+  // Optional: Search Console "HTML tag" verification. DNS verification needs no code.
+  ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
 };
 
 export const viewport: Viewport = {
@@ -45,9 +47,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-      </head>
       <body className="antialiased">
         <AuthProvider>
           <LanguageProvider><AuthLanguageSync/><SkipLink/><ErrorReportingProvider>{children}</ErrorReportingProvider><Toaster richColors/></LanguageProvider>
