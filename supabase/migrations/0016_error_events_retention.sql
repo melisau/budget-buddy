@@ -1,23 +1,31 @@
 -- Keep technical error reports for at most 90 days, as stated on the privacy
--- and account-deletion pages. Runs daily with pg_cron (available on all
--- Supabase plans). Idempotent: re-running replaces the job.
+-- and account-deletion pages, and clear expired rate-limit rows. Runs daily
+-- with pg_cron, which every Supabase project provides. Idempotent: re-running
+-- replaces the jobs. Databases without pg_cron (local/in-memory test
+-- databases) skip this migration with a notice instead of failing.
 
-create extension if not exists pg_cron with schema pg_catalog;
+do $migration$
+begin
+  if not exists (select 1 from pg_available_extensions where name = 'pg_cron') then
+    raise notice 'pg_cron is not available; retention jobs were not scheduled.';
+    return;
+  end if;
 
-select cron.unschedule(jobid) from cron.job where jobname = 'purge-old-error-events';
+  execute 'create extension if not exists pg_cron with schema pg_catalog';
 
-select cron.schedule(
-  'purge-old-error-events',
-  '23 3 * * *',
-  $$delete from public.error_events where created_at < now() - interval '90 days'$$
-);
+  perform cron.unschedule(jobid) from cron.job
+    where jobname in ('purge-old-error-events', 'purge-expired-rate-limits');
 
--- Expired rate-limit windows are also cleaned up opportunistically by
--- check_rate_limit(); this keeps the table small even when traffic is low.
-select cron.unschedule(jobid) from cron.job where jobname = 'purge-expired-rate-limits';
+  perform cron.schedule(
+    'purge-old-error-events',
+    '23 3 * * *',
+    $job$delete from public.error_events where created_at < now() - interval '90 days'$job$
+  );
 
-select cron.schedule(
-  'purge-expired-rate-limits',
-  '41 3 * * *',
-  $$delete from public.rate_limit_buckets where reset_at < now() - interval '1 day'$$
-);
+  perform cron.schedule(
+    'purge-expired-rate-limits',
+    '41 3 * * *',
+    $job$delete from public.rate_limit_buckets where reset_at < now() - interval '1 day'$job$
+  );
+end;
+$migration$;
