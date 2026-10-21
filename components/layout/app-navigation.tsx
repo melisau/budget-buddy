@@ -7,6 +7,7 @@ import {Sheet,SheetClose,SheetContent,SheetDescription,SheetHeader,SheetTitle,Sh
 import {LanguageContext,LanguageSelect,useT} from "@/components/providers/language-provider";
 import {Logo} from "@/components/layout/logo";
 import { SavingsJarIcon } from "@/components/budgetbuddy/savings-jar-icon";
+import { AddTransaction } from "@/components/budgetbuddy/shared";
 import { BILLING_ENABLED } from "@/lib/billing/launch";
 
 export type AppView="dashboard"|"family"|"wishlists"|"transactions"|"budgets"|"accounts"|"goals"|"analytics"|"assistant"|"settings";
@@ -69,7 +70,7 @@ export function MobileNavigation({view,go,prefetch}:{view:AppView;go:Navigate;pr
   go(destination);
  };
  return <nav className="bottom" aria-label={t("Mobile navigation")}>{items.map(([id,label,Icon])=>
-  <button type="button" className={(view===id?"active ":"")+(id==="add"?"add":"")} aria-current={view===id?"page":undefined} onClick={()=>go(id==="add"?"transactions":id)} onPointerEnter={()=>prefetch?.(id==="add"?"transactions":id)} onFocus={()=>prefetch?.(id==="add"?"transactions":id)} key={id}><Icon aria-hidden="true"/>{t(label)}</button>
+  id === "add" ? <AddTransaction key={id} trigger={<button type="button" className="add"><Icon aria-hidden="true"/>{t(label)}</button>} /> : <button type="button" className={view===id?"active":""} aria-current={view===id?"page":undefined} onClick={()=>go(id)} onPointerEnter={()=>prefetch?.(id)} onFocus={()=>prefetch?.(id)} key={id}><Icon aria-hidden="true"/>{t(label)}</button>
  )}<Sheet open={moreOpen} onOpenChange={setMoreOpen}>
   <SheetTrigger asChild><button type="button" className={moreActive?"active":""} aria-expanded={moreOpen}><MoreHorizontal aria-hidden="true"/>{t("More")}</button></SheetTrigger>
   <SheetContent side="bottom" className="mobile-more-sheet" showCloseButton={false}>

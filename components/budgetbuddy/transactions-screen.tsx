@@ -2,17 +2,21 @@
 
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { notifyFinanceDataChanged, useFinanceDataVersion } from "@/lib/finance/data-events";
-import { Check, Download, FileSpreadsheet, Pencil, ReceiptText, Search, Trash2, Upload } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, BriefcaseBusiness, Check, CreditCard, Download, FileSpreadsheet, GraduationCap, MoreHorizontal, MoreVertical, Pencil, ReceiptText, Search, ShoppingCart, SlidersHorizontal, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { AddTransaction } from "@/components/budgetbuddy/shared";
 import { TransactionForm } from "@/components/transactions/transaction-form";
 import { LanguageContext, useT } from "@/components/providers/language-provider";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { StoredTransaction, TransactionOption, TransactionType } from "@/types/finance";
 import { formatNumber } from "@/lib/finance/currency";
 import { parseTransactionCsv, type CsvParseResult } from "@/lib/finance/csv-import";
@@ -38,6 +42,9 @@ export function TransactionsScreen() {
   const [exportScope, setExportScope] = useState<"personal" | "family">("personal");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const loadTransactions = useCallback(async () => {
     setLoadError(undefined);
@@ -75,33 +82,69 @@ export function TransactionsScreen() {
   }, [accountFilter, categoryFilter, data.transactions, fromDate, language, query, toDate, typeFilter]);
 
   const hasFilters = Boolean(query || typeFilter !== "all" || accountFilter !== "all" || categoryFilter !== "all" || fromDate || toDate);
+  const filterCount = [typeFilter !== "all", accountFilter !== "all", categoryFilter !== "all", Boolean(fromDate), Boolean(toDate)].filter(Boolean).length;
 
-  return <>
-    <div className="toolbar transaction-toolbar">
-      <div><Search /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("Search transactions")} aria-label={t("Search transactions")} /></div>
-      <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as "all" | TransactionType)}><SelectTrigger aria-label={t("Transaction type")}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t("All types")}</SelectItem><SelectItem value="expense">{t("Expense")}</SelectItem><SelectItem value="income">{t("Income")}</SelectItem></SelectContent></Select>
-      <Select value={accountFilter} onValueChange={setAccountFilter}><SelectTrigger aria-label={t("Account")}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t("All accounts")}</SelectItem>{data.accounts.map((account) => <SelectItem value={account.id} key={account.id}>{t(account.name)}</SelectItem>)}</SelectContent></Select>
-      <div className="transaction-filter-row">
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}><SelectTrigger aria-label={t("Category")}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t("All categories")}</SelectItem>{data.categories.map((category) => <SelectItem value={category.id} key={category.id}>{t(category.name)}</SelectItem>)}</SelectContent></Select>
-        <Select value={exportScope} onValueChange={(value) => setExportScope(value as "personal" | "family")}><SelectTrigger className="transaction-export-scope" aria-label={language === "tr" ? "Dışa aktarma kapsamı" : "Export scope"}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="personal">{language === "tr" ? "Kişisel" : "Personal"}</SelectItem><SelectItem value="family">{language === "tr" ? "Aile" : "Family"}</SelectItem></SelectContent></Select>
-      </div>
-      <Input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} aria-label={t("From date")} />
-      <Input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} aria-label={t("To date")} />
-      <CsvExport scope={exportScope} />
-      <CsvImport />
-      <AddTransaction />
+  function clearFilters() {
+    setTypeFilter("all");
+    setAccountFilter("all");
+    setCategoryFilter("all");
+    setFromDate("");
+    setToDate("");
+  }
+
+  return <section className="transactions-page" aria-labelledby="transactions-heading">
+    <div className="transactions-heading">
+      <div><h2 id="transactions-heading">{t("Transactions")}</h2><p>{language === "tr" ? "Gelir ve giderlerin tek yerde" : "Your income and expenses in one place"}</p></div>
+      <Popover open={toolsOpen} onOpenChange={setToolsOpen}>
+        <PopoverTrigger asChild><Button variant="outline" size="icon" aria-label={language === "tr" ? "CSV işlemleri" : "CSV tools"}><MoreHorizontal /></Button></PopoverTrigger>
+        <PopoverContent align="end" className="transaction-csv-tools" aria-label={language === "tr" ? "CSV işlemleri" : "CSV tools"}>
+          <h3>{language === "tr" ? "CSV işlemleri" : "CSV tools"}</h3>
+          <label htmlFor="transaction-export-scope">{language === "tr" ? "Dışa aktarma kapsamı" : "Export scope"}</label>
+          <Select value={exportScope} onValueChange={(value) => setExportScope(value as "personal" | "family")}><SelectTrigger id="transaction-export-scope"><SelectValue /></SelectTrigger><SelectContent><SelectGroup><SelectItem value="personal">{language === "tr" ? "Kişisel" : "Personal"}</SelectItem><SelectItem value="family">{language === "tr" ? "Aile" : "Family"}</SelectItem></SelectGroup></SelectContent></Select>
+          <CsvExport scope={exportScope} />
+          <Button variant="outline" onClick={() => { setToolsOpen(false); setImportOpen(true); }}><Upload data-icon="inline-start" />{t("Import CSV")}</Button>
+        </PopoverContent>
+      </Popover>
     </div>
+    <CsvImport open={importOpen} onOpenChange={setImportOpen} />
+    <div className="transactions-searchbar">
+      <div className="transactions-search"><Search aria-hidden="true" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("Search transactions")} aria-label={t("Search transactions")} />{query && <Button variant="ghost" size="icon" onClick={() => setQuery("")} aria-label={language === "tr" ? "Aramayı temizle" : "Clear search"}><X /></Button>}</div>
+      <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <SheetTrigger asChild><Button variant="outline" className="transactions-filter-button"><SlidersHorizontal data-icon="inline-start" />{language === "tr" ? "Filtreler" : "Filters"}{filterCount > 0 && <Badge>{filterCount}</Badge>}</Button></SheetTrigger>
+        <SheetContent side="bottom" className="transaction-filters">
+          <SheetHeader><SheetTitle>{language === "tr" ? "İşlemleri filtrele" : "Filter transactions"}</SheetTitle><SheetDescription>{language === "tr" ? "Görmek istediğin işlemleri seç." : "Choose the transactions you want to see."}</SheetDescription></SheetHeader>
+          <div className="transaction-filter-fields">
+            <div><label htmlFor="transaction-type">{t("Transaction type")}</label><Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as "all" | TransactionType)}><SelectTrigger id="transaction-type"><SelectValue /></SelectTrigger><SelectContent><SelectGroup><SelectItem value="all">{t("All types")}</SelectItem><SelectItem value="expense">{t("Expense")}</SelectItem><SelectItem value="income">{t("Income")}</SelectItem></SelectGroup></SelectContent></Select></div>
+            <div><label htmlFor="transaction-account">{t("Account")}</label><Select value={accountFilter} onValueChange={setAccountFilter}><SelectTrigger id="transaction-account"><SelectValue /></SelectTrigger><SelectContent><SelectGroup><SelectItem value="all">{t("All accounts")}</SelectItem>{data.accounts.map((account) => <SelectItem value={account.id} key={account.id}>{t(account.name)}</SelectItem>)}</SelectGroup></SelectContent></Select></div>
+            <div className="transaction-category-filter"><label htmlFor="transaction-category">{t("Category")}</label><Select value={categoryFilter} onValueChange={setCategoryFilter}><SelectTrigger id="transaction-category"><SelectValue /></SelectTrigger><SelectContent><SelectGroup><SelectItem value="all">{t("All categories")}</SelectItem>{data.categories.map((category) => <SelectItem value={category.id} key={category.id}>{t(category.name)}</SelectItem>)}</SelectGroup></SelectContent></Select></div>
+            <div><label htmlFor="transaction-from">{t("From date")}</label><Input id="transaction-from" type="date" value={fromDate} max={toDate || undefined} onChange={(event) => setFromDate(event.target.value)} /></div>
+            <div><label htmlFor="transaction-to">{t("To date")}</label><Input id="transaction-to" type="date" value={toDate} min={fromDate || undefined} onChange={(event) => setToDate(event.target.value)} /></div>
+          </div>
+          <SheetFooter className="transaction-filter-footer"><Button variant="outline" onClick={clearFilters} disabled={!filterCount}>{language === "tr" ? "Filtreleri temizle" : "Clear filters"}</Button><Button onClick={() => setFiltersOpen(false)}>{language === "tr" ? "Sonuçları göster" : "Show results"}{!isLoading && !loadError && ` (${filteredTransactions.length})`}</Button></SheetFooter>
+        </SheetContent>
+      </Sheet>
+    </div>
+    {filterCount > 0 && <div className="transaction-filter-summary"><span role="status">{language === "tr" ? `${filterCount} filtre etkin` : `${filterCount} active filters`}</span><Button variant="ghost" size="sm" onClick={clearFilters}>{language === "tr" ? "Temizle" : "Clear"}<X data-icon="inline-end" /></Button></div>}
     {loadError && <div className="panel empty-state"><p role="alert">{loadError}</p><Button onClick={() => void loadTransactions()}>{t("Try again")}</Button></div>}
     {isLoading && <div className="panel empty-state" role="status" aria-live="polite"><p>{t("Loading transactions…")}</p></div>}
     {!isLoading && !loadError && filteredTransactions.length ? <article className="panel tx-table" role="table" aria-label={t("Transactions")}>
       <header role="row"><span role="columnheader">{t("Transaction")}</span><span role="columnheader">{t("Category")}</span><span role="columnheader">{t("Date")}</span><span role="columnheader">{t("Account")}</span><span role="columnheader">{t("Amount")}</span><span role="columnheader">{t("Actions")}</span></header>
       {filteredTransactions.map((transaction) => <div className="tx-row" role="row" key={transaction.id}>
-        <b role="cell">{transaction.title}</b><span role="cell">{t(transaction.category)}</span><span role="cell">{formatTransactionDate(transaction.transactionDate, language)}</span><span role="cell">{t(transaction.accountName)}</span>
+        <b role="cell" className="transaction-title"><TransactionIcon transaction={transaction} /><span>{transaction.title}</span></b><span role="cell" className="transaction-category">{t(transaction.category)}</span><span role="cell" className="transaction-date">{formatTransactionDate(transaction.transactionDate, language)}</span><span role="cell" className="transaction-account">{t(transaction.accountName)}</span>
         <strong role="cell" className={transaction.type === "income" ? "pos" : "neg"}>{transaction.type === "income" ? "+" : "−"}₺{formatNumber(transaction.amount, language)}</strong>
-        <div role="cell"><TransactionActions transaction={transaction} /></div>
+        <div role="cell" className="transaction-row-actions"><TransactionActions transaction={transaction} /></div>
       </div>)}
     </article> : !isLoading && !loadError && <Empty className="panel empty-state"><EmptyHeader><EmptyMedia variant="icon"><Search /></EmptyMedia><EmptyTitle>{hasFilters ? t("No matching transactions") : t("No transactions yet")}</EmptyTitle><EmptyDescription>{hasFilters ? t("Try a different search, or add your first income or expense.") : t("Add your first income or expense to start tracking your money.")}</EmptyDescription></EmptyHeader><EmptyContent><AddTransaction /></EmptyContent></Empty>}
-  </>;
+  </section>;
+}
+
+function TransactionIcon({ transaction }: { transaction: StoredTransaction }) {
+  const category = transaction.category.toLocaleLowerCase("tr-TR");
+  const Icon = /transfer/i.test(transaction.title) ? (transaction.type === "income" ? ArrowDownLeft : ArrowUpRight)
+    : /eğitim|education/.test(category) ? GraduationCap
+    : /maaş|salary/.test(category) ? BriefcaseBusiness
+    : /alışveriş|shopping/.test(category) ? ShoppingCart : CreditCard;
+  return <i className="transaction-category-icon" aria-hidden="true"><Icon /></i>;
 }
 
 function CsvExport({ scope }: { scope: "personal" | "family" }) {
@@ -122,6 +165,7 @@ function TransactionActions({ transaction }: { transaction: StoredTransaction })
   const t = useT();
   const { language } = useContext(LanguageContext);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   async function removeTransaction() {
@@ -142,9 +186,13 @@ function TransactionActions({ transaction }: { transaction: StoredTransaction })
   }
 
   return <div className="tx-actions">
-    {transaction.hasReceipt && <ReceiptLink transactionId={transaction.id} language={language} />}
-    <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}><DialogTrigger asChild><Button variant="ghost" size="sm" aria-label={t("Edit transaction")}><Pencil />{t("Edit")}</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>{t("Edit transaction")}</DialogTitle><DialogDescription>{t("Update the transaction details.")}</DialogDescription></DialogHeader><TransactionForm key={transaction.id} transaction={transaction} onSuccess={() => setIsEditOpen(false)} /></DialogContent></Dialog>
-    <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="sm" disabled={isDeleting} aria-label={t("Delete transaction")}><Trash2 />{t("Delete")}</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{t("Delete this transaction?")}</AlertDialogTitle><AlertDialogDescription>{t("This action cannot be undone.")}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>{t("Cancel")}</AlertDialogCancel><AlertDialogAction variant="destructive" onClick={() => void removeTransaction()}>{t("Delete")}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+    <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" disabled={isDeleting} aria-label={`${t("Actions")}: ${transaction.title}`}><MoreVertical /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuGroup>
+      {transaction.hasReceipt && <ReceiptLink transactionId={transaction.id} language={language} />}
+      <DropdownMenuItem onSelect={() => setIsEditOpen(true)}><Pencil />{t("Edit")}</DropdownMenuItem>
+      <DropdownMenuItem variant="destructive" onSelect={() => setIsDeleteOpen(true)}><Trash2 />{t("Delete")}</DropdownMenuItem>
+    </DropdownMenuGroup></DropdownMenuContent></DropdownMenu>
+    <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}><DialogContent><DialogHeader><DialogTitle>{t("Edit transaction")}</DialogTitle><DialogDescription>{t("Update the transaction details.")}</DialogDescription></DialogHeader><TransactionForm key={transaction.id} transaction={transaction} onSuccess={() => setIsEditOpen(false)} /></DialogContent></Dialog>
+    <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{t("Delete this transaction?")}</AlertDialogTitle><AlertDialogDescription>{t("This action cannot be undone.")}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>{t("Cancel")}</AlertDialogCancel><AlertDialogAction variant="destructive" onClick={() => void removeTransaction()}>{t("Delete")}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </div>;
 }
 
@@ -161,14 +209,14 @@ function ReceiptLink({ transactionId, language }: { transactionId: string; langu
       toast.error(error instanceof Error && error.message ? error.message : (language === "tr" ? "Fiş görseli açılamadı." : "Unable to open receipt image."));
     } finally { setIsOpening(false); }
   };
-  return <Button variant="ghost" size="sm" disabled={isOpening} onClick={() => void openReceipt()}><ReceiptText />{language === "tr" ? "Fiş" : "Receipt"}</Button>;
+  return <DropdownMenuItem disabled={isOpening} onSelect={() => void openReceipt()}><ReceiptText />{language === "tr" ? "Fiş" : "Receipt"}</DropdownMenuItem>;
 }
 
 function formatTransactionDate(value: string, language: "en" | "tr") {
   return new Intl.DateTimeFormat(language === "tr" ? "tr-TR" : "en-US", { day: "numeric", month: "short", year: "numeric" }).format(new Date(`${value}T00:00:00Z`));
 }
 
-function CsvImport() {
+function CsvImport({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const t = useT();
   const { language } = useContext(LanguageContext);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -226,8 +274,7 @@ function CsvImport() {
     } catch (error) { setFileError(error instanceof Error && error.message ? error.message : "Unable to import CSV."); } finally { setIsImporting(false); }
   }
 
-  return <Dialog onOpenChange={resetDialog}>
-    <DialogTrigger asChild><Button variant="outline"><Upload />{t("Import CSV")}</Button></DialogTrigger>
+  return <Dialog open={open} onOpenChange={(nextOpen) => { resetDialog(nextOpen); onOpenChange(nextOpen); }}>
     <DialogContent><DialogHeader><DialogTitle>{t("Import transactions")}</DialogTitle><DialogDescription>{t("Nothing is added until you review and approve it.")}</DialogDescription></DialogHeader>
       <div className="steps">{["Upload", "Map columns", "Review"].map((label, index) => <span className={step > index ? "on" : ""} key={label}><b>{step > index + 1 ? <Check /> : index + 1}</b>{t(label)}</span>)}</div>
       {step === 1 && <div className="drop"><Upload /><h3>{t("Drop your CSV here")}</h3><p>{t("date, description and amount required")}</p><Input ref={fileInput} type="file" accept=".csv,text/csv" onChange={handleFileChange} aria-label={t("Choose CSV")} />{fileError && <p role="alert" className="text-destructive">{fileError}</p>}</div>}
