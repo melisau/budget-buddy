@@ -178,7 +178,7 @@ export function LandingScreen({ go }: { go: Navigate }) {
         <section className="section faq">
           <div><span className="eyebrow">{t("Questions, answered")}</span><h2>{t("Know before you start.")}</h2><p>{t("BudgetBuddy helps you understand your own data. It does not provide investment advice.")}</p></div>
           <Accordion type="single" collapsible>
-            {faqs.map(([question, answer]) => <AccordionItem value={question} key={question}><AccordionTrigger>{t(question)}</AccordionTrigger><AccordionContent>{t(answer)}</AccordionContent></AccordionItem>)}
+            {faqs.map(([question, answer]) => <AccordionItem value={question} key={question}><AccordionTrigger>{t(question)}</AccordionTrigger><AccordionContent forceMount>{t(answer)}</AccordionContent></AccordionItem>)}
           </Accordion>
         </section>
 

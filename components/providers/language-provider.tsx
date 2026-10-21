@@ -94,7 +94,7 @@ export function LanguageSelect(){const {language,setLanguage}=useContext(Languag
 
 const languageEvent="budgetbuddy-language-change";
 let fallbackLanguage:Language="en";
-function readLanguage():Language{
+export function readLanguage():Language{
  try {
   const saved=window.localStorage.getItem("budgetbuddy-language");
   return saved==="tr"||saved==="en"?saved:fallbackLanguage;
@@ -108,13 +108,16 @@ function subscribe(onChange:()=>void){
   window.removeEventListener("storage",onChange);
  };
 }
-function setLanguage(next:Language){
+export function hasSavedLanguage():boolean{
+ try {const saved=window.localStorage.getItem("budgetbuddy-language");return saved==="tr"||saved==="en";} catch { return false; }
+}
+export function setLanguage(next:Language){
  fallbackLanguage=next;
  try {window.localStorage.setItem("budgetbuddy-language",next);} catch {}
  window.dispatchEvent(new Event(languageEvent));
 }
 export function LanguageProvider({children}:{children:ReactNode}){
  const language=useSyncExternalStore(subscribe,readLanguage,()=>"en" as Language);
- useEffect(()=>{document.documentElement.lang=language;},[language]);
+ useEffect(()=>{if(!document.documentElement.dataset.langLocked) document.documentElement.lang=language;},[language]);
  return <LanguageContext.Provider value={{language,setLanguage}}>{children}</LanguageContext.Provider>;
 }

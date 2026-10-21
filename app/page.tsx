@@ -1,21 +1,14 @@
+import type { Metadata } from "next";
 import { LandingPage } from "@/components/budgetbuddy/landing-page";
-import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
+import { landingMetadata, landingStructuredData } from "@/lib/seo/landing-metadata";
 
-const structuredData = {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  name: SITE_NAME,
-  url: SITE_URL,
-  description: SITE_DESCRIPTION,
-  applicationCategory: "FinanceApplication",
-  operatingSystem: "Web",
-  inLanguage: ["en", "tr"],
-  offers: { "@type": "Offer", price: "0", priceCurrency: "TRY" },
-};
+const LANGUAGE = "tr";
+
+export const metadata: Metadata = landingMetadata(LANGUAGE);
 
 export default function Page() {
   return <>
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
-    <LandingPage />
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(landingStructuredData(LANGUAGE)).replace(/</g, "\\u003c") }} />
+    <LandingPage language={LANGUAGE} />
   </>;
 }
