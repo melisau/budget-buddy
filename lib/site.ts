@@ -19,4 +19,4 @@ export const SITE_DESCRIPTION =
 export const BRAND_COLOR = "#4258d5";
 
 /** Public, indexable pages. Everything else is private or an API. */
-export const PUBLIC_ROUTES = ["/", "/en", "/sign-up", "/privacy", "/terms"] as const;
+export const PUBLIC_ROUTES = ["/", "/en", "/sign-up", "/privacy", "/terms", "/account-deletion"] as const;

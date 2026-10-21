@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useContext } from "react";
 import { LanguageContext, LanguageSelect } from "@/components/providers/language-provider";
 import { LEGAL_CONTACT_EMAIL, LEGAL_CONTROLLER_NAME, LEGAL_LAST_UPDATED } from "@/lib/legal";
+import { SITE_URL } from "@/lib/site";
 
 type Section = { title: string; paragraphs?: string[]; items?: string[]; note?: string };
 
@@ -54,7 +55,7 @@ const tr: Section[] = [
     title: "5. Saklama süresi",
     paragraphs: [
       "Verileriniz hesabınız açık olduğu sürece saklanır. Hesabınızı Ayarlar bölümünden sildiğinizde giriş hesabınız, kişisel finans kayıtlarınız, sahibi olduğunuz aile grupları ve fiş görselleriniz silinir. Başka üyelerin oluşturduğu aile grubu işlemleri o üyelerin kaydı olarak kalır.",
-      "Hata kayıtları ve sistem günlükleri güvenlik ve hata giderme amacıyla sınırlı bir süre tutulur. Yasal bir saklama yükümlülüğü bulunan veriler ilgili süre boyunca saklanır.",
+      "Hata kayıtları ve sistem günlükleri güvenlik ve hata giderme amacıyla en fazla 90 gün tutulur ve ardından otomatik olarak silinir. Yasal bir saklama yükümlülüğü bulunan veriler ilgili süre boyunca saklanır.",
     ],
   },
   {
@@ -86,7 +87,7 @@ const tr: Section[] = [
   {
     title: "9. Başvuru",
     paragraphs: [
-      `Taleplerinizi kayıtlı e-posta adresinizden ${LEGAL_CONTACT_EMAIL} adresine iletebilirsiniz. Başvurular en geç 30 gün içinde ücretsiz olarak yanıtlanır. İşlem verilerinizi Ayarlar bölümünden CSV olarak dışa aktarabilir, hesabınızı da aynı bölümden silebilirsiniz.`,
+      `Taleplerinizi kayıtlı e-posta adresinizden ${LEGAL_CONTACT_EMAIL} adresine iletebilirsiniz. Başvurular en geç 30 gün içinde ücretsiz olarak yanıtlanır. İşlem verilerinizi Ayarlar bölümünden CSV olarak dışa aktarabilir, hesabınızı da aynı bölümden silebilirsiniz. Uygulamayı kullanmadan hesap silme talebi için: ${SITE_URL}/account-deletion`,
       "Başvurunuzun sonucundan memnun kalmazsanız Kişisel Verileri Koruma Kurulu'na şikâyette bulunabilirsiniz.",
     ],
   },
@@ -139,7 +140,7 @@ const en: Section[] = [
     title: "5. Retention",
     paragraphs: [
       "Your data is kept while your account is open. When you delete your account from Settings, your sign-in account, personal financial records, family groups you own and your receipt images are deleted. Family transactions created by other members remain as their records.",
-      "Error reports and system logs are kept for a limited time for security and troubleshooting. Data subject to a legal retention obligation is kept for the required period.",
+      "Error reports and system logs are kept for up to 90 days for security and troubleshooting and are then deleted automatically. Data subject to a legal retention obligation is kept for the required period.",
     ],
   },
   {
@@ -171,7 +172,7 @@ const en: Section[] = [
   {
     title: "9. How to apply",
     paragraphs: [
-      `Send your request from your registered email address to ${LEGAL_CONTACT_EMAIL}. Requests are answered free of charge within 30 days. You can export your transactions as CSV and delete your account from Settings at any time.`,
+      `Send your request from your registered email address to ${LEGAL_CONTACT_EMAIL}. Requests are answered free of charge within 30 days. You can export your transactions as CSV and delete your account from Settings at any time. To request deletion without using the app: ${SITE_URL}/account-deletion`,
       "If you are not satisfied with the response, you may file a complaint with the Turkish Personal Data Protection Board.",
     ],
   },
