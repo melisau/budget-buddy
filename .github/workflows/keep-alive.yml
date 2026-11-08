@@ -1,6 +1,6 @@
 name: Keep Supabase awake
 
-# Backup for the Vercel Cron in vercel.json (the primary keep-alive).
+# Backup for the server cron /etc/cron.d/budgetbuddy-keepalive (the primary keep-alive, see docs/vds.md).
 # Free Supabase projects pause after a week without activity, which takes the
 # app offline. This pings the production health check once a day; the check
 # runs a small database query that counts as activity. A failed check also

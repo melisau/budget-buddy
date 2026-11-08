@@ -164,7 +164,7 @@ jarsigner -verify app/build/outputs/bundle/release/app-release.aab
 ```
 
 Supabase'i uyanık tutan günlük kontrol, Actions'a bağlı kalmaması için
-`vercel.json` içindeki Vercel Cron ile de çalışır.
+sunucudaki `/etc/cron.d/budgetbuddy-keepalive` zamanlayıcısıyla çalışır (bkz. `docs/vds.md`).
 
 ## Güncelleme
 
