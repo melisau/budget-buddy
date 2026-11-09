@@ -11,7 +11,7 @@ bir şey değiştiğinde gerekir.
 | Paket adı | `com.melisauyar.budgetbuddy` (bir kez seçilir, sonra değiştirilemez) |
 | Hedef API | 36 (Android 16) — 31 Ağustos 2026'dan beri yeni uygulamalar için zorunlu |
 | En düşük Android | 8.0 (API 26) |
-| Paket | GitHub Actions → **Android app bundle** → imzalı `.aab` |
+| Paket | GitHub Actions → **Android app bundle** → imzalı `.aab` (Actions çalışmıyorsa: aşağıdaki "Actions olmadan derleme") |
 
 ## 0. Tek seferlik hazırlık
 
@@ -136,7 +136,7 @@ bu "paylaşım" sayılmaz).
 | Ad | Evet | Hesap yönetimi, uygulama işlevi | Evet |
 | E-posta adresi | Evet | Hesap yönetimi, uygulama işlevi | Evet |
 | Diğer finansal bilgiler (kullanıcının girdiği işlemler, bütçeler, hedefler) | Evet | Uygulama işlevi | Evet |
-| Fotoğraflar (fiş görselleri) | Evet | Uygulama işlevi | Hayır (isteğe bağlı) |
+| Fotoğraflar (fiş görselleri, profil fotoğrafı) | Evet | Uygulama işlevi | Hayır (isteğe bağlı) |
 | Diğer kullanıcı içeriği (AI asistanı soruları) | Evet | Uygulama işlevi | Hayır (isteğe bağlı) |
 | Kilitlenme günlükleri, tanılama | Evet | Uygulama işlevi (hata giderme) | Evet |
 
@@ -148,6 +148,23 @@ IP adresi yalnızca kötüye kullanımı önlemek için en fazla bir gün tutulu
 12 test kullanıcısı 14 gün tamamladıktan sonra: **Kontrol paneli → Üretim erişimi başvurusu**.
 Onaydan sonra **Üretim → Yeni sürüm** ile kapalı testteki paketi üretime taşı.
 İlk incelemeler genellikle birkaç gün sürer.
+
+## Actions olmadan derleme
+
+GitHub Actions kullanılamıyorsa paket JDK 17+ ve Android SDK (platform 36,
+build-tools 36) olan herhangi bir makinede derlenir:
+
+```bash
+cd android
+echo "sdk.dir=/path/to/android-sdk" > local.properties
+gradle bundleRelease -PversionCode=2 -PversionName=1.0.1
+jarsigner -keystore budgetbuddy-upload.p12 -storetype PKCS12 \
+  app/build/outputs/bundle/release/app-release.aab upload
+jarsigner -verify app/build/outputs/bundle/release/app-release.aab
+```
+
+Supabase'i uyanık tutan günlük kontrol, Actions'a bağlı kalmaması için
+sunucudaki `/etc/cron.d/budgetbuddy-keepalive` zamanlayıcısıyla çalışır (bkz. `docs/vds.md`).
 
 ## Güncelleme
 
