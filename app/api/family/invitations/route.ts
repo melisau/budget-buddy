@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { AccessError, requireAppUser } from "@/lib/auth/authorization";
 import { createFamilyInvite, listPendingFamilyInvites } from "@/lib/finance/family-data";
+import { publicUrl } from "@/lib/auth/request-origin";
 
 export async function GET() {
   try {
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
       throw new AccessError("Please check the invitation fields.", 404);
     }
     const invitationId = await createFamilyInvite(user, body.familyGroupId, body.email, body.role);
-    const invitationUrl = new URL("/sign-in?redirect=%2Ffamily", request.url).toString();
+    const invitationUrl = publicUrl("/sign-in?redirect=%2Ffamily", request).toString();
     return NextResponse.json({ invitationId, invitationUrl }, { status: 201 });
   } catch (error) {
     if (error instanceof AccessError) return NextResponse.json({ error: error.message }, { status: error.status });
