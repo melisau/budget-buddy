@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { publicUrl } from "@/lib/auth/request-origin";
 import { requireAppUser } from "@/lib/auth/authorization";
 import { getStripe } from "@/lib/billing/stripe";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -12,7 +13,7 @@ export async function POST(request: Request) {
 
     const session = await getStripe().billingPortal.sessions.create({
       customer: data.stripe_customer_id,
-      return_url: `${new URL(request.url).origin}/settings`,
+      return_url: publicUrl("/settings", request).toString(),
     });
     return NextResponse.json({ url: session.url });
   } catch (error) {

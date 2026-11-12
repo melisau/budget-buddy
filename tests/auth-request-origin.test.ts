@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { sameOriginFormOrigin } from "../lib/auth/request-origin.ts";
+import { publicUrl, sameOriginFormOrigin } from "../lib/auth/request-origin.ts";
 
 function formRequest(url: string, headers: Record<string, string>) {
   return new Request(url, { method: "POST", headers });
@@ -32,4 +32,14 @@ test("rejects cross-origin and unverified form submissions", () => {
     host: "localhost:5173", "sec-fetch-site": "cross-site",
   })), null);
   assert.equal(sameOriginFormOrigin(formRequest(url, { host: "localhost:5173" })), null);
+});
+
+test("redirects use the public site URL in production, not the container address", () => {
+  const request = new Request("http://0.0.0.0:3000/auth/callback?code=x");
+  assert.equal(publicUrl("/dashboard", request, true).toString(), "https://budgetbuddy.melisauyar.com/dashboard");
+});
+
+test("redirects keep the request origin in development", () => {
+  const request = new Request("http://localhost:3000/auth/callback?code=x");
+  assert.equal(publicUrl("/dashboard", request, false).toString(), "http://localhost:3000/dashboard");
 });
