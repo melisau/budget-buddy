@@ -18,6 +18,7 @@ Store real values only in a developer's `.env.local`, the appropriate Vercel env
 | --- | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Browser + server | No |
 | `NEXT_PUBLIC_AUTH_GOOGLE_ENABLED` | Browser | No |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Browser | No |
 | `NEXT_PUBLIC_SUPABASE_URL` | Browser + server | No |
 | `SUPABASE_SECRET_KEY` | Server | Yes |
 | `GROQ_API_KEY` | Server | Yes |
