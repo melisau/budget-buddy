@@ -25,15 +25,15 @@
 - Authentication and user sessions are managed by Supabase Auth.
 - Supabase/PostgreSQL stores application data and receipt files.
 - Server routes must derive the acting user from the verified Supabase Auth session; never trust a client-provided user ID.
-- Payments are managed by Stripe. Subscription state must be verified from signed, idempotent webhooks.
+- No payment provider is connected yet; paid plans are off. Once one is added, subscription state must be verified from signed, idempotent provider notifications.
 - Database changes must be forward-only SQL migrations in `supabase/migrations/`.
 - Keep server-only credentials and privileged clients out of client components and public environment variables.
 
 ## Safety
 
 - Never commit `.env` files, secrets, credentials, personal financial data, or production exports.
-- Never expose Supabase secret/service-role keys, Stripe secret keys, or webhook secrets to the client.
-- Local and Preview environments must not use production Supabase projects or Stripe live keys.
+- Never expose Supabase secret/service-role keys, payment provider secret keys, or webhook secrets to the client.
+- Local and Preview environments must not use production Supabase projects or a payment provider's live keys.
 - Do not read, write, or migrate production data without explicit user approval.
 - Do not push directly to `main` or rewrite another contributor's branch.
 - Prefer additive, backward-compatible migrations. Use expand-contract for destructive schema changes.
@@ -50,7 +50,7 @@
 ## Review priorities
 
 - Flag missing authentication, authorization, ownership, or Supabase RLS checks.
-- Flag unverified or non-idempotent Stripe webhook handling.
+- Flag unverified or non-idempotent payment webhook handling.
 - Flag secrets, privileged clients, or server-only code exposed to the browser.
 - Flag destructive or backward-incompatible database migrations.
 - Flag missing loading, empty, error, and mobile states for user-facing changes.

@@ -19,7 +19,7 @@ The application uses **Supabase Auth** for authentication and Supabase/PostgreSQ
 
 ## Plans
 
-The Free plan includes manual tracking, personal goals, family wishlists, the shared shopping list, and allowance planning. Core and Pro provide additional account, reporting, and AI capabilities; Stripe support is included as payment infrastructure but requires separate Stripe configuration before it is enabled.
+The Free plan includes manual tracking, personal goals, family wishlists, the shared shopping list, and allowance planning. Core and Pro provide additional account, reporting, and AI capabilities. Paid plans are switched off: no payment provider is connected yet, so every feature is free during launch.
 
 ## Local development
 
@@ -75,7 +75,7 @@ The Free plan includes manual tracking, personal goals, family wishlists, the sh
 
    Visit [http://localhost:5173](http://localhost:5173).
 
-Use separate Supabase, Stripe, and Groq projects/keys for development, preview, and production.
+Use separate Supabase and Groq projects/keys for development, preview, and production.
 
 ## Migrating from Clerk
 
@@ -98,7 +98,7 @@ pnpm build
 - **UI:** Tailwind CSS, shadcn/ui, Lucide, Recharts
 - **Data and authentication:** Supabase PostgreSQL, Supabase Auth, `@supabase/ssr`, Row Level Security, private Storage buckets
 - **AI:** Groq API
-- **Payments:** Stripe Checkout and webhook verification groundwork
+- **Payments:** none yet; paid plans are off until a provider is integrated
 - **Deployment runtime:** Vinext and Cloudflare Workers
 
 ## Security model
