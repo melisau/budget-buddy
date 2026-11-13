@@ -7,7 +7,7 @@ export type TransactionPayload = {
   amount: number;
   title: string;
   categoryId: string;
-  accountId: string;
+  accountId?: string;
   date: string;
   note?: string;
   familyGroupId?: string;
@@ -18,7 +18,9 @@ const transactionSelect = "id, type, amount, title, note, transaction_date, fami
 async function assertPersonalReferences(user: AppUser, payload: TransactionPayload) {
   const supabase = getSupabaseServerClient();
   const [accountResult, categoryResult] = await Promise.all([
-    supabase.from("accounts").select("id").eq("id", payload.accountId).eq("user_id", user.id).maybeSingle(),
+    payload.accountId
+      ? supabase.from("accounts").select("id").eq("id", payload.accountId).eq("user_id", user.id).maybeSingle()
+      : Promise.resolve({ data: { id: null }, error: null }),
     supabase.from("categories").select("id, type").eq("id", payload.categoryId).eq("user_id", user.id).maybeSingle(),
   ]);
 
@@ -80,7 +82,7 @@ export async function createTransaction(user: AppUser, payload: TransactionPaylo
       owner_user_id: user.id,
       created_by_user_id: user.id,
       family_group_id: payload.familyGroupId ?? null,
-      account_id: payload.accountId,
+      account_id: payload.accountId ?? null,
       category_id: payload.categoryId,
       type: payload.type,
       amount: payload.amount,
@@ -101,7 +103,7 @@ export async function updateTransaction(user: AppUser, transactionId: string, pa
   const { data, error } = await supabase
     .from("transactions")
     .update({
-      account_id: payload.accountId,
+      account_id: payload.accountId ?? null,
       category_id: payload.categoryId,
       type: payload.type,
       amount: payload.amount,
