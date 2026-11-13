@@ -8,6 +8,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authErrors, authMessages, type AuthMode } from "@/lib/auth/form";
+import { GoogleIdentityButton } from "@/components/auth/google-identity-button";
 
 const copy: Record<AuthMode, { eyebrow: string; title: string; description: string; button: string }> = {
   "sign-in": { eyebrow: "YENİDEN HOŞ GELDİN", title: "Finansal yolculuğuna devam et.", description: "Bütçen, hedeflerin ve tüm hesapların seni bekliyor.", button: "Giriş yap" },
@@ -21,6 +22,7 @@ export function AuthPage({ mode, redirectTo = "/dashboard", errorCode = "", stat
   const { language } = useContext(LanguageContext);
   const [showPassword, setShowPassword] = useState(false);
   const [googleError, setError] = useState("");
+  const [gisUnavailable, setGisUnavailable] = useState(false);
   const message = typeof authMessages[status] === "string" ? authMessages[status] : "";
   const error = googleError || (typeof authErrors[errorCode] === "string" ? authErrors[errorCode] : "");
   const content = copy[mode];
@@ -84,7 +86,7 @@ export function AuthPage({ mode, redirectTo = "/dashboard", errorCode = "", stat
           </form>
 
           {(mode === "sign-in" || mode === "sign-up") && <>
-            {process.env.NEXT_PUBLIC_AUTH_GOOGLE_ENABLED === "true" && <><div className="my-6 flex items-center gap-4 text-xs font-semibold text-[#99a2b3]"><span className="h-px flex-1 bg-[#e1e5ee]" />VEYA<span className="h-px flex-1 bg-[#e1e5ee]" /></div><Button type="button" variant="outline" className="h-12 w-full rounded-xl border-[#dfe3ed] bg-white text-sm font-semibold shadow-none" disabled={busy} onClick={() => void google()}>Google ile devam et</Button></>}
+            {process.env.NEXT_PUBLIC_AUTH_GOOGLE_ENABLED === "true" && <><div className="my-6 flex items-center gap-4 text-xs font-semibold text-[#99a2b3]"><span className="h-px flex-1 bg-[#e1e5ee]" />VEYA<span className="h-px flex-1 bg-[#e1e5ee]" /></div>{!gisUnavailable && <GoogleIdentityButton redirectTo={redirectTo} mode={mode} onUnavailable={() => setGisUnavailable(true)} onError={setError} />}{gisUnavailable ? <Button type="button" variant="outline" className="h-12 w-full rounded-xl border-[#dfe3ed] bg-white text-sm font-semibold shadow-none" disabled={busy} onClick={() => void google()}>Google ile devam et</Button> : <button type="button" className="mt-3 w-full text-center text-xs font-semibold text-[#69738c] hover:text-[#4258d5] hover:underline" disabled={busy} onClick={() => void google()}>Google penceresi açılmıyor mu? Yönlendirerek devam et</button>}</>}
             <p className="mt-8 text-center text-sm text-[#69738c]">{mode === "sign-in" ? "Henüz hesabın yok mu?" : "Zaten bir hesabın var mı?"} <Link className="font-bold text-[#4258d5] hover:underline" href={`${mode === "sign-in" ? "/sign-up" : "/sign-in"}?redirect=${encodeURIComponent(redirectTo)}`}>{mode === "sign-in" ? "Hesap oluştur" : "Giriş yap"}</Link></p>
           </>}
           {mode === "forgot-password" && <Link className="mt-7 text-center text-sm font-semibold text-[#4258d5] hover:underline" href="/sign-in">← Giriş ekranına dön</Link>}
