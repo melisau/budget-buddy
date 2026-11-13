@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { deleteAvatarFiles } from "@/lib/profile/avatar-server";
 import { AccessError, requireAppUser } from "@/lib/auth/authorization";
 import { sameOriginFormOrigin } from "@/lib/auth/request-origin";
+import { isMissingBillingSchemaError } from "@/lib/billing/schema-errors";
 import { getStripe } from "@/lib/billing/stripe";
 import { deleteStoredReceipts } from "@/lib/finance/receipt-storage";
 import { captureException } from "@/lib/monitoring/sentry";
@@ -102,7 +103,8 @@ export async function DELETE(request: Request) {
       .select("stripe_subscription_id")
       .eq("id", user.id)
       .single();
-    if (error) throw error;
+    // Without the billing columns there is no subscription that could be billed.
+    if (error && !isMissingBillingSchemaError(error)) throw error;
 
     const subscriptionId = profile?.stripe_subscription_id as string | null | undefined;
     if (subscriptionId) {

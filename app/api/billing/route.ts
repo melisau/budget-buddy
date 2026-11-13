@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAppUser } from "@/lib/auth/authorization";
 import { BILLING_ENABLED } from "@/lib/billing/launch";
+import { isMissingBillingSchemaError } from "@/lib/billing/schema-errors";
 import { isFullAccess, toSubscriptionStatus } from "@/lib/billing/subscription";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -13,6 +14,15 @@ export async function GET() {
       supabase.from("billing_invoices").select("stripe_invoice_id, amount_paid, currency, status, invoice_url, paid_at, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(12),
     ]);
 
+    const schemaMissing = isMissingBillingSchemaError(userResult.error) || isMissingBillingSchemaError(invoicesResult.error);
+    if (schemaMissing && !BILLING_ENABLED) {
+      // Billing migrations are not applied here; report the free launch state.
+      return NextResponse.json({
+        billingEnabled: false,
+        subscription: { plan: "free", status: "inactive", trialEndsAt: null, endsAt: null, fullAccess: true, canManage: false },
+        invoices: [],
+      });
+    }
     if (userResult.error) throw userResult.error;
     if (invoicesResult.error) throw invoicesResult.error;
 
