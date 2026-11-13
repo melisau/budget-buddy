@@ -4,7 +4,7 @@ This document describes durable system boundaries. Application behavior belongs 
 
 ## System overview
 
-Budget Buddy is a bilingual personal-finance application built with Next.js 16 App Router and React 19. Vercel hosts the application, Supabase manages identity and stores data and files, and Stripe handles payments.
+Budget Buddy is a bilingual personal-finance application built with Next.js 16 App Router and React 19. Vercel hosts the application, Supabase manages identity and stores data and files, and paid plans are switched off until a payment provider is integrated.
 
 ```text
 Browser
@@ -15,7 +15,6 @@ Next.js server routes
   ├─ Supabase Auth session verification
   ├─ authorization and validation
   ├─ Supabase/PostgreSQL + private Storage
-  ├─ Stripe Checkout/Portal/Webhooks
   └─ Groq assistant with authorized summaries only
 ```
 
@@ -27,7 +26,7 @@ Next.js server routes
 | `components/` | Product screens, layouts, and reusable UI |
 | `lib/auth/` | Supabase Auth sessions, user mapping, and authorization |
 | `lib/finance/` | Financial calculations, transformations, and import/export |
-| `lib/billing/` | Stripe client, plans, and subscription rules |
+| `lib/billing/` | Plans, the launch switch, and subscription rules |
 | `lib/supabase/` | Server-side Supabase access |
 | `supabase/migrations/` | Ordered, version-controlled schema changes |
 | `tests/` | Unit tests run with the Node.js test runner |
@@ -73,10 +72,10 @@ stored data is retained.
 
 ## Payment boundary
 
-- Start Checkout and Customer Portal sessions on the server.
-- Validate plan selection against server-controlled Stripe price IDs.
-- Treat a signature-verified Stripe webhook as the source of truth for subscription state.
-- Webhook processing must be idempotent so a repeated event cannot create duplicate records or entitlements.
+- No payment provider is connected. The Stripe integration was removed because Stripe is not available in Turkey; `NEXT_PUBLIC_BILLING_ENABLED` stays `false` and every user has full access.
+- When a provider is added: start checkout on the server and validate plan selection against server-controlled price IDs.
+- Treat a signature-verified provider notification as the source of truth for subscription state.
+- Notification processing must be idempotent so a repeated event cannot create duplicate records or entitlements.
 
 ## AI boundary
 
