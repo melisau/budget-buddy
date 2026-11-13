@@ -13,6 +13,8 @@ import { transactionSchema, type TransactionInput } from "@/validations/transact
 import { LanguageContext, useT } from "@/components/providers/language-provider";
 import type { StoredTransaction, TransactionOption } from "@/types/finance";
 
+const NO_ACCOUNT = "none";
+
 interface TransactionFormProps {
   transaction?: StoredTransaction;
   onSuccess?: () => void;
@@ -173,10 +175,10 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
           {form.formState.errors.category && <small className="field-error">{form.formState.errors.category.message}</small>}
         </label>
         <label>
-          {tr ? "Hesap" : "Account"}
-          <Select onValueChange={(value) => { setAccount(value); form.setValue("account", value, { shouldValidate: true }); }} value={account}>
+          {tr ? "Hesap (isteğe bağlı)" : "Account (optional)"}
+          <Select onValueChange={(value) => { const next = value === NO_ACCOUNT ? "" : value; setAccount(next); form.setValue("account", next, { shouldValidate: true }); }} value={account || NO_ACCOUNT}>
             <SelectTrigger aria-invalid={!!form.formState.errors.account}><SelectValue placeholder={tr ? "Hesap seç" : "Select account"} /></SelectTrigger>
-            <SelectContent>{accounts.map((item) => <SelectItem value={item.id} key={item.id}>{t(item.name)}</SelectItem>)}</SelectContent>
+            <SelectContent><SelectItem value={NO_ACCOUNT}>{tr ? "Hesap yok" : "No account"}</SelectItem>{accounts.map((item) => <SelectItem value={item.id} key={item.id}>{t(item.name)}</SelectItem>)}</SelectContent>
           </Select>
           {form.formState.errors.account && <small className="field-error">{form.formState.errors.account.message}</small>}
         </label>

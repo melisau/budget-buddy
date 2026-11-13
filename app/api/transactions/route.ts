@@ -20,7 +20,7 @@ function toClientTransaction(transaction: Record<string, unknown>) {
     title: String(transaction.title),
     category: category?.name ?? "Uncategorized",
     categoryId: category?.id ?? "",
-    accountName: account?.name ?? "Unknown account",
+    accountName: account?.name ?? "No account",
     accountId: account?.id ?? "",
     transactionDate: String(transaction.transaction_date),
     amount,
