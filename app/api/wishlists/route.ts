@@ -16,14 +16,18 @@ export async function GET() {
     const members = await supabase.from("family_members").select("family_group_id").eq("user_id", user.id).eq("invitation_status", "accepted");
     if (members.error) throw members.error;
     const groupIds = (members.data ?? []).map((member) => member.family_group_id);
-    if (!groupIds.length) return NextResponse.json({ lists: [] });
-    const accepted = await supabase.from("family_members").select("family_group_id, user_id").in("family_group_id", groupIds).eq("invitation_status", "accepted");
-    if (accepted.error) throw accepted.error;
+    const columns = "id, family_group_id, owner_user_id, title, occasion, event_date, surprise, created_at";
+    const [accepted, familyLists, personalLists] = await Promise.all([
+      groupIds.length ? supabase.from("family_members").select("family_group_id, user_id").in("family_group_id", groupIds).eq("invitation_status", "accepted") : Promise.resolve({ data: [], error: null }),
+      groupIds.length ? supabase.from("wishlists").select(columns).in("family_group_id", groupIds) : Promise.resolve({ data: [], error: null }),
+      supabase.from("wishlists").select(columns).is("family_group_id", null).eq("owner_user_id", user.id),
+    ]);
+    for (const result of [accepted, familyLists, personalLists]) if (result.error) throw result.error;
     const acceptedPairs = new Set((accepted.data ?? []).map((member) => `${member.family_group_id}:${member.user_id}`));
-    const lists = await supabase.from("wishlists").select("id, family_group_id, owner_user_id, title, occasion, event_date, surprise, created_at")
-      .in("family_group_id", groupIds).order("created_at", { ascending: false });
-    if (lists.error) throw lists.error;
-    const visibleLists = (lists.data ?? []).filter((list) => acceptedPairs.has(`${list.family_group_id}:${list.owner_user_id}`));
+    const visibleLists = [
+      ...(personalLists.data ?? []),
+      ...(familyLists.data ?? []).filter((list) => acceptedPairs.has(`${list.family_group_id}:${list.owner_user_id}`)),
+    ].sort((left, right) => right.created_at.localeCompare(left.created_at));
     const ids = visibleLists.map((list) => list.id);
     const items = ids.length ? await supabase.from("wishlist_items").select("id, wishlist_id, name, note, product_url, reserved_by_user_id").in("wishlist_id", ids).order("created_at") : { data: [], error: null };
     if (items.error) throw items.error;
@@ -40,11 +44,12 @@ export async function POST(request: Request) {
     const user = await requireAppUser();
     const body = await request.json() as { familyGroupId?: unknown; title?: unknown; occasion?: unknown; eventDate?: unknown; surprise?: unknown };
     const title = typeof body.title === "string" ? body.title.trim() : "";
-    if (typeof body.familyGroupId !== "string" || title.length < 2 || title.length > 100 || !occasions.includes(body.occasion as typeof occasions[number]) || typeof body.surprise !== "boolean") return NextResponse.json({ error: "Check the wishlist fields." }, { status: 400 });
+    const familyGroupId = body.familyGroupId === "" || body.familyGroupId === null || body.familyGroupId === undefined ? null : body.familyGroupId;
+    if ((familyGroupId !== null && typeof familyGroupId !== "string") || title.length < 2 || title.length > 100 || !occasions.includes(body.occasion as typeof occasions[number]) || typeof body.surprise !== "boolean") return NextResponse.json({ error: "Check the wishlist fields." }, { status: 400 });
     const eventDate = body.eventDate === "" || body.eventDate === null || body.eventDate === undefined ? null : body.eventDate;
     if (eventDate !== null && (typeof eventDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(eventDate))) return NextResponse.json({ error: "Invalid occasion date." }, { status: 400 });
-    if (!await getAcceptedFamilyRole(user.id, body.familyGroupId)) throw new AccessError("Family group not found.", 404);
-    const { data, error } = await getSupabaseServerClient().from("wishlists").insert({ family_group_id: body.familyGroupId, owner_user_id: user.id, title, occasion: body.occasion, event_date: eventDate, surprise: body.surprise }).select("id").single();
+    if (familyGroupId !== null && !await getAcceptedFamilyRole(user.id, familyGroupId)) throw new AccessError("Family group not found.", 404);
+    const { data, error } = await getSupabaseServerClient().from("wishlists").insert({ family_group_id: familyGroupId, owner_user_id: user.id, title, occasion: body.occasion, event_date: eventDate, surprise: body.surprise }).select("id").single();
     if (error) throw error;
     return NextResponse.json({ id: data.id }, { status: 201 });
   } catch (error) { return fail(error); }

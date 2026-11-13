@@ -15,7 +15,13 @@ async function contextFor(context: Context) {
   const supabase = getSupabaseServerClient();
   const { data: list, error } = await supabase.from("wishlists").select("id, family_group_id, owner_user_id").eq("id", wishlistId).maybeSingle();
   if (error) throw error;
-  if (!list || !await getAcceptedFamilyRole(user.id, list.family_group_id) || !await getAcceptedFamilyRole(list.owner_user_id, list.family_group_id)) throw new AccessError("Wishlist not found.", 404);
+  if (!list) throw new AccessError("Wishlist not found.", 404);
+  if (list.family_group_id === null) {
+    // Personal list: visible only to its owner.
+    if (list.owner_user_id !== user.id) throw new AccessError("Wishlist not found.", 404);
+  } else if (!await getAcceptedFamilyRole(user.id, list.family_group_id) || !await getAcceptedFamilyRole(list.owner_user_id, list.family_group_id)) {
+    throw new AccessError("Wishlist not found.", 404);
+  }
   return { user, list, supabase };
 }
 
