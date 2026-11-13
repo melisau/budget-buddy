@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { deleteAvatarFiles } from "@/lib/profile/avatar-server";
 import { AccessError, requireAppUser } from "@/lib/auth/authorization";
 import { sameOriginFormOrigin } from "@/lib/auth/request-origin";
+import { BILLING_ENABLED } from "@/lib/billing/launch";
 import { getStripe } from "@/lib/billing/stripe";
 import { deleteStoredReceipts } from "@/lib/finance/receipt-storage";
 import { captureException } from "@/lib/monitoring/sentry";
@@ -96,7 +97,9 @@ export async function DELETE(request: Request) {
 
   const supabase = getSupabaseServerClient();
 
-  try {
+  // While paid plans are disabled there are no Stripe subscriptions to cancel,
+  // and the subscription columns may not exist yet in that database.
+  if (BILLING_ENABLED) try {
     const { data: profile, error } = await supabase
       .from("users")
       .select("stripe_subscription_id")

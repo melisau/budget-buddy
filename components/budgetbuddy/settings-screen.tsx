@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { SubscriptionCard } from "@/components/billing/subscription-card";
+import { BILLING_ENABLED } from "@/lib/billing/launch";
 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
@@ -107,7 +108,7 @@ export function SettingsScreen() {
 
       <div className="settings-data-column">
 
-        <div className="settings-membership"><SubscriptionCard /></div>
+        {BILLING_ENABLED && <div className="settings-membership"><SubscriptionCard /></div>}
 
         <section className="settings-section" aria-labelledby="settings-data-title"><h3 id="settings-data-title">{tr ? "VERİLERİN" : "Your data"}</h3><div className="settings-group">
 
