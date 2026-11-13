@@ -52,7 +52,12 @@ export async function PATCH(request: Request) {
 }
 
 async function logDeletionFailure(userId: string, step: string, error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
+  // Supabase (PostgREST) errors are plain objects, so String() would only print "[object Object]".
+  const message = error instanceof Error
+    ? error.message
+    : error && typeof error === "object" && "message" in error
+      ? [error.message, "code" in error ? `(${String(error.code)})` : ""].join(" ").trim()
+      : String(error);
   console.error(`[account] deletion step "${step}" failed for app user ${userId}`, message);
   await captureException(error, { source: "server", path: "/api/account", userId, tags: { step } });
   try {
