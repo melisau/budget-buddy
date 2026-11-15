@@ -1,6 +1,6 @@
 # VDS hosting
 
-BudgetBuddy production (`budgetbuddy.melisauyar.com`) runs on a shared VDS, not on Vercel.
+BudgetBuddy production (`budgetbuddy.melisauyar.com`) runs on a shared VDS hosted by Keyubu, not on Vercel.
 
 ## Layout
 

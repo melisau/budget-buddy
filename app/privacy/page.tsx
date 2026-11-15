@@ -41,12 +41,12 @@ const tr: Section[] = [
   {
     title: "4. Verilerin aktarıldığı hizmet sağlayıcılar",
     paragraphs: [
-      "Uygulama aşağıdaki hizmet sağlayıcılarla çalışır; her biri yalnızca kendi görevi için gerekli veriyi işler. Bu sağlayıcıların sunucuları Türkiye dışında (ABD ve/veya Avrupa Birliği) bulunduğundan verileriniz yurt dışına aktarılır. Aktarımlar KVKK m. 9'da öngörülen güvencelere dayanır ve hizmetin sunulması için zorunludur.",
+      "Uygulama aşağıdaki hizmet sağlayıcılarla çalışır; her biri yalnızca kendi görevi için gerekli veriyi işler. Barındırma dışındaki sağlayıcıların sunucuları Türkiye dışında (ABD ve/veya Avrupa Birliği) bulunduğundan verileriniz yurt dışına aktarılır. Aktarımlar KVKK m. 9'da öngörülen güvencelere dayanır ve hizmetin sunulması için zorunludur.",
     ],
     items: [
       "Supabase: hesap oluşturma, giriş ve oturum yönetimi; veritabanı ve fiş görsellerinin saklandığı özel depolama.",
       "E-posta gönderim hizmeti (Resend): hesap doğrulama ve şifre sıfırlama e-postalarının iletilmesi. Yalnızca e-posta adresiniz ve ilgili bağlantı gönderilir.",
-      "Vercel: uygulamanın barındırılması.",
+      "Keyubu: uygulamanın barındırılması. Sunucu Türkiye'dedir.",
       "Groq: AI asistanının yanıt üretmesi. Yalnızca sorunuz ve sorunun yanıtlanması için gereken özet finans bilgisi gönderilir.",
       "Sentry: hata izleme. Yalnızca uygulama içi kullanıcı numaranız gönderilir; adınız ve e-postanız gönderilmez.",
     ],
@@ -126,12 +126,12 @@ const en: Section[] = [
   {
     title: "4. Service providers and transfers abroad",
     paragraphs: [
-      "The app relies on the providers below, each processing only what its role requires. Their servers are located outside Türkiye (the United States and/or the European Union), so your data is transferred abroad. Transfers rely on the safeguards set out in KVKK Art. 9 and are necessary to provide the service.",
+      "The app relies on the providers below, each processing only what its role requires. Except for hosting, their servers are located outside Türkiye (the United States and/or the European Union), so your data is transferred abroad. Transfers rely on the safeguards set out in KVKK Art. 9 and are necessary to provide the service.",
     ],
     items: [
       "Supabase: sign-up, sign-in and session management; database and private storage for receipt images.",
       "Email delivery (Resend): sending account verification and password reset emails. Only your email address and the relevant link are sent.",
-      "Vercel: application hosting.",
+      "Keyubu: application hosting. The server is located in Türkiye.",
       "Groq: generating AI assistant answers. Only your question and the summary financial data needed to answer it are sent.",
       "Sentry: error monitoring. Only your internal user ID is sent, never your name or email.",
     ],
