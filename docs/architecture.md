@@ -4,7 +4,7 @@ This document describes durable system boundaries. Application behavior belongs 
 
 ## System overview
 
-Budget Buddy is a bilingual personal-finance application built with Next.js 16 App Router and React 19. Vercel hosts the application, Supabase manages identity and stores data and files, and paid plans are switched off until a payment provider is integrated.
+Budget Buddy is a bilingual personal-finance application built with Next.js 16 App Router and React 19. Production runs in a Docker container on a Keyubu VDS behind a Caddy reverse proxy (see [VDS hosting](./vds.md)), Supabase manages identity and stores data and files, and paid plans are switched off until a payment provider is integrated.
 
 ```text
 Browser

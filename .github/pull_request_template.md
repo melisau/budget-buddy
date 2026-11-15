@@ -36,7 +36,7 @@
 - [ ] `pnpm typecheck` passes.
 - [ ] `pnpm test` passes.
 - [ ] `pnpm build` passes.
-- [ ] The Vercel Preview deployment has been tested.
+- [ ] The branch has been tested locally against the Dev Supabase project.
 - [ ] Mobile layout and accessibility impact have been reviewed.
 - [ ] New environment variables are documented in `.env.example`.
 - [ ] Any required Supabase migration has been added and verified in the development environment.

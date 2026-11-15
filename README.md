@@ -75,7 +75,7 @@ The Free plan includes manual tracking, personal goals, family wishlists, the sh
 
    Visit [http://localhost:5173](http://localhost:5173).
 
-Use separate Supabase and Groq projects/keys for development, preview, and production.
+Use separate Supabase and Groq projects/keys for development and production.
 
 ## Migrating from Clerk
 
@@ -99,7 +99,8 @@ pnpm build
 - **Data and authentication:** Supabase PostgreSQL, Supabase Auth, `@supabase/ssr`, Row Level Security, private Storage buckets
 - **AI:** Groq API
 - **Payments:** none yet; paid plans are off until a provider is integrated
-- **Deployment runtime:** Vinext and Cloudflare Workers
+- **Build:** Vinext (`pnpm build`)
+- **Hosting:** Docker container on a VDS behind a Caddy reverse proxy; see [VDS hosting](docs/vds.md)
 
 ## Security model
 
@@ -114,6 +115,7 @@ pnpm build
 - [Supabase Auth migration runbook](docs/supabase-auth-migration.md)
 - [Architecture](docs/architecture.md)
 - [Deployment and release process](docs/deployment.md)
+- [VDS hosting](docs/vds.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 

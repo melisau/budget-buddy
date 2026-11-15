@@ -54,10 +54,10 @@ Bu adım olmadan uygulama, üstte bir adres çubuğu ile açılır.
 
 1. Play Console → **Test et ve yayınla → Uygulama bütünlüğü → Uygulama imzalama**.
 2. **Uygulama imzalama anahtarı sertifikası → SHA-256** değerini kopyala.
-3. Vercel → **Environment Variables** (Production):
+3. Sunucuda `/opt/budgetbuddy/.env.vds` dosyasına ekle:
    `ANDROID_CERT_SHA256` = `<uygulama imzalama SHA-256>,<yükleme anahtarı SHA-256>`
    (virgülle ayrılmış; yükleme anahtarınınki GitHub Actions özetinde ve anahtar dosyasıyla gelen notta).
-4. Redeploy → https://budgetbuddy.melisauyar.com/.well-known/assetlinks.json içinde iki parmak izi görünmeli.
+4. Sunucuda yeniden dağıt (`/opt/budgetbuddy/deploy/vds/deploy.sh`) → https://budgetbuddy.melisauyar.com/.well-known/assetlinks.json içinde iki parmak izi görünmeli.
 
 ## 6. Mağaza kaydı
 
@@ -127,7 +127,7 @@ gerçek uygulamadan: Genel bakış, İşlemler, Bütçeler, Aile grubu.
 ### Veri güvenliği (Data safety)
 
 Genel: veriler aktarım sırasında **şifreleniyor (HTTPS)**; kullanıcı **silme talep edebilir**;
-veriler **üçüncü taraflarla paylaşılmıyor** (Supabase, Vercel, Groq, Sentry, Resend
+veriler **üçüncü taraflarla paylaşılmıyor** (Supabase, Keyubu, Groq, Sentry, Resend
 yalnızca BudgetBuddy adına işlem yapan hizmet sağlayıcılardır; Google'ın tanımında
 bu "paylaşım" sayılmaz).
 

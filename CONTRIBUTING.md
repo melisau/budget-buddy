@@ -1,6 +1,6 @@
 # Contributing to Budget Buddy
 
-Budget Buddy uses a lightweight `Linear → branch → pull request → Preview → production` workflow for a two-person team. Linear is the single source of truth for active work.
+Budget Buddy uses a lightweight `Linear → branch → pull request → local verification → production` workflow for a two-person team. Linear is the single source of truth for active work.
 
 ## 1. Before starting work
 
@@ -61,16 +61,16 @@ If a check cannot be run, explain why and describe the remaining risk in the pul
 - Call out migrations and environment-variable changes explicitly.
 - Keep the pull request focused; do not mix a feature with a broad refactor.
 
-Merge only after CI passes, the Vercel Preview deployment is verified, the other team member approves, and all review conversations are resolved. Use `Squash and merge`, then delete the feature branch.
+Merge only after CI passes, the change is verified locally against the Dev Supabase project, the other team member approves, and all review conversations are resolved. Use `Squash and merge`, then delete the feature branch.
 
 ## 5. Database and environment changes
 
 - Store schema changes as ordered SQL files under `supabase/migrations/`.
 - Apply migrations from a clean state locally, then verify them against the development environment.
-- Preview must never use the production Supabase project or a payment provider's live keys.
+- Local runs must never use the production Supabase project or a payment provider's live keys.
 - Add new variables to `.env.example` without real values.
 - Both team members should review production migrations and secret changes.
 
 ## 6. Hotfixes
 
-Create an `Urgent`, `bug`-labelled Linear issue for a critical production problem. Create a short `fix/MB-xxx-description` branch from `main`. Keep the change narrow but retain CI, Preview, and review steps. Record production verification and the root cause in the Linear issue.
+Create an `Urgent`, `bug`-labelled Linear issue for a critical production problem. Create a short `fix/MB-xxx-description` branch from `main`. Keep the change narrow but retain CI, local verification, and review steps. Record production verification and the root cause in the Linear issue.

@@ -5,14 +5,15 @@
 | Environment | Branch | Supabase (data + Auth) | Payment provider | Deployment |
 | --- | --- | --- | --- | --- |
 | Local | Personal feature branch | Local or Dev | Sandbox/Test | Developer machine |
-| Preview | Pull request branch | Dev | Sandbox/Test | Vercel Preview |
-| Production | `main` | Prod | Live | Vercel Production |
+| Production | `main` | Prod | Live | Docker container on the VDS (`budgetbuddy.melisauyar.com`) |
 
-Preview must never connect to the production Supabase project or use a payment provider's live keys.
+There is no hosted Preview environment: Vercel no longer builds or serves this repository. Verify a pull request by running its branch locally against the Dev Supabase project. Local must never connect to the production Supabase project or use a payment provider's live keys.
+
+Production hosting, the deploy command and server access are described in [VDS hosting](./vds.md).
 
 ## Environment variables
 
-Store real values only in a developer's `.env.local`, the appropriate Vercel environment, or the team's password manager. Commit only `.env.example`.
+Store real values only in a developer's `.env.local`, the server's `/opt/budgetbuddy/.env.vds` for production, or the team's password manager. Commit only `.env.example`.
 
 | Variable | Scope | Secret? |
 | --- | --- | --- |
@@ -24,16 +25,17 @@ Store real values only in a developer's `.env.local`, the appropriate Vercel env
 | `GROQ_API_KEY` | Server | Yes |
 | `GROQ_MODEL` | Server | No |
 | `SENTRY_DSN` | Server | No, but keep it environment-specific |
+| `ANDROID_CERT_SHA256` | Server | No. Production only; see [VDS hosting](./vds.md) |
 | `NEXT_PUBLIC_BILLING_ENABLED` | Browser + server | No. Keep `false`: no payment provider is connected yet, and every user has full access |
 
 If a secret is committed accidentally, removing it from the repository is not enough. Rotate it immediately at the provider.
 
-## Pull requests and Preview
+## Pull requests and verification
 
 1. Start work from a Linear issue and its dedicated feature branch.
 2. GitHub Actions runs lint, typecheck, tests, and the production build after a push.
-3. The Vercel Git integration creates a Preview deployment.
-4. Verify the acceptance criteria in Preview, including mobile behavior when relevant.
+3. Run the branch locally with `pnpm dev` against the Dev Supabase project.
+4. Verify the acceptance criteria there, including mobile behavior when relevant.
 5. Document migrations and environment-variable changes in the pull request and this guide when appropriate.
 6. Squash-merge only after approval from the other team member and resolution of all review conversations.
 
@@ -46,16 +48,16 @@ identity mapping. Migration 0014 must precede the new auth application release.
 Migration 0015 adds private allowance plans, opt-in goal shares, group shopping
 lists/notes, and gift wishlists. Apply it to an isolated development project
 before testing these routes. New users then start without sample accounts or
-transactions. Existing finance rows are preserved. Do not point Local or
-Preview at production to test family collaboration or surprise mode.
+transactions. Existing finance rows are preserved. Do not point Local
+at production to test family collaboration or surprise mode.
 
 When application code depends on a schema change:
 
 1. Apply all migrations from a clean local database.
-2. Apply and verify the migration against the development Supabase project and Preview deployment.
+2. Apply and verify the migration against the development Supabase project from a local run of the branch.
 3. Review the migration in the pull request.
 4. Apply the backward-compatible migration to production in a controlled step.
-5. Deploy the application from `main` through Vercel Production.
+5. Deploy the application from `main` with the VDS deploy script (see [VDS hosting](./vds.md)).
 6. Handle destructive cleanup in a separate, later issue and pull request.
 
 Do not run a production migration command or Dashboard operation without explicit team approval.
@@ -77,13 +79,13 @@ After every production deployment, verify that:
 - The dashboard and at least one critical API request succeed.
 - An unauthorized user cannot access protected data.
 - Sentry has no new critical errors.
-- Payment changes were already verified in Preview with the payment provider's sandbox.
+- Payment changes were already verified locally with the payment provider's sandbox.
 
 Record the result in the related Linear issue or release note.
 
 ## Rollback
 
-- For an application regression, promote the last healthy Vercel deployment back to production.
+- For an application regression, revert the offending change on `main` through a pull request and redeploy with the VDS deploy script.
 - Do not automatically reverse a migration that risks data loss; create a forward-fix migration instead.
 - For a leaked secret, rotate the credential first, update the deployment, and review access logs.
 - Create an `Urgent`, `bug`-labelled Linear issue for a critical incident and record its impact, timeline, and permanent prevention.
@@ -91,7 +93,7 @@ Record the result in the related Linear issue or release note.
 
 ## Migration 0017 — profile avatars
 
-Apply `0017_profile_avatars.sql` to Dev before previewing this release. It adds
+Apply `0017_profile_avatars.sql` to Dev before testing this release. It adds
 `users.avatar_icon` (default: initials) and an optional owner-prefixed
 `users.avatar_path`; financial IDs and Auth identities are unchanged. Existing
 users RLS continues to deny direct browser updates. Run the migration in the
