@@ -67,7 +67,7 @@ Merge only after CI passes, the Vercel Preview deployment is verified, the other
 
 - Store schema changes as ordered SQL files under `supabase/migrations/`.
 - Apply migrations from a clean state locally, then verify them against the development environment.
-- Preview must never use the production Supabase project or Stripe live keys.
+- Preview must never use the production Supabase project or a payment provider's live keys.
 - Add new variables to `.env.example` without real values.
 - Both team members should review production migrations and secret changes.
 

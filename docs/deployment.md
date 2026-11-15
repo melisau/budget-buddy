@@ -2,13 +2,13 @@
 
 ## Environment model
 
-| Environment | Branch | Supabase (data + Auth) | Stripe | Deployment |
+| Environment | Branch | Supabase (data + Auth) | Payment provider | Deployment |
 | --- | --- | --- | --- | --- |
 | Local | Personal feature branch | Local or Dev | Sandbox/Test | Developer machine |
 | Preview | Pull request branch | Dev | Sandbox/Test | Vercel Preview |
 | Production | `main` | Prod | Live | Vercel Production |
 
-Preview must never connect to the production Supabase project or use Stripe live keys.
+Preview must never connect to the production Supabase project or use a payment provider's live keys.
 
 ## Environment variables
 
@@ -23,12 +23,8 @@ Store real values only in a developer's `.env.local`, the appropriate Vercel env
 | `SUPABASE_SECRET_KEY` | Server | Yes |
 | `GROQ_API_KEY` | Server | Yes |
 | `GROQ_MODEL` | Server | No |
-| `STRIPE_SECRET_KEY` | Server | Yes |
-| `STRIPE_WEBHOOK_SECRET` | Server | Yes |
-| `STRIPE_CORE_PRICE_ID` | Server | No |
-| `STRIPE_PRO_PRICE_ID` | Server | No |
 | `SENTRY_DSN` | Server | No, but keep it environment-specific |
-| `NEXT_PUBLIC_BILLING_ENABLED` | Browser + server | No. `true` turns paid plans and Stripe Checkout on |
+| `NEXT_PUBLIC_BILLING_ENABLED` | Browser + server | No. Keep `false`: no payment provider is connected yet, and every user has full access |
 
 If a secret is committed accidentally, removing it from the repository is not enough. Rotate it immediately at the provider.
 
@@ -81,7 +77,7 @@ After every production deployment, verify that:
 - The dashboard and at least one critical API request succeed.
 - An unauthorized user cannot access protected data.
 - Sentry has no new critical errors.
-- Payment changes were already verified in Preview with Stripe Sandbox.
+- Payment changes were already verified in Preview with the payment provider's sandbox.
 
 Record the result in the related Linear issue or release note.
 

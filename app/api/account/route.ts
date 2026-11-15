@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import { deleteAvatarFiles } from "@/lib/profile/avatar-server";
 import { AccessError, requireAppUser } from "@/lib/auth/authorization";
 import { sameOriginFormOrigin } from "@/lib/auth/request-origin";
-import { isMissingBillingSchemaError } from "@/lib/billing/schema-errors";
-import { getStripe } from "@/lib/billing/stripe";
 import { deleteStoredReceipts } from "@/lib/finance/receipt-storage";
 import { captureException } from "@/lib/monitoring/sentry";
 import { createSupabaseAuthClient } from "@/lib/supabase/auth-server";
@@ -76,12 +74,14 @@ async function logDeletionFailure(userId: string, step: string, error: unknown) 
 /**
  * Deletes the signed-in user's account.
  *
- * 1. Cancel any Stripe subscription first, so a deleted user is never billed.
- *    If this fails, nothing is deleted and the user can retry.
- * 2. Delete the Supabase Auth identity. The users row references auth.users
+ * 1. Delete the Supabase Auth identity. The users row references auth.users
  *    with ON DELETE CASCADE, so the identity and all personal finance records
  *    are removed in one PostgreSQL transaction: either everything or nothing.
- * 3. Remove receipt files from Storage (not covered by SQL cascades).
+ * 2. Remove receipt files from Storage (not covered by SQL cascades).
+ *
+ * No payment provider is connected, so there is no subscription to cancel.
+ * Cancelling at the provider must be added here before paid plans go live
+ * (MB-26); a deleted user must never keep being billed.
  */
 export async function DELETE(request: Request) {
   if (!sameOriginFormOrigin(request)) {
@@ -96,30 +96,6 @@ export async function DELETE(request: Request) {
   }
 
   const supabase = getSupabaseServerClient();
-
-  try {
-    const { data: profile, error } = await supabase
-      .from("users")
-      .select("stripe_subscription_id")
-      .eq("id", user.id)
-      .single();
-    // Without the billing columns there is no subscription that could be billed.
-    if (error && !isMissingBillingSchemaError(error)) throw error;
-
-    const subscriptionId = profile?.stripe_subscription_id as string | null | undefined;
-    if (subscriptionId) {
-      try {
-        await getStripe().subscriptions.cancel(subscriptionId);
-      } catch (stripeError) {
-        // An already-cancelled or missing subscription is not a blocker.
-        const code = stripeError && typeof stripeError === "object" && "code" in stripeError ? String(stripeError.code) : "";
-        if (code !== "resource_missing") throw stripeError;
-      }
-    }
-  } catch (error) {
-    await logDeletionFailure(user.id, "cancel-subscription", error);
-    return NextResponse.json({ error: "Unable to cancel the subscription. Your account was not deleted." }, { status: 502 });
-  }
 
   // Collect receipt paths before the cascade removes the rows that reference them.
   let receiptPaths: string[] = [];

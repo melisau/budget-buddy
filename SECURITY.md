@@ -16,8 +16,8 @@ Team members should notify each other through a private channel and create a res
 
 ## Security baseline
 
-- Enable two-factor authentication for GitHub, Vercel, Supabase, Stripe, and Sentry accounts.
+- Enable two-factor authentication for GitHub, Vercel, Supabase, Sentry, and payment provider accounts.
 - Store shared secrets in Bitwarden or 1Password.
 - Never use production data or live payment keys in Local or Preview environments.
 - Server routes must enforce authentication, authorization, and ownership checks.
-- Reassess Supabase RLS, Stripe webhook signatures, and webhook idempotency whenever related behavior changes.
+- Reassess Supabase RLS, payment webhook signatures, and webhook idempotency whenever related behavior changes.

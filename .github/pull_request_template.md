@@ -41,5 +41,5 @@
 - [ ] New environment variables are documented in `.env.example`.
 - [ ] Any required Supabase migration has been added and verified in the development environment.
 - [ ] Authentication, authorization, and RLS impact have been reviewed.
-- [ ] Stripe webhook and idempotency impact have been reviewed.
+- [ ] Payment webhook and idempotency impact have been reviewed.
 - [ ] Documentation and rollback instructions have been updated.
