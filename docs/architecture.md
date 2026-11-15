@@ -37,6 +37,7 @@ Next.js server routes
 - Route handlers derive the acting user from the verified session and never trust a user ID supplied by the client.
 - Ownership protects personal records; active membership and roles protect family records.
 - Two-step verification is optional and uses Supabase Auth MFA with an authenticator app (TOTP). When an account has a verified factor, `getCurrentUser()` returns no user until the session reaches `aal2`, so every protected page and API route rejects a password-only session; pages send it to `/auth/two-step`. There are no recovery codes: a user who loses the device is restored by an administrator removing the factor in Supabase after confirming the request comes from the account's email address.
+- Notifications (budget at 80% and 100%, goals due within 7 days, family invitations) are stored per user in `notifications`, one row per event (`dedupe_key`). `lib/notifications/rules.ts` decides what is due, `service.ts` stores it, the header bell reads it, and a daily job (`/api/cron/notifications`, bearer `CRON_SECRET`) e-mails a digest over SMTP when configured. Users can turn the e-mail off; invitation e-mails go to the invited address and are rate limited per owner.
 - Hiding an action in the UI is not an authorization control. The server must enforce the same rule.
 - Supabase secret or service-role credentials remain server-only. RLS provides an additional layer of defense.
 

@@ -27,7 +27,7 @@ The Free plan includes manual tracking, personal goals, family wishlists, the sh
 
 - Node.js 22.13 or newer
 - pnpm 11 or newer
-- A **development** Supabase project
+- Docker and the [Supabase CLI](https://supabase.com/docs/guides/cli) (for the local Supabase stack)
 - A Groq API key for AI features
 
 ### Set up
@@ -66,9 +66,11 @@ The Free plan includes manual tracking, personal goals, family wishlists, the sh
 
    `SUPABASE_SECRET_KEY` is server-only. Do not put it in a `NEXT_PUBLIC_*` variable. The local keys only work against your own machine.
 
-5. Sign up in the app at `http://localhost:5173/sign-up`. The local stack does not require email confirmation, so the new account works immediately. To test the production-like confirmation flow, set `enable_confirmations = true` in `supabase/config.toml` and read the emails in the local inbox at `http://127.0.0.1:54324`.
+5. Optional, to try e-mail locally: add `SMTP_HOST=127.0.0.1`, `SMTP_PORT=54325` and `SMTP_FROM=BudgetBuddy <no-reply@budgetbuddy.test>` to `.env.local`, and `CRON_SECRET=` with any 16+ character value. Every e-mail the app sends lands in the local inbox at `http://127.0.0.1:54324`. Trigger the daily notification job with `curl -X POST -H "Authorization: Bearer <CRON_SECRET>" http://localhost:5173/api/cron/notifications`.
 
-6. Start the development server.
+6. Sign up in the app at `http://localhost:5173/sign-up`. The local stack does not require email confirmation, so the new account works immediately. To test the production-like confirmation flow, set `enable_confirmations = true` in `supabase/config.toml` and read the emails in the local inbox at `http://127.0.0.1:54324`.
+
+7. Start the development server.
 
    ```bash
    pnpm dev
@@ -82,7 +84,7 @@ Use separate Supabase and Groq projects/keys for development and production.
 
 Clerk is not used for current sign-in or authorization. Migration `0014_supabase_auth.sql` keeps the old `clerk_user_id` only as a legacy audit/mapping field; it is not a credential and is not used at runtime.
 
-Existing financial rows are preserved and are **not** automatically matched solely by email. Before an existing user can access legacy data, an administrator must independently verify and explicitly link the old app identity with the confirmed Supabase Auth identity. Follow the complete safety checklist in [docs/supabase-auth-migration.md](docs/supabase-auth-migration.md). Apply and test migrations in development first; do not use this setup guide to change production data.
+Existing financial rows are preserved and are **not** automatically matched solely by email. Before an existing user can access legacy data, an administrator must independently verify and explicitly link the old app identity with the confirmed Supabase Auth identity. Follow the complete safety checklist in [docs/supabase-auth-migration.md](docs/supabase-auth-migration.md). Apply and test migrations on the local Supabase stack first; do not use this setup guide to change production data.
 
 ## Quality checks
 

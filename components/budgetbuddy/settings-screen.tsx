@@ -4,6 +4,7 @@ import { ProfileAvatar } from "@/components/profile/profile-avatar";
 import { useOwnAvatar } from "@/components/profile/avatar-picker";
 import { ProfileEditor } from "@/components/auth/profile-editor";
 import { TwoStepSettings } from "@/components/auth/two-step-settings";
+import { NotificationSettings } from "@/components/layout/notification-settings";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -99,6 +100,8 @@ export function SettingsScreen() {
           <Link href="/update-password" className="settings-option-row"><SettingsIcon icon={LockKeyhole} /><span className="settings-option-text"><b>{tr ? "Şifreyi değiştir" : "Change password"}</b><small>{tr ? "Hesap güvenliği" : "Account security"}</small></span><ChevronRight aria-hidden="true" /></Link>
 
           <TwoStepSettings />
+
+          <NotificationSettings />
 
           <Select value={currency} disabled={savingCurrency || preferencesLoading || preferencesError} onValueChange={(value) => void saveCurrency(value)}><SelectTrigger className="settings-option-row" aria-label={t("Currency")}><SettingsIcon icon={Coins} /><span className="settings-option-text"><b>{t("Currency")}</b></span><SelectValue /></SelectTrigger><SelectContent><SelectGroup>{["TRY", "EUR", "USD", "GBP"].map((item) => <SelectItem value={item} key={item}>{item}</SelectItem>)}</SelectGroup></SelectContent></Select>
 
