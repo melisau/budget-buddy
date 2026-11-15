@@ -18,6 +18,7 @@ export const authErrors: Record<string, string> = {
   failed: "İşlem tamamlanamadı. Bağlantınızı ve Supabase ayarlarını kontrol edip tekrar deneyin.",
   callback: "Bağlantı geçersiz veya süresi dolmuş. Lütfen yeniden deneyin.",
   confirmation: "Doğrulama bağlantısı geçersiz veya süresi dolmuş.",
+  twostep: "Bu işlem için önce iki adımlı doğrulamayı tamamlayın.",
 };
 export function authErrorCode(error: unknown): string {
   const code = error && typeof error === "object" && "code" in error ? String(error.code) : "";
@@ -27,5 +28,6 @@ export function authErrorCode(error: unknown): string {
   if (["email_address_not_authorized", "email_address_invalid", "unexpected_failure"].includes(code)) return "email";
   if (code === "signup_disabled") return "disabled";
   if (code === "weak_password" || code === "same_password") return "weak";
+  if (code === "insufficient_aal") return "twostep";
   return "failed";
 }

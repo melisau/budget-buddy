@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth/supabase-server";
+import { getAuthState } from "@/lib/auth/supabase-server";
 import { authDestination } from "@/lib/auth/redirect";
 
 // Keep old bookmarks working, but never accept a legacy session cookie.
 export default async function Page({ searchParams }: { searchParams: Promise<{ redirect?: string }> }) {
-  if (!await getCurrentUser()) redirect("/sign-in");
-  redirect(authDestination((await searchParams).redirect));
+  const { user, secondStepPending } = await getAuthState();
+  if (!user) redirect("/sign-in");
+  const destination = authDestination((await searchParams).redirect);
+  redirect(secondStepPending ? `/auth/two-step?redirect=${encodeURIComponent(destination)}` : destination);
 }
