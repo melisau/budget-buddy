@@ -36,10 +36,10 @@
 - [ ] `pnpm typecheck` passes.
 - [ ] `pnpm test` passes.
 - [ ] `pnpm build` passes.
-- [ ] The branch has been tested locally against the Dev Supabase project.
+- [ ] The branch has been tested locally against the local Supabase stack.
 - [ ] Mobile layout and accessibility impact have been reviewed.
 - [ ] New environment variables are documented in `.env.example`.
-- [ ] Any required Supabase migration has been added and verified in the development environment.
+- [ ] Any required Supabase migration has been added and verified against the local Supabase stack.
 - [ ] Authentication, authorization, and RLS impact have been reviewed.
 - [ ] Payment webhook and idempotency impact have been reviewed.
 - [ ] Documentation and rollback instructions have been updated.
