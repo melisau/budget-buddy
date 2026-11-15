@@ -61,7 +61,7 @@ If a check cannot be run, explain why and describe the remaining risk in the pul
 - Call out migrations and environment-variable changes explicitly.
 - Keep the pull request focused; do not mix a feature with a broad refactor.
 
-Merge only after CI passes, the change is verified locally against the Dev Supabase project, the other team member approves, and all review conversations are resolved. Use `Squash and merge`, then delete the feature branch.
+Merge only after CI passes, the change is verified locally against the local Supabase stack, the other team member approves, and all review conversations are resolved. Use `Squash and merge`, then delete the feature branch.
 
 ## 5. Database and environment changes
 

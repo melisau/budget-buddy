@@ -4,10 +4,10 @@
 
 | Environment | Branch | Supabase (data + Auth) | Payment provider | Deployment |
 | --- | --- | --- | --- | --- |
-| Local | Personal feature branch | Local or Dev | Sandbox/Test | Developer machine |
+| Local | Personal feature branch | Local Supabase (`supabase start`) | Sandbox/Test | Developer machine |
 | Production | `main` | Prod | Live | Docker container on the VDS (`budgetbuddy.melisauyar.com`) |
 
-There is no hosted Preview environment: Vercel no longer builds or serves this repository. Verify a pull request by running its branch locally against the Dev Supabase project. Local must never connect to the production Supabase project or use a payment provider's live keys.
+There is no hosted Preview environment: Vercel no longer builds or serves this repository. Verify a pull request by running its branch locally against the local Supabase stack (`supabase start`, see the README). There is no hosted development project either; production is the only hosted Supabase project. Local must never connect to the production Supabase project or use a payment provider's live keys.
 
 Production hosting, the deploy command and server access are described in [VDS hosting](./vds.md).
 
@@ -34,7 +34,7 @@ If a secret is committed accidentally, removing it from the repository is not en
 
 1. Start work from a Linear issue and its dedicated feature branch.
 2. GitHub Actions runs lint, typecheck, tests, and the production build after a push.
-3. Run the branch locally with `pnpm dev` against the Dev Supabase project.
+3. Run the branch locally with `pnpm dev` against the local Supabase stack.
 4. Verify the acceptance criteria there, including mobile behavior when relevant.
 5. Document migrations and environment-variable changes in the pull request and this guide when appropriate.
 6. Squash-merge only after approval from the other team member and resolution of all review conversations.
@@ -46,7 +46,7 @@ for development credentials, email templates, callback URLs and explicit legacy
 identity mapping. Migration 0014 must precede the new auth application release.
 
 Migration 0015 adds private allowance plans, opt-in goal shares, group shopping
-lists/notes, and gift wishlists. Apply it to an isolated development project
+lists/notes, and gift wishlists. Apply it to the local Supabase stack
 before testing these routes. New users then start without sample accounts or
 transactions. Existing finance rows are preserved. Do not point Local
 at production to test family collaboration or surprise mode.
@@ -54,7 +54,7 @@ at production to test family collaboration or surprise mode.
 When application code depends on a schema change:
 
 1. Apply all migrations from a clean local database.
-2. Apply and verify the migration against the development Supabase project from a local run of the branch.
+2. Apply and verify the migration against the local Supabase stack from a local run of the branch (`supabase start` applies every migration; use `supabase db reset` to re-run them from scratch).
 3. Review the migration in the pull request.
 4. Apply the backward-compatible migration to production in a controlled step.
 5. Deploy the application from `main` with the VDS deploy script (see [VDS hosting](./vds.md)).
@@ -68,7 +68,7 @@ Do not run a production migration command or Dashboard operation without explici
 `check_rate_limit()` function used by the transaction, assistant and error-report APIs.
 The application falls back to a per-instance in-memory limit (and logs
 `[rate-limit] shared limiter unavailable`) until the migration is applied, so it is safe
-to deploy the code first. Apply it to Dev, verify, then apply it to Prod.
+to deploy the code first. Apply it locally, verify, then apply it to Prod.
 
 ## Production smoke test
 
@@ -93,7 +93,7 @@ Record the result in the related Linear issue or release note.
 
 ## Migration 0017 — profile avatars
 
-Apply `0017_profile_avatars.sql` to Dev before testing this release. It adds
+Apply `0017_profile_avatars.sql` to the local stack before testing this release. It adds
 `users.avatar_icon` (default: initials) and an optional owner-prefixed
 `users.avatar_path`; financial IDs and Auth identities are unchanged. Existing
 users RLS continues to deny direct browser updates. Run the migration in the
@@ -107,7 +107,7 @@ The server validates the image signature and derives the owner from the session.
 Only confirmed family members' avatars are included in family responses, with
 private signed URLs valid for one hour. Pending members do not expose a photo.
 
-Verify in Dev: upload a photo, choose each default icon, reload, check another
+Verify locally: upload a photo, choose each default icon, reload, check another
 accepted family member can see it, check outsiders cannot access the family,
 and delete a test account. Replacing a photo or selecting an icon removes the
 previous object; a failed database update removes the new upload. Account

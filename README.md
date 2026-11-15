@@ -48,24 +48,25 @@ The Free plan includes manual tracking, personal goals, family wishlists, the sh
 
    On macOS or Linux, use `cp .env.example .env.local`.
 
-3. Set the Supabase values from the **same development project** in `.env.local`:
+3. Start the local Supabase stack. It needs Docker running and the [Supabase CLI](https://supabase.com/docs/guides/cli). There is no hosted development project: production is the only hosted Supabase project, so never point a local run at it.
 
-   ```dotenv
-   NEXT_PUBLIC_SUPABASE_URL=https://YOUR-DEV-PROJECT.supabase.co
-   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=YOUR-DEV-PUBLISHABLE-KEY
-   SUPABASE_SECRET_KEY=YOUR-DEV-SECRET-KEY
+   ```bash
+   supabase start
    ```
 
-   `SUPABASE_SECRET_KEY` is server-only. Do not use a production project or put this key in a `NEXT_PUBLIC_*` variable.
+   The first run downloads Docker images and applies every file in `supabase/migrations/` in order. `supabase/config.toml` already sets Site URL to `http://localhost:5173` and turns on authenticator-app (TOTP) verification. Accounts are confirmed without email, and `supabase stop` keeps the data (`supabase db reset` wipes it and reapplies the migrations).
 
-4. In the Supabase SQL Editor for the development project, apply every file in `supabase/migrations/` in numeric order. Do not rerun migrations that are already recorded as applied.
+4. Put the local values in `.env.local`. Read them from `supabase status -o env`: `API_URL`, `PUBLISHABLE_KEY` and `SECRET_KEY`.
 
-5. Configure Supabase Auth before testing registration:
+   ```dotenv
+   NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<PUBLISHABLE_KEY>
+   SUPABASE_SECRET_KEY=<SECRET_KEY>
+   ```
 
-   - Enable Email/Password and Confirm email.
-   - Set Site URL to `http://localhost:5173`.
-   - Add `http://localhost:5173/auth/callback` to the redirect allow-list.
-   - Configure email templates and SMTP when testing with real recipients. Details are in the migration runbook below.
+   `SUPABASE_SECRET_KEY` is server-only. Do not put it in a `NEXT_PUBLIC_*` variable. The local keys only work against your own machine.
+
+5. Sign up in the app at `http://localhost:5173/sign-up`. The local stack does not require email confirmation, so the new account works immediately. To test the production-like confirmation flow, set `enable_confirmations = true` in `supabase/config.toml` and read the emails in the local inbox at `http://127.0.0.1:54324`.
 
 6. Start the development server.
 
