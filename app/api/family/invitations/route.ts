@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { AccessError, requireAppUser } from "@/lib/auth/authorization";
 import { createFamilyInvite, listPendingFamilyInvites } from "@/lib/finance/family-data";
 import { publicUrl } from "@/lib/auth/request-origin";
+import { sendFamilyInviteEmail } from "@/lib/notifications/invite-email";
 
 export async function GET() {
   try {
@@ -22,7 +23,8 @@ export async function POST(request: Request) {
     }
     const invitationId = await createFamilyInvite(user, body.familyGroupId, body.email, body.role);
     const invitationUrl = publicUrl("/sign-in?redirect=%2Ffamily", request).toString();
-    return NextResponse.json({ invitationId, invitationUrl }, { status: 201 });
+    const emailed = await sendFamilyInviteEmail(user, body.familyGroupId, body.email);
+    return NextResponse.json({ invitationId, invitationUrl, emailed }, { status: 201 });
   } catch (error) {
     if (error instanceof AccessError) return NextResponse.json({ error: error.message }, { status: error.status });
     console.error("[family invitation] request failed", error);

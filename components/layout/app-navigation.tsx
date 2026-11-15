@@ -6,6 +6,7 @@ import {Progress} from "@/components/ui/progress";
 import {Sheet,SheetClose,SheetContent,SheetDescription,SheetHeader,SheetTitle,SheetTrigger} from "@/components/ui/sheet";
 import {LanguageContext,LanguageSelect,useT} from "@/components/providers/language-provider";
 import {Logo} from "@/components/layout/logo";
+import {NotificationBell} from "@/components/layout/notification-bell";
 import { SavingsJarIcon } from "@/components/budgetbuddy/savings-jar-icon";
 import { AddTransaction } from "@/components/budgetbuddy/shared";
 import { BILLING_ENABLED } from "@/lib/billing/launch";
@@ -54,6 +55,7 @@ export function AppHeader({view,quickAdd}:{view:AppView;quickAdd:ReactNode}){
  return <header>
   <div className="header-page-title"><h1>{t(label)}</h1><p>{view==="dashboard"?today:t("Manage your money with confidence.")}</p></div>
   <div className="mobile-header-brand"><span className="mobile-header-icon"><WalletCards aria-hidden="true"/></span><span>Budget<b>Buddy</b></span></div>
+  <NotificationBell/>
   <LanguageSelect/>
   {quickAdd}
  </header>;

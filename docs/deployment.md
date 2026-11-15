@@ -25,6 +25,8 @@ Store real values only in a developer's `.env.local`, the server's `/opt/budgetb
 | `GROQ_API_KEY` | Server | Yes |
 | `GROQ_MODEL` | Server | No |
 | `SENTRY_DSN` | Server | No, but keep it environment-specific |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | Server | `SMTP_PASSWORD` is secret. Optional: without `SMTP_HOST` and `SMTP_FROM` no e-mail is sent |
+| `CRON_SECRET` | Server | Yes. 16+ characters; authorizes the daily notification job |
 | `ANDROID_CERT_SHA256` | Server | No. Production only; see [VDS hosting](./vds.md) |
 | `NEXT_PUBLIC_BILLING_ENABLED` | Browser + server | No. Keep `false`: no payment provider is connected yet, and every user has full access |
 
@@ -90,6 +92,22 @@ Record the result in the related Linear issue or release note.
 - For a leaked secret, rotate the credential first, update the deployment, and review access logs.
 - Create an `Urgent`, `bug`-labelled Linear issue for a critical incident and record its impact, timeline, and permanent prevention.
 
+
+## Migration 0019 — notifications
+
+`0019_notifications.sql` adds the `notifications` table (budget, goal and
+invitation notifications, one row per event) and `users.notify_email`. It is
+additive. The application hides the notification bell until the migration is
+applied, so it is safe to deploy the code first. Apply it locally, verify, then
+apply it to production in a controlled step (explicit approval required).
+
+Notifications work in the app without any configuration. To also send e-mail
+(daily digest of new budget and goal notifications, and the family invitation
+e-mail), set the `SMTP_*` variables in `.env.vds` and redeploy; use a real
+sending provider, since Supabase's built-in sender is for testing only. The
+same SMTP account should be set in Supabase Auth so sign-up and password
+e-mails are reliable. The daily job needs `CRON_SECRET` and a cron entry on
+the server, described in [VDS hosting](./vds.md).
 
 ## Migration 0017 — profile avatars
 
