@@ -33,7 +33,7 @@
 
 - Never commit `.env` files, secrets, credentials, personal financial data, or production exports.
 - Never expose Supabase secret/service-role keys, payment provider secret keys, or webhook secrets to the client.
-- Local and Preview environments must not use production Supabase projects or a payment provider's live keys.
+- Local environments must not use the production Supabase project or a payment provider's live keys. There is no hosted Preview or development project; verify locally against the local Supabase stack (`supabase start`).
 - Do not read, write, or migrate production data without explicit user approval.
 - Do not push directly to `main` or rewrite another contributor's branch.
 - Prefer additive, backward-compatible migrations. Use expand-contract for destructive schema changes.
@@ -54,4 +54,4 @@
 - Flag secrets, privileged clients, or server-only code exposed to the browser.
 - Flag destructive or backward-incompatible database migrations.
 - Flag missing loading, empty, error, and mobile states for user-facing changes.
-- Treat human approval, CI, and Preview verification as required even when Codex review passes.
+- Treat human approval, CI, and local verification as required even when Codex review passes.
