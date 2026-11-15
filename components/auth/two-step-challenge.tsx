@@ -1,0 +1,71 @@
+"use client";
+
+import { useContext, useState, type FormEvent } from "react";
+import { ArrowRight, ShieldCheck, WalletCards } from "lucide-react";
+import { LanguageContext } from "@/components/providers/language-provider";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { LEGAL_CONTACT_EMAIL } from "@/lib/legal";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+
+/** Second sign-in step: asks for the authenticator code and upgrades the session. */
+export function TwoStepChallenge({ redirectTo }: { redirectTo: string }) {
+  const { language } = useContext(LanguageContext);
+  const tr = language === "tr";
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (!/^\d{6}$/.test(code)) { setError(tr ? "6 haneli kodu girin." : "Enter the 6-digit code."); return; }
+    setBusy(true);
+    setError("");
+    try {
+      const auth = getSupabaseBrowserClient().auth;
+      const factors = await auth.mfa.listFactors();
+      if (factors.error) throw factors.error;
+      const factor = factors.data.totp[0];
+      // No verified factor any more (turned off elsewhere): the server decides.
+      if (!factor) { window.location.assign(redirectTo); return; }
+      const { error: verifyError } = await auth.mfa.challengeAndVerify({ factorId: factor.id, code });
+      if (verifyError) throw verifyError;
+      window.location.assign(redirectTo);
+    } catch (caught) {
+      const errorCode = caught && typeof caught === "object" && "code" in caught ? String(caught.code) : "";
+      setError(errorCode === "mfa_verification_failed" || errorCode === "mfa_challenge_expired"
+        ? (tr ? "Kod hatalı veya süresi dolmuş. Uygulamadaki güncel kodu girin." : "The code is wrong or expired. Enter the current code from your app.")
+        : errorCode === "over_request_rate_limit"
+          ? (tr ? "Çok fazla deneme yapıldı. Bir süre bekleyip tekrar deneyin." : "Too many attempts. Wait a while and try again.")
+          : (tr ? "Doğrulama tamamlanamadı. Bağlantınızı kontrol edip tekrar deneyin." : "Verification could not be completed. Check your connection and try again."));
+      setCode("");
+      setBusy(false);
+    }
+  }
+
+  async function signOut() {
+    setBusy(true);
+    try { await getSupabaseBrowserClient().auth.signOut({ scope: "local" }); } catch { /* leave anyway */ }
+    window.location.replace("/sign-in");
+  }
+
+  return (
+    <main id="main-content" tabIndex={-1} className="flex min-h-screen flex-col bg-[#f7f8fc] px-5 py-7 text-[#17213c] sm:px-10 sm:py-9">
+      <span className="flex items-center gap-2 text-lg font-extrabold tracking-tight"><span className="grid size-9 place-items-center rounded-xl bg-[#5267df] text-white"><WalletCards className="size-5" aria-hidden="true" /></span>Budget<span className="-ml-2 text-[#5267df]">Buddy</span></span>
+      <section className="mx-auto flex w-full max-w-[440px] flex-1 flex-col justify-center py-12" aria-labelledby="two-step-title">
+        <span className="flex items-center gap-2 text-xs font-extrabold tracking-[0.16em] text-[#5267df]"><ShieldCheck className="size-4" aria-hidden="true" />{tr ? "İKİ ADIMLI DOĞRULAMA" : "TWO-STEP VERIFICATION"}</span>
+        <h1 id="two-step-title" className="mt-4 text-3xl font-bold leading-tight tracking-[-0.045em]">{tr ? "Doğrulama kodunu gir." : "Enter your verification code."}</h1>
+        <p className="mt-3 text-[15px] leading-7 text-[#69738c]">{tr ? "Kimlik doğrulama uygulamandaki 6 haneli BudgetBuddy kodunu yaz." : "Type the 6-digit BudgetBuddy code from your authenticator app."}</p>
+        <form onSubmit={(event) => void submit(event)} className="mt-8 space-y-5" noValidate>
+          <label className="block text-sm font-semibold text-[#34415f]">{tr ? "Doğrulama kodu" : "Verification code"}
+            <Input name="code" value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" pattern="\d{6}" maxLength={6} placeholder="000000" autoFocus required aria-invalid={Boolean(error)} aria-describedby={error ? "two-step-error" : undefined} className="mt-2 h-12 rounded-xl bg-white px-4 text-center text-lg tracking-[0.4em] shadow-none" />
+          </label>
+          {error && <p id="two-step-error" role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+          <Button type="submit" className="h-12 w-full rounded-xl bg-[#4258d5] text-sm font-bold shadow-lg shadow-[#4258d5]/20 hover:bg-[#3549bd]" disabled={busy}>{busy ? (tr ? "Lütfen bekleyin…" : "Please wait…") : <>{tr ? "Doğrula" : "Verify"}<ArrowRight className="ml-1 size-4" aria-hidden="true" /></>}</Button>
+        </form>
+        <p className="mt-6 text-sm leading-6 text-[#69738c]">{tr ? "Telefonuna erişemiyor musun? Hesabının e-posta adresinden bize yaz: " : "Lost access to your phone? Write to us from your account's email address: "}<a className="font-semibold text-[#4258d5] underline underline-offset-2" href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a></p>
+        <button type="button" className="mt-6 w-fit text-sm font-semibold text-[#4258d5] hover:underline" disabled={busy} onClick={() => void signOut()}>{tr ? "← Farklı bir hesapla giriş yap" : "← Sign in with a different account"}</button>
+      </section>
+    </main>
+  );
+}

@@ -36,6 +36,7 @@ Next.js server routes
 - Verify Supabase Auth sessions on the server.
 - Route handlers derive the acting user from the verified session and never trust a user ID supplied by the client.
 - Ownership protects personal records; active membership and roles protect family records.
+- Two-step verification is optional and uses Supabase Auth MFA with an authenticator app (TOTP). When an account has a verified factor, `getCurrentUser()` returns no user until the session reaches `aal2`, so every protected page and API route rejects a password-only session; pages send it to `/auth/two-step`. There are no recovery codes: a user who loses the device is restored by an administrator removing the factor in Supabase after confirming the request comes from the account's email address.
 - Hiding an action in the UI is not an authorization control. The server must enforce the same rule.
 - Supabase secret or service-role credentials remain server-only. RLS provides an additional layer of defense.
 
