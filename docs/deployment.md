@@ -119,6 +119,26 @@ same SMTP account should be set in Supabase Auth so sign-up and password
 e-mails are reliable. The daily job needs `CRON_SECRET` and a cron entry on
 the server, described in [VDS hosting](./vds.md).
 
+The provider is **Resend**, the same one Supabase Auth uses, so the sending
+domain is already verified. In `.env.vds` set (the password is a Resend API key
+with sending access; give this server its own key rather than reusing the one in
+the Supabase panel, so either can be rotated alone):
+
+```
+SMTP_HOST=smtp.resend.com
+SMTP_PORT=465
+SMTP_USER=resend
+SMTP_PASSWORD=<Resend API key, starts with re_>
+SMTP_FROM=BudgetBuddy <no-reply@your-verified-domain>
+CRON_SECRET=<a random string of 32 or more characters>
+```
+
+`SMTP_FROM` must use the domain verified in Resend. Port 465 uses a direct TLS
+connection and 587 uses STARTTLS; the app handles both. The free plan has daily
+and monthly sending limits (check Resend's pricing page): a daily digest to
+every user is one e-mail each, so the number of users with a new notification
+per day is what counts.
+
 ## Migration 0017 — profile avatars
 
 Apply `0017_profile_avatars.sql` to the local stack before testing this release. It adds
@@ -157,3 +177,19 @@ transactions list or the Recurring page. No cron job is needed. The unique index
 guarantees that repeated or concurrent loads create each occurrence once. Dates
 in the past are never back-filled when an item is created or resumed, and one
 run creates at most the 36 most recent missed occurrences.
+
+## Migration 0021 — category rules
+
+`0021_category_rules.sql` adds the `category_rules` table: "if the description
+contains this word, use this category" (one rule per keyword and type for each
+user, case-insensitive, at most 200 per user). It is additive. Until it is
+applied the rules dialog says the feature is not ready, CSV import and the
+transaction form simply find no rules, and nothing else changes, so it is safe
+to deploy the code first. Apply it locally, verify, then apply it to production
+in a controlled step (explicit approval required).
+
+Rules are used in two places: the CSV import and the add-transaction form.
+A CSV row's category is, in order, the category named in the file (when the user
+has it), the user's most specific matching rule, then "Other income" /
+"Other expenses". A row no longer fails because its category or account is
+unknown; an unknown account leaves the row without one.
