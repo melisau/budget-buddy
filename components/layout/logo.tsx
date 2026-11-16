@@ -1,6 +1,6 @@
 "use client";
-import {WalletCards} from "lucide-react";
+import {BrandMark} from "@/components/brand/brand-mark";
 
 export function Logo({go}:{go?:()=>void}){
- return <button type="button" className="logo" onClick={go} aria-label="BudgetBuddy"><span><WalletCards aria-hidden="true"/></span>Budget<b>Buddy</b></button>;
+ return <button type="button" className="logo" onClick={go} aria-label="BudgetBuddy"><BrandMark size={36} className="logo-mark"/>Budget<b>Buddy</b></button>;
 }

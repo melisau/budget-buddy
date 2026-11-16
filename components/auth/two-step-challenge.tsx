@@ -1,7 +1,8 @@
 "use client";
 
 import { useContext, useState, type FormEvent } from "react";
-import { ArrowRight, ShieldCheck, WalletCards } from "lucide-react";
+import { ArrowRight, ShieldCheck } from "lucide-react";
+import { BrandMark } from "@/components/brand/brand-mark";
 import { LanguageContext } from "@/components/providers/language-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,7 +52,7 @@ export function TwoStepChallenge({ redirectTo }: { redirectTo: string }) {
 
   return (
     <main id="main-content" tabIndex={-1} className="flex min-h-screen flex-col bg-[#f7f8fc] px-5 py-7 text-[#17213c] sm:px-10 sm:py-9">
-      <span className="flex items-center gap-2 text-lg font-extrabold tracking-tight"><span className="grid size-9 place-items-center rounded-xl bg-[#5267df] text-white"><WalletCards className="size-5" aria-hidden="true" /></span>Budget<span className="-ml-2 text-[#5267df]">Buddy</span></span>
+      <span className="flex items-center gap-2 text-lg font-extrabold tracking-tight"><BrandMark size={36} />Budget<span className="-ml-2 text-[#5267df]">Buddy</span></span>
       <section className="mx-auto flex w-full max-w-[440px] flex-1 flex-col justify-center py-12" aria-labelledby="two-step-title">
         <span className="flex items-center gap-2 text-xs font-extrabold tracking-[0.16em] text-[#5267df]"><ShieldCheck className="size-4" aria-hidden="true" />{tr ? "İKİ ADIMLI DOĞRULAMA" : "TWO-STEP VERIFICATION"}</span>
         <h1 id="two-step-title" className="mt-4 text-3xl font-bold leading-tight tracking-[-0.045em]">{tr ? "Doğrulama kodunu gir." : "Enter your verification code."}</h1>

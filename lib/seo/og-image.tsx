@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { WalletMark } from "@/components/seo/wallet-mark";
+import { BRAND_MARK_DATA_URL } from "@/lib/seo/brand-mark-data";
 import { BRAND_COLOR } from "@/lib/site";
 
 export const OG_SIZE = { width: 1200, height: 630 };
@@ -15,9 +15,8 @@ export function renderOpenGraphImage(language: "tr" | "en") {
     (
       <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "72px 80px", background: "linear-gradient(135deg, #f6f7fb 0%, #e9ecff 100%)", color: "#17213c", fontFamily: "sans-serif" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 84, height: 84, borderRadius: 22, background: BRAND_COLOR }}>
-            <WalletMark size={52} />
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element -- ImageResponse renders plain <img>. */}
+          <img src={BRAND_MARK_DATA_URL} width={84} height={84} alt="" />
           <div style={{ display: "flex", fontSize: 44, fontWeight: 800 }}>
             <span>Budget</span><span style={{ color: BRAND_COLOR }}>Buddy</span>
           </div>
