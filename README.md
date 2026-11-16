@@ -6,16 +6,20 @@ The application uses **Supabase Auth** for authentication and Supabase/PostgreSQ
 
 ## What you can do
 
-- Create a password-based account, confirm an email address, recover a password, sign out, and optionally use Google sign-in.
-- Track income, expenses, transfers, balances, budgets, financial reports, and savings goals.
+- Create a password-based account, confirm an email address, recover a password, sign out, and optionally use Google sign-in or two-step verification with an authenticator app.
+- Track income, expenses, transfers, balances, budgets, financial reports, and savings goals. A bank account is optional for a transaction.
+- Set up recurring items such as rent, salary, and bills, and track subscriptions like Netflix or Spotify; the matching transactions are created on schedule.
+- Add category rules ("if the description contains Migros, use Groceries") so new and imported transactions are categorized automatically.
+- Get in-app notifications for budgets and goals, plus an optional daily e-mail digest.
 - Start with a goal in minutes: a bank account or historical transaction is not required.
 - Share selected goal progress with a family group without exposing private transactions.
 - Create a private monthly allowance plan with a savings percentage.
 - Manage family groups, invitations, roles, shared transactions, a shared shopping note, and a live shopping checklist.
-- Build occasion wishlists for birthdays, housewarmings, New Year, and other events. Family members can reserve a gift so it is not bought twice.
+- Build occasion wishlists for birthdays, housewarmings, New Year, and other events, on your own or with a family group. Family members can reserve a gift so it is not bought twice.
 - Choose surprise mode for a wishlist: the owner cannot see reservations, while other family members can.
 - Upload private receipt images, import/export CSV data, and use the Groq-powered financial assistant and voice transaction drafts.
-- Use the interface in Turkish or English.
+- Choose a profile photo or an icon avatar.
+- Use the interface in Turkish or English, in the browser, as an installable web app (PWA), or as an Android app packaged for Google Play (Trusted Web Activity).
 
 ## Plans
 
@@ -103,7 +107,9 @@ pnpm build
 - **AI:** Groq API
 - **Payments:** none yet; paid plans are off until a provider is integrated
 - **Build:** Vinext (`pnpm build`)
+- **E-mail:** SMTP through Resend (notification digests and family invitations)
 - **Hosting:** Docker container on a VDS behind a Caddy reverse proxy; see [VDS hosting](docs/vds.md)
+- **Backups:** daily `pg_dump` and Storage mirror on the VDS, with an encrypted off-site copy (rclone crypt to Backblaze B2); see [VDS hosting](docs/vds.md#database-and-file-backups)
 
 ## Security model
 
@@ -111,6 +117,7 @@ pnpm build
 - Browser clients do not receive privileged database credentials. Server routes perform ownership and family-role checks before using the server-only Supabase key.
 - New family collaboration tables are protected with RLS; the server enforces membership and surprise-wishlist visibility.
 - Receipts live in a private Storage bucket and are served through short-lived signed URLs.
+- Production data is backed up daily; the off-site copy is encrypted on the server before upload, and the restore procedure is tested against a local stack.
 - The AI assistant receives authorized, sanitized financial summaries and cannot create a transaction without an explicit confirmation step.
 
 ## Project documentation
@@ -122,7 +129,7 @@ pnpm build
 - [Contributing guide](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 
-Active work is tracked in Linear. Changes should be developed in a dedicated branch and reach `main` through a reviewed pull request with passing checks.
+Active work is tracked in Linear. Changes should be developed in a dedicated branch and reach `main` through a pull request; `main` is protected and only accepts changes whose CI checks pass on an up-to-date branch. Merging does not deploy: production is deployed from `main` on the VDS (see [VDS hosting](docs/vds.md)), and database migrations are applied to production as a separate, approved step.
 
 ## License
 
