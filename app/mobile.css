@@ -257,8 +257,10 @@ body {
 }
 .transaction-filter-row { display: contents; }
 
+/* The month field and the create button share one bottom edge, on every width. */
+.page-head:has(> .budget-month-filter) { align-items: flex-end; }
+
 @media (max-width: 767px) {
-  .page-head:has(> .budget-month-filter) { align-items: flex-end; }
   .transaction-toolbar > .transaction-filter-row {
     display: grid;
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);

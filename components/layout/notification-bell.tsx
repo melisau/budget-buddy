@@ -51,9 +51,10 @@ export function NotificationBell() {
   if (state.status === "unavailable") return null;
   const label = tr ? "Bildirimler" : "Notifications";
 
-  // A wrapper, not a direct child of the header: the header hides its own direct buttons on phones.
+  // A span wrapper, not a bare button and not a div: the header hides its direct buttons on phones
+  // and gives every direct div margin-right:auto, which pushed the bell to the middle.
   return (
-    <div className="mr-[10px] shrink-0 max-[820px]:mr-0">
+    <span className="mr-[10px] flex shrink-0 max-[820px]:mr-0">
     <Popover open={open} onOpenChange={(next) => void changeOpen(next)}>
       <PopoverTrigger asChild>
         <button type="button" className="relative grid size-10 shrink-0 place-items-center rounded-xl border border-[#dfe3ed] bg-white text-[#34415f] hover:text-[#4258d5]" aria-label={state.unread > 0 ? `${label} (${state.unread})` : label}>
@@ -74,6 +75,6 @@ export function NotificationBell() {
         </div>
       </PopoverContent>
     </Popover>
-    </div>
+    </span>
   );
 }
