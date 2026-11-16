@@ -64,7 +64,15 @@ pg 'pg_restore --list /out/public.dump >/dev/null && pg_restore --list /out/auth
 
 if [ -n "$BACKUP_STORAGE_REMOTE" ]; then
   [ -r "$BACKUP_RCLONE_CONFIG" ] || fail "rclone config $BACKUP_RCLONE_CONFIG not readable"
+  # The app creates a bucket on its first upload (avatars on the first profile
+  # photo), so a listed bucket may not exist yet: skip it instead of failing.
+  # A failed listing (bad key, no network) still fails the backup.
+  existing="$(rclone lsf --dirs-only "$BACKUP_STORAGE_REMOTE:")" || fail "listing Storage buckets"
   for bucket in $BACKUP_STORAGE_BUCKETS; do
+    if ! printf '%s\n' "$existing" | grep -qxF "$bucket/"; then
+      log "skipping Storage bucket $bucket: it does not exist yet"
+      continue
+    fi
     log "mirroring Storage bucket $bucket"
     # Files removed or changed in Storage are moved aside (dated), not lost.
     rclone sync "$BACKUP_STORAGE_REMOTE:$bucket" "/data/files/current/$bucket" \
