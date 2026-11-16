@@ -100,11 +100,8 @@ export function LandingScreen({ go }: { go: Navigate }) {
           <a href="#how" onClick={closeMenu}>{t("How it works")}</a>
           <a href="#pricing" onClick={closeMenu}>{t("Pricing")}</a>
           <a href="#about" onClick={closeMenu}>{t("About")}</a>
-          <LanguageSelect />
           <a href="/sign-in" onClick={closeMenu}>{t("Sign in")}</a>
-          <Button asChild><a href="/sign-up" onClick={closeMenu}>{t("Get started")}</a></Button>
         </nav>
-        <div className="mobile-language"><LanguageSelect /></div>
         <button
           type="button"
           className="hamb"
@@ -188,7 +185,7 @@ export function LandingScreen({ go }: { go: Navigate }) {
         </section>
       </main>
 
-      <footer id="about"><Logo /><p>{t("Personal finance clarity, without the clutter.")}</p><span><a href="/privacy">{t("Privacy")}</a> · <a href="/terms">{t("Terms")}</a></span><small>{`© ${new Date().getFullYear()} BudgetBuddy`}</small></footer>
+      <footer id="about"><div className="footer-brand"><Logo /><p>{t("Personal finance clarity, without the clutter.")}</p></div><div className="footer-meta"><span><a href="/privacy">{t("Privacy")}</a> · <a href="/terms">{t("Terms")}</a></span><LanguageSelect /></div><small>{`© ${new Date().getFullYear()} BudgetBuddy`}</small></footer>
     </div>
   );
 }
