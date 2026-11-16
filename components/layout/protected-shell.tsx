@@ -14,6 +14,7 @@ const PATH_VIEWS: Record<string, AppView> = {
   "/family": "family",
   "/wishlists": "wishlists",
   "/transactions": "transactions",
+  "/recurring": "recurring",
   "/budgets": "budgets",
   "/accounts": "accounts",
   "/goals": "goals",
