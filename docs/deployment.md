@@ -30,6 +30,15 @@ Store real values only in a developer's `.env.local`, the server's `/opt/budgetb
 | `ANDROID_CERT_SHA256` | Server | No. Production only; see [VDS hosting](./vds.md) |
 | `NEXT_PUBLIC_BILLING_ENABLED` | Browser + server | No. Keep `false`: no payment provider is connected yet, and every user has full access |
 
+The daily backup job keeps its own settings, including the production database
+connection string, in `/opt/budgetbuddy/backup.env` on the server, not in
+`.env.vds`, so the app container never sees the database password. The variables
+(`BACKUP_DATABASE_URL`, `BACKUP_DIR`, `BACKUP_KEEP_DAYS`, `BACKUP_RCLONE_CONFIG`,
+`BACKUP_STORAGE_REMOTE`, `BACKUP_STORAGE_BUCKETS`, `BACKUP_REMOTE`,
+`BACKUP_REMOTE_KEEP_DAYS`, `BACKUP_HEALTHCHECK_URL`) are listed in
+`deploy/vds/backup.env.example`; `BACKUP_DATABASE_URL` and the rclone config are
+secret. See [Database and file backups](./vds.md#database-and-file-backups).
+
 If a secret is committed accidentally, removing it from the repository is not enough. Rotate it immediately at the provider.
 
 ## Pull requests and verification
@@ -89,6 +98,7 @@ Record the result in the related Linear issue or release note.
 
 - For an application regression, revert the offending change on `main` through a pull request and redeploy with the VDS deploy script.
 - Do not automatically reverse a migration that risks data loss; create a forward-fix migration instead.
+- The free Supabase plan has no automatic backups. Before a risky production migration, run the backup job by hand (`/opt/budgetbuddy/deploy/vds/backup.sh`). To recover lost data, follow [Restoring a backup](./vds.md#restoring-a-backup).
 - For a leaked secret, rotate the credential first, update the deployment, and review access logs.
 - Create an `Urgent`, `bug`-labelled Linear issue for a critical incident and record its impact, timeline, and permanent prevention.
 
