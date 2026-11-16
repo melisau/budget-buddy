@@ -177,3 +177,19 @@ transactions list or the Recurring page. No cron job is needed. The unique index
 guarantees that repeated or concurrent loads create each occurrence once. Dates
 in the past are never back-filled when an item is created or resumed, and one
 run creates at most the 36 most recent missed occurrences.
+
+## Migration 0021 — category rules
+
+`0021_category_rules.sql` adds the `category_rules` table: "if the description
+contains this word, use this category" (one rule per keyword and type for each
+user, case-insensitive, at most 200 per user). It is additive. Until it is
+applied the rules dialog says the feature is not ready, CSV import and the
+transaction form simply find no rules, and nothing else changes, so it is safe
+to deploy the code first. Apply it locally, verify, then apply it to production
+in a controlled step (explicit approval required).
+
+Rules are used in two places: the CSV import and the add-transaction form.
+A CSV row's category is, in order, the category named in the file (when the user
+has it), the user's most specific matching rule, then "Other income" /
+"Other expenses". A row no longer fails because its category or account is
+unknown; an unknown account leaves the row without one.
