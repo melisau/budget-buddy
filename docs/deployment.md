@@ -129,11 +129,14 @@ SMTP_HOST=smtp.resend.com
 SMTP_PORT=465
 SMTP_USER=resend
 SMTP_PASSWORD=<Resend API key, starts with re_>
-SMTP_FROM=BudgetBuddy <no-reply@your-verified-domain>
+SMTP_FROM=no-reply@your-verified-domain
 CRON_SECRET=<a random string of 32 or more characters>
 ```
 
-`SMTP_FROM` must use the domain verified in Resend. Port 465 uses a direct TLS
+`SMTP_FROM` must use the domain verified in Resend. Write it as a plain address,
+without a display name such as `BudgetBuddy <...>`: `deploy.sh` and `notify.sh`
+read `.env.vds` as a shell script, where `<` and `>` are redirections and stop
+the deploy with "syntax error near unexpected token". Port 465 uses a direct TLS
 connection and 587 uses STARTTLS; the app handles both. The free plan has daily
 and monthly sending limits (check Resend's pricing page): a daily digest to
 every user is one e-mail each, so the number of users with a new notification
