@@ -16,7 +16,7 @@ Deploy a branch from GitHub with:
 /opt/budgetbuddy/deploy/vds/deploy.sh [branch]
 ```
 
-The default branch is `main`. `deploy.sh` and the other deploy files under `deploy/vds/` exist only on the server, not in this repository; the backup scripts (`backup.sh`, `restore.sh`, `backup.env.example`) are in the repository and reach the server with each deploy.
+The default branch is `main`. `/opt/budgetbuddy` is a git repository that `deploy.sh` only fetches into: it builds the image from a `git archive` copy in `/opt/budgetbuddy/.release`, so files in the repository do **not** appear in the `/opt/budgetbuddy` working folder. `deploy.sh` and the other deploy files under `deploy/vds/` exist only on the server, not in this repository. The backup scripts (`backup.sh`, `restore.sh`, `backup.env.example`) are in the repository and are copied into `/opt/budgetbuddy/deploy/vds/` by hand (see [One-time setup](#one-time-setup-server-owner)).
 
 ## Environment variables
 
@@ -59,7 +59,15 @@ Off-site storage: **Backblaze B2** is recommended (10 GB free, no card needed, S
 
 ### One-time setup (server owner)
 
-The scripts arrive on the server with the next deploy of `main`. Check with `ls /opt/budgetbuddy/deploy/vds/backup.sh`.
+Deploys do not place the scripts in `/opt/budgetbuddy/deploy/vds/`, so copy them there from `main`. The first command fetches the current `main`; do not rely on an earlier `deploy.sh` run for that, because it may have fetched another branch. Each script is written to a `.new` file first and replaces the installed one only when the copy succeeded, so a failed copy never leaves the cron with an empty `backup.sh`. Run the same commands again after a later change to the scripts; the cron keeps using the copied version until then.
+
+```bash
+cd /opt/budgetbuddy
+git fetch -q https://github.com/melisau/budget-buddy.git main:refs/remotes/origin/main
+for f in backup.sh restore.sh backup.env.example; do git show "origin/main:deploy/vds/$f" > "deploy/vds/$f.new" && mv "deploy/vds/$f.new" "deploy/vds/$f" || echo "FAILED: $f was not updated"; done
+chmod 700 deploy/vds/backup.sh deploy/vds/restore.sh
+ls -la deploy/vds/
+```
 
 1. **Settings file.** Create it from the example and fill in `BACKUP_DATABASE_URL`: Supabase Dashboard → **Connect** → **Session pooler** connection string, with the database password in place of `[PASSWORD]`. (The direct connection is IPv6-only on the free plan; the session pooler works over IPv4.)
 
@@ -111,7 +119,6 @@ The scripts arrive on the server with the next deploy of `main`. Check with `ls 
 5. **First run by hand**, then check the result:
 
    ```bash
-   chmod 700 /opt/budgetbuddy/deploy/vds/backup.sh /opt/budgetbuddy/deploy/vds/restore.sh
    /opt/budgetbuddy/deploy/vds/backup.sh
    ls -la /var/backups/budgetbuddy/db/
    docker run --rm -v /opt/budgetbuddy/rclone.conf:/config/rclone/rclone.conf:ro rclone/rclone:1.68.2 ls offsite:db
