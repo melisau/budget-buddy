@@ -45,7 +45,7 @@ const tr: Section[] = [
     ],
     items: [
       "Supabase: hesap oluşturma, giriş ve oturum yönetimi; veritabanı ve fiş görsellerinin saklandığı özel depolama.",
-      "E-posta gönderim hizmeti (Resend): hesap doğrulama ve şifre sıfırlama e-postalarının iletilmesi. Yalnızca e-posta adresiniz ve ilgili bağlantı gönderilir.",
+      "E-posta gönderim hizmeti (Resend): hesap doğrulama, şifre sıfırlama ve bildirim e-postalarının (bütçe ve hedef özetleri, aile daveti) iletilmesi. E-posta adresiniz ve e-postanın içeriği gönderilir; bildirim e-postalarını Ayarlar bölümünden kapatabilirsiniz.",
       "Keyubu: uygulamanın barındırılması. Sunucu Türkiye'dedir.",
       "Groq: AI asistanının yanıt üretmesi. Yalnızca sorunuz ve sorunun yanıtlanması için gereken özet finans bilgisi gönderilir.",
       "Sentry: hata izleme. Yalnızca uygulama içi kullanıcı numaranız gönderilir; adınız ve e-postanız gönderilmez.",
@@ -130,7 +130,7 @@ const en: Section[] = [
     ],
     items: [
       "Supabase: sign-up, sign-in and session management; database and private storage for receipt images.",
-      "Email delivery (Resend): sending account verification and password reset emails. Only your email address and the relevant link are sent.",
+      "Email delivery (Resend): sending account verification, password reset and notification emails (budget and goal summaries, family invitations). Your email address and the content of the email are sent; you can turn notification emails off in Settings.",
       "Keyubu: application hosting. The server is located in Türkiye.",
       "Groq: generating AI assistant answers. Only your question and the summary financial data needed to answer it are sent.",
       "Sentry: error monitoring. Only your internal user ID is sent, never your name or email.",
