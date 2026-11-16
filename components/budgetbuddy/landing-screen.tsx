@@ -96,7 +96,7 @@ export function LandingScreen({ go }: { go: Navigate }) {
           <a href="#how" onClick={closeMenu}>{t("How it works")}</a>
           <a href="#pricing" onClick={closeMenu}>{t("Pricing")}</a>
           <a href="#about" onClick={closeMenu}>{t("About")}</a>
-          <a href="/sign-in" onClick={closeMenu}>{t("Sign in")}</a>
+          <Button asChild><a href="/sign-in" onClick={closeMenu}>{t("Sign in")}</a></Button>
         </nav>
         <button
           type="button"
