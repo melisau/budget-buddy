@@ -131,3 +131,19 @@ and delete a test account. Replacing a photo or selecting an icon removes the
 previous object; a failed database update removes the new upload. Account
 deletion also removes the current avatar after identity deletion. Failed cleanup
 is logged and should be retried by an administrator.
+
+## Migration 0020 — recurring items and subscriptions
+
+`0020_recurring_items.sql` adds the `recurring_items` table (rent, salary, bills
+and subscriptions such as Netflix, weekly, monthly or yearly) and the nullable
+`transactions.recurring_item_id` column with a unique index on
+`(recurring_item_id, transaction_date)`. It is additive. Until it is applied the
+Recurring page says the feature is not ready, and nothing else changes, so it is
+safe to deploy the code first. Apply it locally, verify, then apply it to
+production in a controlled step (explicit approval required).
+
+Due items become real transactions whenever the user opens the dashboard, the
+transactions list or the Recurring page. No cron job is needed. The unique index
+guarantees that repeated or concurrent loads create each occurrence once. Dates
+in the past are never back-filled when an item is created or resumed, and one
+run creates at most the 36 most recent missed occurrences.
