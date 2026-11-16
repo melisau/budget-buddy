@@ -5,7 +5,7 @@
 | Environment | Branch | Supabase (data + Auth) | Payment provider | Deployment |
 | --- | --- | --- | --- | --- |
 | Local | Personal feature branch | Local Supabase (`supabase start`) | Sandbox/Test | Developer machine |
-| Production | `main` | Prod | Live | Docker container on the VDS (`budgetbuddy.melisauyar.com`) |
+| Production | `main` | Prod | Live | Docker container on the VDS (`budgetbuddy.melisauyar.com`); by hand, or automatically after CI passes when the [auto-deploy cron](./vds.md#automatic-deploys) is on |
 
 There is no hosted Preview environment: Vercel no longer builds or serves this repository. Verify a pull request by running its branch locally against the local Supabase stack (`supabase start`, see the README). There is no hosted development project either; production is the only hosted Supabase project. Local must never connect to the production Supabase project or use a payment provider's live keys.
 

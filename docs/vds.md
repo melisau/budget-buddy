@@ -191,6 +191,39 @@ A daily cron on the server, `/etc/cron.d/budgetbuddy-keepalive`, calls `/api/hea
 
 The GitHub Actions `keep-alive.yml` workflow does the same job but cannot run while GitHub Actions is unavailable (account billing lock). The server cron does not depend on it.
 
+## Automatic deploys
+
+Optional. Without it, production changes only when the owner runs `deploy.sh` by hand.
+
+A cron on the server runs [`deploy/vds/auto-deploy.sh`](../deploy/vds/auto-deploy.sh) every five minutes. The script:
+
+1. Asks GitHub for the newest commit on `main`. If it is the commit handled last time, it stops.
+2. Asks GitHub for that commit's CI checks. While CI is running it waits for the next run. If any check failed, it logs `SKIPPED` and does not deploy.
+3. When all checks passed, runs `deploy.sh main`, then calls `/api/health` and logs `OK` or `FAILED`.
+
+The server asks GitHub; GitHub never connects to the server. No SSH key or token is stored in GitHub, and the repository is public, so the script needs no credentials.
+
+Each commit is tried once. A commit whose CI or deploy failed is not retried: fix the cause and deploy by hand, or push a new commit. If GitHub Actions is unavailable, CI never reports, nothing is deployed automatically, and deploys go by hand as before. `deploy.sh` fetches `main` itself, so a commit pushed in the minutes between the CI check and the build is built with it.
+
+### Turning it on (server owner)
+
+Install the script the same way as the backup scripts (it is not placed by deploys), then check it:
+
+```bash
+cd /opt/budgetbuddy
+git fetch -q https://github.com/melisau/budget-buddy.git main:refs/remotes/origin/main
+git show origin/main:deploy/vds/auto-deploy.sh > deploy/vds/auto-deploy.sh.new && mv deploy/vds/auto-deploy.sh.new deploy/vds/auto-deploy.sh && chmod 700 deploy/vds/auto-deploy.sh
+/opt/budgetbuddy/deploy/vds/auto-deploy.sh
+```
+
+The first run deploys the current `main` if its CI passed. Then create `/etc/cron.d/budgetbuddy-auto-deploy`:
+
+```
+*/5 * * * * root /opt/budgetbuddy/deploy/vds/auto-deploy.sh >> /var/log/budgetbuddy-auto-deploy.log 2>&1
+```
+
+Check what happened with `tail /var/log/budgetbuddy-auto-deploy.log`. Quiet runs write nothing; every deploy, skip and failure writes one line. To turn automatic deploys off, delete the cron file.
+
 ## Access
 
 Only the server owner has SSH access. Agents and contributors without access should hand server-side steps to the owner as exact commands.
