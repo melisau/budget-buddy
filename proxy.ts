@@ -1,11 +1,21 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { readSupabasePublicConfig } from "@/lib/supabase/config";
+import { LANDING_LANGUAGE_BY_PATH, PAGE_LANGUAGE_HEADER } from "@/lib/seo/i18n";
 
 // Refreshes the Supabase session cookie on every matched request so server
 // code always sees a valid session. Authorization itself is checked next to
 // every protected resource with auth.getUser(); nothing here grants access.
 export async function proxy(request: NextRequest) {
+  // Public landing pages: no session work, only tell the root layout which
+  // language the page is in so the server HTML carries the right <html lang>.
+  const landingLanguage = LANDING_LANGUAGE_BY_PATH[request.nextUrl.pathname];
+  if (landingLanguage) {
+    const headers = new Headers(request.headers);
+    headers.set(PAGE_LANGUAGE_HEADER, landingLanguage);
+    return NextResponse.next({ request: { headers } });
+  }
+
   const config = readSupabasePublicConfig();
   if (!config) {
     // Missing configuration must not take the whole site down (a missing
@@ -42,6 +52,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/", "/en",
     "/sign-in", "/sign-up", "/auth/:path*", "/forgot-password", "/update-password",
     "/dashboard/:path*", "/accounts/:path*", "/analytics/:path*", "/assistant/:path*",
     "/budgets/:path*", "/family/:path*", "/goals/:path*", "/settings/:path*",

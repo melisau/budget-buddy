@@ -30,6 +30,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Button } from "@/components/ui/button";
 import type { Navigate } from "@/components/budgetbuddy/view-types";
 import { BILLING_ENABLED } from "@/lib/billing/launch";
+import { LANDING_FAQ } from "@/lib/seo/landing-faq";
 
 const flow = [
   { m: "Apr", income: 43, expense: 29 },
@@ -69,12 +70,7 @@ const howSteps = [
   ["03", "See what matters", "Use your dashboard and focused AI insights."],
 ] as const;
 
-const faqs = [
-  ["Do I need a CSV?", "No. Manual transaction entry is always available."],
-  ["Does BudgetBuddy move money?", "No. BudgetBuddy organizes your information and cannot move funds."],
-  ["Is AI financial advice?", "No. It summarizes your tracked data and budgeting patterns."],
-  ["Does it work on mobile?", "Yes. Every view adapts to mobile screens."],
-] as const;
+const faqs = LANDING_FAQ.map((item) => item.en);
 
 export function LandingScreen({ go }: { go: Navigate }) {
   const [menu, setMenu] = useState(false);
