@@ -59,11 +59,12 @@ Off-site storage: **Backblaze B2** is recommended (10 GB free, no card needed, S
 
 ### One-time setup (server owner)
 
-Deploys do not place the scripts in `/opt/budgetbuddy/deploy/vds/`, so copy them there from the fetched `main` (run `deploy.sh` first, or `git -C /opt/budgetbuddy fetch -q https://github.com/melisau/budget-buddy.git main:refs/remotes/origin/main`). Run the same commands again after a later change to the scripts; the cron keeps using the copied version until then.
+Deploys do not place the scripts in `/opt/budgetbuddy/deploy/vds/`, so copy them there from `main`. The first command fetches the current `main`; do not rely on an earlier `deploy.sh` run for that, because it may have fetched another branch. Each script is written to a `.new` file first and replaces the installed one only when the copy succeeded, so a failed copy never leaves the cron with an empty `backup.sh`. Run the same commands again after a later change to the scripts; the cron keeps using the copied version until then.
 
 ```bash
 cd /opt/budgetbuddy
-for f in backup.sh restore.sh backup.env.example; do git show "origin/main:deploy/vds/$f" > "deploy/vds/$f"; done
+git fetch -q https://github.com/melisau/budget-buddy.git main:refs/remotes/origin/main
+for f in backup.sh restore.sh backup.env.example; do git show "origin/main:deploy/vds/$f" > "deploy/vds/$f.new" && mv "deploy/vds/$f.new" "deploy/vds/$f" || echo "FAILED: $f was not updated"; done
 chmod 700 deploy/vds/backup.sh deploy/vds/restore.sh
 ls -la deploy/vds/
 ```
