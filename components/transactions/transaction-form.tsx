@@ -11,6 +11,7 @@ import { ImagePlus, Minus, Plus, ReceiptText, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { transactionSchema, type TransactionInput } from "@/validations/transaction";
 import { LanguageContext, useT } from "@/components/providers/language-provider";
+import { matchCategoryRule, type CategoryRule } from "@/lib/finance/category-rules";
 import type { StoredTransaction, TransactionOption } from "@/types/finance";
 
 const NO_ACCOUNT = "none";
@@ -33,6 +34,8 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
   const [accounts, setAccounts] = useState<TransactionOption[]>([]);
   const [categories, setCategories] = useState<TransactionOption[]>([]);
   const [optionsError, setOptionsError] = useState<string>();
+  const [rules, setRules] = useState<CategoryRule[]>([]);
+  const [pickedByRule, setPickedByRule] = useState(false);
   const [receipt, setReceipt] = useState<File>();
   const [hasStoredReceipt, setHasStoredReceipt] = useState(Boolean(transaction?.hasReceipt));
   const [isRemovingReceipt, setIsRemovingReceipt] = useState(false);
@@ -69,6 +72,31 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
     void loadOptions();
     return () => controller.abort();
   }, [tr]);
+
+  useEffect(() => {
+    if (transaction) return;
+    const controller = new AbortController();
+    fetch("/api/category-rules", { signal: controller.signal })
+      .then((response) => response.ok ? response.json() as Promise<{ available?: boolean; rules?: CategoryRule[] }> : null)
+      .then((payload) => { if (payload?.available && payload.rules) setRules(payload.rules); })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [transaction]);
+
+  /** Picks the category from the user's rules while they type, until they choose one themselves. */
+  function applyRule(title: string, kind: TransactionInput["type"]) {
+    if (transaction || (category && !pickedByRule)) return;
+    const rule = matchCategoryRule(title, kind, rules);
+    if (rule) {
+      setCategory(rule.categoryId);
+      form.setValue("category", rule.categoryId, { shouldValidate: true });
+      setPickedByRule(true);
+    } else if (pickedByRule) {
+      setCategory("");
+      form.setValue("category", "", { shouldValidate: false });
+      setPickedByRule(false);
+    }
+  }
 
   async function submit(values: TransactionInput) {
     setIsSubmitting(true);
@@ -110,6 +138,15 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
     }
   }
 
+  const titleField = form.register("title");
+  /** After switching income/expense the category is cleared; try the rules again for the title already typed. */
+  function applyRuleAfterTypeChange(kind: TransactionInput["type"]) {
+    const rule = transaction ? null : matchCategoryRule(form.getValues("title"), kind, rules);
+    if (!rule) return;
+    setCategory(rule.categoryId);
+    form.setValue("category", rule.categoryId, { shouldValidate: true });
+    setPickedByRule(true);
+  }
   const availableCategories = categories.filter((item) => !item.type || item.type === type);
   const removeStoredReceipt = async () => {
     if (!transaction) return;
@@ -134,7 +171,7 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
             aria-pressed={type === value}
             className={`${value} ${type === value ? "active" : ""}`}
             key={value}
-            onClick={() => { setType(value); setCategory(""); form.setValue("type", value, { shouldValidate: true }); form.setValue("category", "", { shouldValidate: true }); }}
+            onClick={() => { setType(value); setCategory(""); setPickedByRule(false); form.setValue("type", value, { shouldValidate: true }); form.setValue("category", "", { shouldValidate: true }); applyRuleAfterTypeChange(value); }}
             type="button"
           >
             <i>{value === "expense" ? <Minus /> : <Plus />}</i>
@@ -156,7 +193,7 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
       </label>
       <label>
         {tr ? "Açıklama" : "Description"}
-        <Input placeholder={tr ? "Haftalık market alışverişi" : "Weekly groceries"} {...form.register("title")} aria-invalid={!!form.formState.errors.title} />
+        <Input placeholder={tr ? "Haftalık market alışverişi" : "Weekly groceries"} {...titleField} onChange={(event) => { void titleField.onChange(event); applyRule(event.target.value, type); }} aria-invalid={!!form.formState.errors.title} />
         {form.formState.errors.title && <small className="field-error">{form.formState.errors.title.message}</small>}
       </label>
       <div className="receipt-field">
@@ -168,10 +205,11 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
       <div className="form-grid">
         <label>
           {tr ? "Kategori" : "Category"}
-          <Select onValueChange={(value) => { setCategory(value); form.setValue("category", value, { shouldValidate: true }); }} value={category}>
+          <Select onValueChange={(value) => { setCategory(value); setPickedByRule(false); form.setValue("category", value, { shouldValidate: true }); }} value={category}>
             <SelectTrigger aria-invalid={!!form.formState.errors.category}><SelectValue placeholder={tr ? "Kategori seç" : "Select category"} /></SelectTrigger>
             <SelectContent>{availableCategories.map((item) => <SelectItem value={item.id} key={item.id}>{t(item.name)}</SelectItem>)}</SelectContent>
           </Select>
+          {pickedByRule && <small>{tr ? "Kategori kurallarına göre seçildi." : "Picked from your category rules."}</small>}
           {form.formState.errors.category && <small className="field-error">{form.formState.errors.category.message}</small>}
         </label>
         <label>
