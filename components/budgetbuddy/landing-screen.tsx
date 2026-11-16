@@ -90,7 +90,7 @@ export function LandingScreen({ go }: { go: Navigate }) {
   return (
     <div className="landing" data-compact={compact ? "true" : undefined}>
       <header className="land-nav">
-        <Logo />
+        <Logo mark={false} />
         <nav className={menu ? "open" : ""}>
           <a href="#features" onClick={closeMenu}>{t("Features")}</a>
           <a href="#how" onClick={closeMenu}>{t("How it works")}</a>
@@ -181,7 +181,7 @@ export function LandingScreen({ go }: { go: Navigate }) {
         </section>
       </main>
 
-      <footer id="about"><div className="footer-brand"><Logo /><p>{t("Personal finance clarity, without the clutter.")}</p></div><div className="footer-meta"><span><a href="/privacy">{t("Privacy")}</a> · <a href="/terms">{t("Terms")}</a></span><LanguageSelect /></div><small>{`© ${new Date().getFullYear()} BudgetBuddy`}</small></footer>
+      <footer id="about"><div className="footer-brand"><Logo mark={false} /><p>{t("Personal finance clarity, without the clutter.")}</p></div><div className="footer-meta"><span><a href="/privacy">{t("Privacy")}</a> · <a href="/terms">{t("Terms")}</a></span><LanguageSelect /></div><small>{`© ${new Date().getFullYear()} BudgetBuddy`}</small></footer>
     </div>
   );
 }
