@@ -2,7 +2,7 @@
 
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { notifyFinanceDataChanged, useFinanceDataVersion } from "@/lib/finance/data-events";
-import { ArrowDownLeft, ArrowUpRight, BriefcaseBusiness, Check, CreditCard, Download, FileSpreadsheet, GraduationCap, MoreHorizontal, MoreVertical, Pencil, ReceiptText, Search, ShoppingCart, SlidersHorizontal, Trash2, Upload, X } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, BriefcaseBusiness, Check, CreditCard, Download, FileSpreadsheet, GraduationCap, MoreHorizontal, MoreVertical, Pencil, ReceiptText, Search, ShoppingCart, SlidersHorizontal, Trash2, Upload, Wand2, X } from "lucide-react";
 import { toast } from "sonner";
 import { AddTransaction } from "@/components/budgetbuddy/shared";
 import { TransactionForm } from "@/components/transactions/transaction-form";
@@ -19,6 +19,7 @@ import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetT
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { StoredTransaction, TransactionOption, TransactionType } from "@/types/finance";
 import { formatNumber } from "@/lib/finance/currency";
+import { CategoryRulesDialog } from "@/components/budgetbuddy/category-rules-dialog";
 import { parseTransactionCsv, type CsvParseResult } from "@/lib/finance/csv-import";
 
 type TransactionData = {
@@ -45,6 +46,7 @@ export function TransactionsScreen() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(false);
 
   const loadTransactions = useCallback(async () => {
     setLoadError(undefined);
@@ -103,10 +105,12 @@ export function TransactionsScreen() {
           <Select value={exportScope} onValueChange={(value) => setExportScope(value as "personal" | "family")}><SelectTrigger id="transaction-export-scope"><SelectValue /></SelectTrigger><SelectContent><SelectGroup><SelectItem value="personal">{language === "tr" ? "Kişisel" : "Personal"}</SelectItem><SelectItem value="family">{language === "tr" ? "Aile" : "Family"}</SelectItem></SelectGroup></SelectContent></Select>
           <CsvExport scope={exportScope} />
           <Button variant="outline" onClick={() => { setToolsOpen(false); setImportOpen(true); }}><Upload data-icon="inline-start" />{t("Import CSV")}</Button>
+          <Button variant="outline" onClick={() => { setToolsOpen(false); setRulesOpen(true); }}><Wand2 data-icon="inline-start" />{language === "tr" ? "Kategori kuralları" : "Category rules"}</Button>
         </PopoverContent>
       </Popover>
     </div>
     <CsvImport open={importOpen} onOpenChange={setImportOpen} />
+    <CategoryRulesDialog open={rulesOpen} onOpenChange={setRulesOpen} />
     <div className="transactions-searchbar">
       <div className="transactions-search"><Search aria-hidden="true" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("Search transactions")} aria-label={t("Search transactions")} />{query && <Button variant="ghost" size="icon" onClick={() => setQuery("")} aria-label={language === "tr" ? "Aramayı temizle" : "Clear search"}><X /></Button>}</div>
       <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
@@ -267,9 +271,9 @@ function CsvImport({ open, onOpenChange }: { open: boolean; onOpenChange: (open:
     setIsImporting(true);
     try {
       const response = await fetch("/api/transactions/import", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rows: parseResult.transactions }) });
-      const payload = await response.json() as { imported?: number; duplicates?: number; error?: string };
+      const payload = await response.json() as { imported?: number; duplicates?: number; categorizedByRule?: number; uncategorized?: number; error?: string };
       if (!response.ok) throw new Error(payload.error);
-      toast.success(language === "tr" ? `${payload.imported ?? 0} işlem aktarıldı${payload.duplicates ? `, ${payload.duplicates} mükerrer satır atlandı` : ""}.` : `${payload.imported ?? 0} transactions imported${payload.duplicates ? `, ${payload.duplicates} duplicates skipped` : ""}.`);
+      toast.success(language === "tr" ? `${payload.imported ?? 0} işlem aktarıldı${payload.duplicates ? `, ${payload.duplicates} mükerrer satır atlandı` : ""}${payload.categorizedByRule ? `, ${payload.categorizedByRule} işlem kurallarla kategorilendi` : ""}${payload.uncategorized ? `, ${payload.uncategorized} işlem "Diğer" kategorisine girdi` : ""}.` : `${payload.imported ?? 0} transactions imported${payload.duplicates ? `, ${payload.duplicates} duplicates skipped` : ""}${payload.categorizedByRule ? `, ${payload.categorizedByRule} categorized by rules` : ""}${payload.uncategorized ? `, ${payload.uncategorized} went to "Other"` : ""}.`);
       notifyFinanceDataChanged(); setStep(1); setParseResult(undefined); setFileName(undefined);
     } catch (error) { setFileError(error instanceof Error && error.message ? error.message : "Unable to import CSV."); } finally { setIsImporting(false); }
   }

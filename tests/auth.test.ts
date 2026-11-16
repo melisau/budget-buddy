@@ -163,3 +163,17 @@ test("a recurring occurrence is created only once, and browsers cannot read recu
   await db.query("delete from public.recurring_items where id=$1", [item]);
   assert.equal((await db.query<{ recurring_item_id: string | null }>("select recurring_item_id from public.transactions where title='Netflix' and transaction_date='2026-11-01'")).rows[0].recurring_item_id, null);
 });
+
+test("category rules are unique per keyword ignoring case, hidden from browsers, and removed with their category", async () => {
+  const ownerId = "30000000-0000-4000-8000-000000000002";
+  await db.query("insert into public.users(id, email, name) values ($1, 'rules@example.test', 'Rules')", [ownerId]);
+  const categoryId = (await db.query<{ id: string }>("insert into public.categories(user_id, name, type) values ($1, 'Market', 'expense') returning id", [ownerId])).rows[0].id;
+  const insert = "insert into public.category_rules(user_id, keyword, type, category_id) values ($1, $2, 'expense', $3)";
+  await db.query(insert, [ownerId, "Migros", categoryId]);
+  await assert.rejects(db.query(insert, [ownerId, "MIGROS", categoryId]), /duplicate key/);
+  await assert.rejects(db.query("insert into public.category_rules(user_id, keyword, type, category_id) values ($1, 'x', 'expense', $2)", [ownerId, categoryId]));
+  const visible = await asUser(authId, async () => (await db.query("select id from public.category_rules")).rows.length);
+  assert.equal(visible, 0);
+  await db.query("delete from public.categories where id=$1", [categoryId]);
+  assert.equal((await db.query("select id from public.category_rules where user_id=$1", [ownerId])).rows.length, 0);
+});
