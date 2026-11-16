@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   keywords: ["personal finance", "budget app", "expense tracker", "savings goals", "family budget", "bütçe uygulaması", "harcama takibi", "gelir gider takibi", "aile bütçesi", "birikim hedefi"],
   authors: [{ name: "Melisa Uyar" }],
   alternates: { canonical: "/" },
-  icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
+  icons: { icon: [{ url: "/brand/icon-32.png", sizes: "32x32", type: "image/png" }, { url: "/brand/icon-48.png", sizes: "48x48", type: "image/png" }], shortcut: "/brand/icon-32.png" },
   openGraph: {
     type: "website",
     url: "/",
