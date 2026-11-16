@@ -1,6 +1,7 @@
 // Turns a stored notification into text. Shared by the bell and the e-mail,
 // so the words stay in one place. Notifications are stored as data, not prose,
 // so they follow the reader's language.
+import { categoryDisplayName } from "@/lib/finance/category-names";
 import type { NotificationData, NotificationKind } from "@/lib/notifications/rules";
 
 export type Language = "tr" | "en";
@@ -19,11 +20,12 @@ function dateText(value: unknown, language: Language) {
 
 export function renderNotification(kind: NotificationKind, data: NotificationData, language: Language): RenderedNotification {
   const tr = language === "tr";
+  const category = categoryDisplayName(String(data.categoryName ?? ""), language);
   switch (kind) {
     case "budget_warning":
       return {
         href: "/budgets",
-        title: tr ? `${data.categoryName} bütçesinin %${data.usage}'ini kullandın` : `You used ${data.usage}% of your ${data.categoryName} budget`,
+        title: tr ? `${category} bütçesinin %${data.usage}'ini kullandın` : `You used ${data.usage}% of your ${category} budget`,
         body: tr
           ? `${money(data.spent, data.currency, language)} / ${money(data.limit, data.currency, language)} harcadın. Limite yaklaşıyorsun.`
           : `You spent ${money(data.spent, data.currency, language)} of ${money(data.limit, data.currency, language)}. You are close to the limit.`,
@@ -31,7 +33,7 @@ export function renderNotification(kind: NotificationKind, data: NotificationDat
     case "budget_exceeded":
       return {
         href: "/budgets",
-        title: tr ? `${data.categoryName} bütçesini aştın` : `You went over your ${data.categoryName} budget`,
+        title: tr ? `${category} bütçesini aştın` : `You went over your ${category} budget`,
         body: tr
           ? `${money(data.spent, data.currency, language)} harcadın; limit ${money(data.limit, data.currency, language)}.`
           : `You spent ${money(data.spent, data.currency, language)}; the limit is ${money(data.limit, data.currency, language)}.`,

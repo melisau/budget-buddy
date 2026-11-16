@@ -82,6 +82,14 @@ describe("notification text", () => {
     assert.match(renderNotification(goalDue.kind, goalDue.data, "en").title, /tomorrow/);
   });
 
+  test("default category names are translated for Turkish readers; custom ones stay as written", () => {
+    const dining = budgetNotification({ ...budget(800), categoryName: "Dining" }, "TRY")!;
+    assert.match(renderNotification(dining.kind, dining.data, "tr").title, /^Dışarıda yemek bütçesinin %80/);
+    assert.match(renderNotification(dining.kind, dining.data, "en").title, /80% of your Dining budget/);
+    const custom = budgetNotification({ ...budget(1200), categoryName: "Kedi maması" }, "TRY")!;
+    assert.equal(renderNotification(custom.kind, custom.data, "tr").title, "Kedi maması bütçesini aştın");
+  });
+
   test("a stored currency code that is not a currency falls back safely", () => {
     const text = renderNotification("budget_exceeded", { categoryName: "X", usage: 120, limit: 100, spent: 120, currency: "<script>" }, "en");
     assert.doesNotMatch(text.body, /script/);
