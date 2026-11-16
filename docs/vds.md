@@ -49,7 +49,7 @@ The response reports `users`, `created`, `emailed`, `failed` and whether e-mail 
 The hosted Supabase project (`fnhzuvhjpnothuuzbnkv`) is on the free plan, which has **no automatic backups**. A daily cron on the server runs [`deploy/vds/backup.sh`](../deploy/vds/backup.sh), which:
 
 1. Dumps the database with `pg_dump` (the `public` schema with its data, plus the user accounts in `auth.users` and `auth.identities`) into a dated folder, compressed, with SHA-256 checksums, and checks that the dumps can be read back.
-2. Mirrors the private Storage buckets `budgetbuddy-receipts` and `budgetbuddy-avatars` through Supabase's S3 endpoint. Files that are later changed or deleted are moved to a dated `files/changed/` folder instead of being lost.
+2. Mirrors the private Storage buckets `budgetbuddy-receipts` and `budgetbuddy-avatars` through Supabase's S3 endpoint. A bucket that does not exist yet (the app creates `budgetbuddy-avatars` on the first profile photo) is skipped with a log line, so keep both in `BACKUP_STORAGE_BUCKETS`. Files that are later changed or deleted are moved to a dated `files/changed/` folder instead of being lost.
 3. Deletes local dumps older than `BACKUP_KEEP_DAYS` (default 14).
 4. Copies everything to an off-site storage bucket and deletes off-site dumps older than `BACKUP_REMOTE_KEEP_DAYS` (default 60).
 
