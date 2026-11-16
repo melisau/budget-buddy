@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { Language } from "@/components/providers/language-provider";
 import { LANDING_ALTERNATES, landingPath } from "@/lib/seo/i18n";
+import { LANDING_FAQ } from "@/lib/seo/landing-faq";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 export const LANDING_COPY = {
@@ -81,6 +82,17 @@ export function landingStructuredData(language: Language) {
         inLanguage: ["tr", "en"],
         offers: { "@type": "Offer", price: "0", priceCurrency: "TRY" },
         publisher: { "@id": `${SITE_URL}/#organization` },
+      },
+      {
+        "@type": "FAQPage",
+        "@id": `${url}#faq`,
+        inLanguage: language,
+        isPartOf: { "@id": `${url}#webpage` },
+        mainEntity: LANDING_FAQ.map((item) => ({
+          "@type": "Question",
+          name: item[language][0],
+          acceptedAnswer: { "@type": "Answer", text: item[language][1] },
+        })),
       },
     ],
   };
