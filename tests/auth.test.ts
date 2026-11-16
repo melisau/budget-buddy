@@ -161,5 +161,5 @@ test("a recurring occurrence is created only once, and browsers cannot read recu
   assert.equal(visible, 0);
   // Deleting the item keeps the transaction it created.
   await db.query("delete from public.recurring_items where id=$1", [item]);
-  assert.equal((await db.query("select recurring_item_id from public.transactions where title='Netflix' and transaction_date='2026-11-01'")).rows[0].recurring_item_id, null);
+  assert.equal((await db.query<{ recurring_item_id: string | null }>("select recurring_item_id from public.transactions where title='Netflix' and transaction_date='2026-11-01'")).rows[0].recurring_item_id, null);
 });
