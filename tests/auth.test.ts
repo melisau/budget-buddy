@@ -143,3 +143,23 @@ test("Auth deletion cascades only that user's data and rollback preserves both i
   assert.equal((await db.query("select * from public.users where auth_user_id=$1", [otherId])).rows.length, 1);
   assert.equal((await db.query("select * from public.transactions")).rows.length, 0);
 });
+
+test("a recurring occurrence is created only once, and browsers cannot read recurring items", async () => {
+  const ownerId = "30000000-0000-4000-8000-000000000001";
+  await db.query("insert into public.users(id, email, name) values ($1, 'recurring@example.test', 'Recurring')", [ownerId]);
+  const item = (await db.query<{ id: string }>("insert into public.recurring_items(user_id, kind, type, title, amount, frequency, start_date, next_date) values ($1, 'subscription', 'expense', 'Netflix', 199.99, 'monthly', '2026-11-01', '2026-11-01') returning id", [ownerId])).rows[0].id;
+  const insert = "insert into public.transactions(user_id, type, amount, title, transaction_date, recurring_item_id) values ($1, 'expense', 199.99, 'Netflix', '2026-11-01', $2) on conflict (recurring_item_id, transaction_date) do nothing returning id";
+  assert.equal((await db.query(insert, [ownerId, item])).rows.length, 1);
+  assert.equal((await db.query(insert, [ownerId, item])).rows.length, 0);
+  // Ordinary transactions without an item never collide with each other.
+  const plain = "insert into public.transactions(user_id, type, amount, title, transaction_date) values ($1, 'expense', 5, 'Tea', '2026-11-01')";
+  await db.query(plain, [ownerId]); await db.query(plain, [ownerId]);
+  // A subscription must be an expense.
+  await assert.rejects(db.query("insert into public.recurring_items(user_id, kind, type, title, amount, frequency, start_date, next_date) values ($1, 'subscription', 'income', 'Bad', 1, 'monthly', '2026-11-01', '2026-11-01')", [ownerId]));
+  // Row level security: no policy, so a signed-in browser client sees nothing.
+  const visible = await asUser(authId, async () => (await db.query("select id from public.recurring_items")).rows.length);
+  assert.equal(visible, 0);
+  // Deleting the item keeps the transaction it created.
+  await db.query("delete from public.recurring_items where id=$1", [item]);
+  assert.equal((await db.query("select recurring_item_id from public.transactions where title='Netflix' and transaction_date='2026-11-01'")).rows[0].recurring_item_id, null);
+});

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { AccessError, requireAppUser } from "@/lib/auth/authorization";
 import { createTransaction, listTransactionData } from "@/lib/finance/transaction-data";
+import { materializeDueRecurringSafely } from "@/lib/finance/recurring-service";
 import { transactionRequestSchema } from "@/validations/transaction";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 
@@ -44,6 +45,7 @@ function errorResponse(error: unknown) {
 export async function GET() {
   try {
     const user = await requireAppUser();
+    await materializeDueRecurringSafely(user);
     const data = await listTransactionData(user);
     return NextResponse.json({
       transactions: data.transactions.map((transaction) => toClientTransaction(transaction as Record<string, unknown>)),

@@ -6,7 +6,7 @@ export const LanguageContext=createContext<{language:Language;setLanguage:(langu
 const translations:Record<string,string>={
  "Active":"Aktif",
  "Features":"Özellikler","How it works":"Nasıl çalışır","Pricing":"Fiyatlandırma","About":"Hakkında","Sign in":"Giriş yap","Get started":"Başla","Open menu":"Menüyü aç","Close menu":"Menüyü kapat","Privacy":"Gizlilik","Terms":"Koşullar","Skip to main content":"Ana içeriğe geç","Trial progress":"Deneme süresi ilerlemesi",
- "Dashboard":"Genel Bakış","Family Group":"Aile Grubu","Wishlists":"Dilek Listeleri","Transactions":"İşlemler","Budgets":"Bütçeler","Accounts":"Hesaplar","Goals":"Hedefler","Analytics":"Analizler","AI Assistant":"AI Asistanı","Settings":"Ayarlar",
+ "Dashboard":"Genel Bakış","Family Group":"Aile Grubu","Wishlists":"Dilek Listeleri","Transactions":"İşlemler","Recurring":"Tekrarlayanlar","Budgets":"Bütçeler","Accounts":"Hesaplar","Goals":"Hedefler","Analytics":"Analizler","AI Assistant":"AI Asistanı","Settings":"Ayarlar",
  "Total balance":"Toplam bakiye","Monthly income":"Aylık gelir","Monthly expenses":"Aylık gider","Savings rate":"Tasarruf oranı",
  "Cash flow":"Nakit akışı","Spending by category":"Kategoriye göre harcama","Budget progress":"Bütçe ilerlemesi","Recent transactions":"Son işlemler",
  "Income and expenses · Last 6 months":"Gelir ve giderler · Son 6 ay","Latest activity":"Son hareketler","View all":"Tümünü gör",

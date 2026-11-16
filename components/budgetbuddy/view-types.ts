@@ -5,6 +5,7 @@ export type View =
   | "dashboard"
   | "family"
   | "wishlists"
+  | "recurring"
   | "transactions"
   | "budgets"
   | "accounts"

@@ -1,7 +1,7 @@
 "use client";
 import { useAuthUser } from "@/components/providers/auth-provider";
 import {useContext,useState,type ReactNode} from "react";
-import {ChartNoAxesCombined,ChevronRight,Gift,Home,Landmark,LayoutDashboard,MoreHorizontal,Plus,ReceiptText,Settings,Sparkles,Target,Users,WalletCards} from "lucide-react";
+import {ChartNoAxesCombined,ChevronRight,Gift,Home,Landmark,LayoutDashboard,MoreHorizontal,Plus,ReceiptText,Repeat,Settings,Sparkles,Target,Users,WalletCards} from "lucide-react";
 import {Progress} from "@/components/ui/progress";
 import {Sheet,SheetClose,SheetContent,SheetDescription,SheetHeader,SheetTitle,SheetTrigger} from "@/components/ui/sheet";
 import {LanguageContext,LanguageSelect,useT} from "@/components/providers/language-provider";
@@ -11,7 +11,7 @@ import { SavingsJarIcon } from "@/components/budgetbuddy/savings-jar-icon";
 import { AddTransaction } from "@/components/budgetbuddy/shared";
 import { BILLING_ENABLED } from "@/lib/billing/launch";
 
-export type AppView="dashboard"|"family"|"wishlists"|"transactions"|"budgets"|"accounts"|"goals"|"analytics"|"assistant"|"settings";
+export type AppView="dashboard"|"family"|"wishlists"|"transactions"|"recurring"|"budgets"|"accounts"|"goals"|"analytics"|"assistant"|"settings";
 type Navigate=(view:AppView|"landing")=>void;
 type Prefetch=(view:AppView)=>void;
 
@@ -20,6 +20,7 @@ export const APP_NAVIGATION=[
  ["family","Family Group",Users],
  ["wishlists","Wishlists",Gift],
  ["transactions","Transactions",ReceiptText],
+ ["recurring","Recurring",Repeat],
  ["budgets","Budgets",SavingsJarIcon],
  ["accounts","Accounts",Landmark],
  ["goals","Goals",Target],

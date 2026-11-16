@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { AccessError, requireAppUser } from "@/lib/auth/authorization";
+import { materializeDueRecurringSafely } from "@/lib/finance/recurring-service";
 import { calculateSavingsRate } from "@/lib/finance/calculations";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { Currency } from "@/types/finance";
@@ -17,6 +18,7 @@ function errorResponse(error: unknown) { if (error instanceof AccessError) retur
 export async function GET(request: Request) {
   try {
     const user = await requireAppUser();
+    await materializeDueRecurringSafely(user);
     const params = new URL(request.url).searchParams;
     const requestedMonth = params.get("month") ?? new Date().toISOString().slice(0, 7);
     const month = monthPattern.test(requestedMonth) ? requestedMonth : new Date().toISOString().slice(0, 7);
