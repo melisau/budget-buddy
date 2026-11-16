@@ -119,6 +119,26 @@ same SMTP account should be set in Supabase Auth so sign-up and password
 e-mails are reliable. The daily job needs `CRON_SECRET` and a cron entry on
 the server, described in [VDS hosting](./vds.md).
 
+The provider is **Resend**, the same one Supabase Auth uses, so the sending
+domain is already verified. In `.env.vds` set (the password is a Resend API key
+with sending access; give this server its own key rather than reusing the one in
+the Supabase panel, so either can be rotated alone):
+
+```
+SMTP_HOST=smtp.resend.com
+SMTP_PORT=465
+SMTP_USER=resend
+SMTP_PASSWORD=<Resend API key, starts with re_>
+SMTP_FROM=BudgetBuddy <no-reply@your-verified-domain>
+CRON_SECRET=<a random string of 32 or more characters>
+```
+
+`SMTP_FROM` must use the domain verified in Resend. Port 465 uses a direct TLS
+connection and 587 uses STARTTLS; the app handles both. The free plan has daily
+and monthly sending limits (check Resend's pricing page): a daily digest to
+every user is one e-mail each, so the number of users with a new notification
+per day is what counts.
+
 ## Migration 0017 — profile avatars
 
 Apply `0017_profile_avatars.sql` to the local stack before testing this release. It adds
