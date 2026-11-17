@@ -14,6 +14,9 @@ const config: CapacitorConfig = {
   },
   android: { path: "mobile/android" },
   ios: { path: "mobile/ios" },
+  plugins: {
+    SocialLogin: { providers: { google: true, facebook: false, apple: false, twitter: false } },
+  },
 };
 
 export default config;

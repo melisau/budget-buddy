@@ -24,3 +24,23 @@ Never point it at production Supabase from a local stack.
   features (camera receipt capture, push notifications, haptics) before submitting.
 - Sign-in links in Supabase emails open the browser, not the app, until deep links
   (Android App Links / iOS Universal Links) are configured.
+
+## Google sign-in in the apps
+
+Google blocks sign-in inside embedded WebViews, so the apps use the native account
+picker (`@capgo/capacitor-social-login`, `components/auth/native-google-button.tsx`).
+It returns a Google ID token that is exchanged with `supabase.auth.signInWithIdToken`,
+the same as the website's Google Identity Services flow.
+
+Setup in Google Cloud Console → Credentials (same project as `NEXT_PUBLIC_GOOGLE_CLIENT_ID`):
+
+1. Create an **Android** OAuth client with package `com.melisauyar.budgetbuddy` and the
+   SHA-1 of each signing key (debug key: `cd mobile/android && ./gradlew signingReport`;
+   release: the upload key, plus the Play App Signing key from Play Console).
+2. For iOS, create an **iOS** OAuth client (bundle ID `com.melisauyar.budgetbuddy`), set
+   `NEXT_PUBLIC_GOOGLE_IOS_CLIENT_ID`, add it to Supabase → Auth → Google → Authorized
+   Client IDs, add its reversed client ID as a URL scheme in `Info.plist`, and forward
+   URL opens in `SceneDelegate.swift` (see the plugin's `docs/setup_google.md`).
+
+The web client ID stays the token audience on Android, so no Supabase change is needed there.
+Because the apps load the deployed site, these changes take effect after a deploy.

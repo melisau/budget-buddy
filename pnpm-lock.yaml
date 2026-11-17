@@ -14,6 +14,9 @@ importers:
       '@capacitor/core':
         specifier: ^8.6.0
         version: 8.6.0
+      '@capgo/capacitor-social-login':
+        specifier: ^8.7.7
+        version: 8.7.7(@capacitor/core@8.6.0)
       '@hookform/resolvers':
         specifier: ^5.7.1
         version: 5.7.1(@sinclair/typebox@0.27.12)(@standard-schema/spec@1.1.0)(ajv-formats@2.1.1(ajv@8.20.0))(ajv@8.20.0)(react-hook-form@7.85.0(react@19.2.6))(superstruct@2.0.2)(zod@3.25.76)
@@ -287,6 +290,11 @@ packages:
     resolution: {integrity: sha512-Y2PE4zoBqMrSTWoVMJmX2byBznjn6egmATzoEUJiGVbVubkNpAvkF/tl0SBKDyP67ngyedTx1tQq5IGYIhby1A==}
     peerDependencies:
       '@capacitor/core': ^8.6.0
+
+  '@capgo/capacitor-social-login@8.7.7':
+    resolution: {integrity: sha512-8El/LzJkwvHDalbtaqKz3Qrd61OiPWHOB5qrt/ExYFrI9Jzjjk4c6GT+Gg9IJ14AMaboJAhI+0sLZghDBG17NQ==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
 
   '@cloudflare/kv-asset-handler@0.5.0':
     resolution: {integrity: sha512-jxQYkj8dSIzc0cD6cMMNdOc1UVjqSqu8BZdor5s8cGjW2I8BjODt/kWPVdY+u9zj3ms75Q5qaZgnxUad83+eAg==}
@@ -2901,10 +2909,6 @@ packages:
     resolution: {integrity: sha512-YovQ3rzhaLMIrDjNDMkNS01tea93qhEhG5xy8f6+R0l+dw3Ki+5sCoIoI942iuLZTHWogWktgwVDhU09iNEimQ==}
     engines: {node: 20 || >=22}
 
-  brace-expansion@5.0.6:
-    resolution: {integrity: sha512-kLpxurY4Z4r9sgMsyG0Z9uzsBlgiU/EFKhj/h91/8yHu0edo7XuixOIH3VcJ8kkxs6/jPzoI6U9Vj3WqbMQ94g==}
-    engines: {node: 18 || 20 || >=22}
-
   braces@3.0.3:
     resolution: {integrity: sha512-yQbXgO/OSZVD2IsiLlro+7Hf6Q18EJrKSEsdoMzKePKXct3gvD8oLcOQdIzGupr5Fj+EDe8gO/lxc1BzfMpxvA==}
     engines: {node: '>=8'}
@@ -5354,6 +5358,11 @@ snapshots:
     dependencies:
       '@capacitor/core': 8.6.0
 
+  '@capgo/capacitor-social-login@8.7.7(@capacitor/core@8.6.0)':
+    dependencies:
+      '@capacitor/core': 8.6.0
+      tslib: 2.8.1
+
   '@cloudflare/kv-asset-handler@0.5.0': {}
 
   '@cloudflare/unenv-preset@2.16.1(unenv@2.0.0-rc.24)(workerd@1.20260515.1)':
@@ -7565,10 +7574,6 @@ snapshots:
     dependencies:
       balanced-match: 4.0.4
 
-  brace-expansion@5.0.6:
-    dependencies:
-      balanced-match: 4.0.4
-
   braces@3.0.3:
     dependencies:
       fill-range: 7.1.1
@@ -8872,7 +8877,7 @@ snapshots:
 
   minimatch@10.2.5:
     dependencies:
-      brace-expansion: 5.0.6
+      brace-expansion: 5.0.12
 
   minimatch@11.0.5:
     dependencies:
