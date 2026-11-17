@@ -16,7 +16,7 @@ export async function GET() {
     const members = await supabase.from("family_members").select("family_group_id").eq("user_id", user.id).eq("invitation_status", "accepted");
     if (members.error) throw members.error;
     const groupIds = (members.data ?? []).map((member) => member.family_group_id);
-    const columns = "id, family_group_id, owner_user_id, title, occasion, event_date, surprise, created_at";
+    const columns = "id, family_group_id, owner_user_id, title, occasion, event_date, surprise, share_token, created_at";
     const [accepted, familyLists, personalLists] = await Promise.all([
       groupIds.length ? supabase.from("family_members").select("family_group_id, user_id").in("family_group_id", groupIds).eq("invitation_status", "accepted") : Promise.resolve({ data: [], error: null }),
       groupIds.length ? supabase.from("wishlists").select(columns).in("family_group_id", groupIds) : Promise.resolve({ data: [], error: null }),
@@ -34,6 +34,7 @@ export async function GET() {
     return NextResponse.json({ lists: visibleLists.map((list) => ({
       id: list.id, familyGroupId: list.family_group_id, mine: list.owner_user_id === user.id,
       title: list.title, occasion: list.occasion, eventDate: list.event_date, surprise: list.surprise,
+      shareToken: list.owner_user_id === user.id ? list.share_token ?? null : null,
       items: (items.data ?? []).filter((item) => item.wishlist_id === list.id).map((item) => visibleWishlistItem(item, list.owner_user_id, user.id, list.surprise)),
     })) });
   } catch (error) { return fail(error); }

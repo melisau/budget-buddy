@@ -67,6 +67,12 @@ omits reservation state from the list owner's response. Owners who leave a
 group no longer have their lists or goal shares returned to its members;
 stored data is retained.
 
+Wishlists can also be personal (no group). An owner may create an optional
+read-only share link (`/w/<token>`, 24 random bytes as base64url). That page
+needs no sign-in, is `noindex`, sends no referrer, and shows only the title,
+occasion, date and wishes: never reservations or owner identity. Rotating
+the link replaces the token; turning it off clears it, revoking access.
+
 - Make persistent schema changes only through SQL files under `supabase/migrations/`.
 - Migrations must be ordered, repeatable where practical, and backward-compatible whenever possible.
 - Split breaking changes across releases with expand-contract: add the new structure, deploy compatible code, migrate data, then remove the old structure in a later release.
