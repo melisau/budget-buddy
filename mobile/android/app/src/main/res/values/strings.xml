@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Budget Buddy</string>
+    <string name="title_activity_main">Budget Buddy</string>
+    <string name="package_name">com.melisauyar.budgetbuddy</string>
+    <string name="custom_url_scheme">com.melisauyar.budgetbuddy</string>
+</resources>

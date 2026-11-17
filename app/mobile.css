@@ -362,3 +362,7 @@ body {
   .landing footer { grid-template-columns: minmax(0, 1fr); }
   .landing footer .footer-meta { justify-content: flex-start; }
 }
+
+/* Keep content below the status bar / notch in the native apps and installed PWAs
+   (viewport-fit=cover lets the page draw edge to edge). */
+body { padding-top: env(safe-area-inset-top, 0px); }
