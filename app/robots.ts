@@ -15,6 +15,7 @@ const PRIVATE_PATHS = [
   "/goals",
   "/settings",
   "/transactions",
+  "/w/",
 ];
 
 export default function robots(): MetadataRoute.Robots {
