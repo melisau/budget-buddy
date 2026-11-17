@@ -1,6 +1,7 @@
 "use client";
-import {WalletCards} from "lucide-react";
+import {BrandMark} from "@/components/brand/brand-mark";
 
-export function Logo({go}:{go?:()=>void}){
- return <button type="button" className="logo" onClick={go} aria-label="BudgetBuddy"><span><WalletCards aria-hidden="true"/></span>Budget<b>Buddy</b></button>;
+/** The landing page uses the wordmark alone (mark={false}); the app and sign-in pages show the icon too. */
+export function Logo({go,mark=true}:{go?:()=>void;mark?:boolean}){
+ return <button type="button" className="logo" onClick={go} aria-label="BudgetBuddy">{mark&&<BrandMark size={36} className="logo-mark"/>}Budget<b>Buddy</b></button>;
 }

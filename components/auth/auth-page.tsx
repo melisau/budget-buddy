@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useContext, useState } from "react";
 import { LanguageContext } from "@/components/providers/language-provider";
-import { ArrowRight, Check, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, Sparkles, WalletCards } from "lucide-react";
+import { ArrowRight, Check, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, Sparkles } from "lucide-react";
+import { BrandMark } from "@/components/brand/brand-mark";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,7 +46,7 @@ export function AuthPage({ mode, redirectTo = "/dashboard", errorCode = "", stat
         <div aria-hidden="true" className="pointer-events-none absolute -right-32 -top-28 h-[430px] w-[430px] rounded-full bg-[#5267df]/30 blur-3xl" />
         <div aria-hidden="true" className="pointer-events-none absolute -bottom-40 -left-36 h-[460px] w-[460px] rounded-full bg-[#344d99]/50 blur-3xl" />
         <Link href="/" className="relative flex w-fit items-center gap-3 text-xl font-extrabold tracking-tight text-white">
-          <span className="grid size-11 place-items-center rounded-2xl bg-[#5267df] shadow-lg shadow-black/20"><WalletCards className="size-6" aria-hidden="true" /></span>
+          <BrandMark size={44} className="shadow-lg shadow-black/20 rounded-[10px]" />
           Budget<span className="-ml-3 text-[#aab8ff]">Buddy</span>
         </Link>
 
@@ -65,7 +66,7 @@ export function AuthPage({ mode, redirectTo = "/dashboard", errorCode = "", stat
 
       <section className="flex min-h-screen flex-col px-5 py-7 sm:px-10 sm:py-9 lg:px-12 xl:px-20" aria-labelledby="auth-title">
         <div className="flex items-center justify-between gap-4">
-          <Link href="/" className="flex items-center gap-2 text-lg font-extrabold tracking-tight text-[#17213c] lg:hidden"><span className="grid size-9 place-items-center rounded-xl bg-[#5267df] text-white"><WalletCards className="size-5" aria-hidden="true" /></span>Budget<span className="-ml-2 text-[#5267df]">Buddy</span></Link>
+          <Link href="/" className="flex items-center gap-2 text-lg font-extrabold tracking-tight text-[#17213c] lg:hidden"><BrandMark size={36} />Budget<span className="-ml-2 text-[#5267df]">Buddy</span></Link>
           <Link href="/" className="ml-auto text-sm font-semibold text-[#68738b] transition-colors hover:text-[#4258d5]">Ana sayfaya dön <span aria-hidden="true">↗</span></Link>
         </div>
 

@@ -334,17 +334,7 @@ body {
     white-space: nowrap;
   }
   .mobile-header-brand b { color: #5267df; }
-  .mobile-header-icon {
-    display: grid;
-    flex: 0 0 30px;
-    place-items: center;
-    width: 30px;
-    height: 30px;
-    border-radius: 9px;
-    background: #5267df;
-    color: #fff;
-  }
-  .mobile-header-icon svg { width: 17px; height: 17px; }
+  .mobile-header-brand img { width: 30px; height: 30px; border-radius: 8px; }
   .work > header > .language-select { flex: 0 0 66px; margin-right: 0; }
 }
 

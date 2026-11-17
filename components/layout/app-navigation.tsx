@@ -1,7 +1,7 @@
 "use client";
 import { useAuthUser } from "@/components/providers/auth-provider";
 import {useContext,useState,type ReactNode} from "react";
-import {ChartNoAxesCombined,ChevronRight,Gift,Home,Landmark,LayoutDashboard,MoreHorizontal,Plus,ReceiptText,Repeat,Settings,Sparkles,Target,Users,WalletCards} from "lucide-react";
+import {ChartNoAxesCombined,ChevronRight,Gift,Home,Landmark,LayoutDashboard,MoreHorizontal,Plus,ReceiptText,Repeat,Settings,Sparkles,Target,Users} from "lucide-react";
 import {Progress} from "@/components/ui/progress";
 import {Sheet,SheetClose,SheetContent,SheetDescription,SheetHeader,SheetTitle,SheetTrigger} from "@/components/ui/sheet";
 import {LanguageContext,LanguageSelect,useT} from "@/components/providers/language-provider";
@@ -10,6 +10,7 @@ import {NotificationBell} from "@/components/layout/notification-bell";
 import { SavingsJarIcon } from "@/components/budgetbuddy/savings-jar-icon";
 import { AddTransaction } from "@/components/budgetbuddy/shared";
 import { BILLING_ENABLED } from "@/lib/billing/launch";
+import { BrandMark } from "@/components/brand/brand-mark";
 
 export type AppView="dashboard"|"family"|"wishlists"|"transactions"|"recurring"|"budgets"|"accounts"|"goals"|"analytics"|"assistant"|"settings";
 type Navigate=(view:AppView|"landing")=>void;
@@ -55,7 +56,7 @@ export function AppHeader({view,quickAdd}:{view:AppView;quickAdd:ReactNode}){
  const today=new Intl.DateTimeFormat(locale,{weekday:"long",day:"numeric",month:"long",timeZone:"Europe/Istanbul"}).format(new Date());
  return <header>
   <div className="header-page-title"><h1>{t(label)}</h1><p>{view==="dashboard"?today:t("Manage your money with confidence.")}</p></div>
-  <div className="mobile-header-brand"><span className="mobile-header-icon"><WalletCards aria-hidden="true"/></span><span>Budget<b>Buddy</b></span></div>
+  <div className="mobile-header-brand"><BrandMark size={32}/><span>Budget<b>Buddy</b></span></div>
   <NotificationBell/>
   <LanguageSelect/>
   {quickAdd}

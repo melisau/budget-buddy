@@ -9,6 +9,8 @@ import {ErrorReportingProvider} from "@/components/providers/error-reporting-pro
 import {Toaster} from "@/components/ui/sonner";
 import {SkipLink} from "@/components/layout/skip-link";
 import { BRAND_COLOR, SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, SITE_URL } from "@/lib/site";
+import { headers } from "next/headers";
+import { PAGE_LANGUAGE_HEADER, pageLanguage } from "@/lib/seo/i18n";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -18,7 +20,7 @@ export const metadata: Metadata = {
   keywords: ["personal finance", "budget app", "expense tracker", "savings goals", "family budget", "bütçe uygulaması", "harcama takibi", "gelir gider takibi", "aile bütçesi", "birikim hedefi"],
   authors: [{ name: "Melisa Uyar" }],
   alternates: { canonical: "/" },
-  icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
+  icons: { icon: [{ url: "/brand/icon-32.png", sizes: "32x32", type: "image/png" }, { url: "/brand/icon-48.png", sizes: "48x48", type: "image/png" }], shortcut: "/brand/icon-32.png" },
   openGraph: {
     type: "website",
     url: "/",
@@ -42,13 +44,14 @@ export const viewport: Viewport = {
   themeColor: BRAND_COLOR,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const lang = pageLanguage((await headers()).get(PAGE_LANGUAGE_HEADER));
   return (
-    <html lang="en">
+    <html lang={lang}>
       <body className="antialiased">
         <AuthProvider>
           <LanguageProvider><AuthLanguageSync/><ServiceWorkerRegistration/><SkipLink/><ErrorReportingProvider>{children}</ErrorReportingProvider><Toaster richColors/></LanguageProvider>
