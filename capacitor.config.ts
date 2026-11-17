@@ -15,6 +15,7 @@ const config: CapacitorConfig = {
   android: { path: "mobile/android" },
   ios: { path: "mobile/ios" },
   plugins: {
+    SystemBars: { style: "LIGHT", initialViewportFitValueHint: "cover" },
     SocialLogin: { providers: { google: true, facebook: false, apple: false, twitter: false } },
   },
 };

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Match the site's light header and bottom bar so the system bars blend in. -->
+    <color name="colorPrimary">#FFFFFF</color>
+    <color name="colorPrimaryDark">#FFFFFF</color>
+    <color name="colorAccent">#5267DF</color>
+    <color name="launchBackground">#FFFFFF</color>
+</resources>
