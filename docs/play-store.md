@@ -1,16 +1,20 @@
 # Google Play'e yayın rehberi
 
-BudgetBuddy, Play Store'da bir **Trusted Web Activity (TWA)** olarak yayınlanır:
-`android/` klasöründeki küçük Android uygulaması, https://budgetbuddy.melisauyar.com
-adresini adres çubuğu olmadan, tam ekran açar. Web sitesinde yapılan her
-güncelleme uygulamaya da anında yansır; yeni paket yalnızca Android tarafında
+BudgetBuddy, Play Store'da bir **Capacitor** uygulaması olarak yayınlanır:
+`mobile/android/` klasöründeki Android uygulaması, https://budgetbuddy.melisauyar.com
+adresini tam ekran açar ve Google ile girişi telefonun kendi hesap seçicisiyle yapar
+(bkz. [mobile.md](./mobile.md)). Web sitesinde yapılan her güncelleme uygulamaya da
+anında yansır; yeni paket yalnızca Android tarafında (ikon, eklenti, izin, hedef API)
 bir şey değiştiğinde gerekir.
+
+Eski Trusted Web Activity paketi (`android/`) aynı paket adını kullanır ve artık
+yayınlanmaz; Play'e yalnızca Capacitor paketi yüklenir.
 
 | Bilgi | Değer |
 | --- | --- |
 | Paket adı | `com.melisauyar.budgetbuddy` (bir kez seçilir, sonra değiştirilemez) |
 | Hedef API | 36 (Android 16) — 31 Ağustos 2026'dan beri yeni uygulamalar için zorunlu |
-| En düşük Android | 8.0 (API 26) |
+| En düşük Android | 7.0 (API 24) |
 | Paket | GitHub Actions → **Android app bundle** → imzalı `.aab` (Actions çalışmıyorsa: aşağıdaki "Actions olmadan derleme") |
 
 ## 0. Tek seferlik hazırlık
@@ -48,16 +52,19 @@ Uygulama · Ücretsiz. Ücretsiz olarak yayınlanan uygulama sonradan ücretliye
 3. Test kullanıcılarının Gmail adreslerini bir listeye ekle, katılım bağlantısını onlara gönder.
    12 kişi bağlantıdan katılıp uygulamayı yüklemeli ve 14 gün testte kalmalı.
 
-## 5. Uygulamayı web sitesine bağla (adres çubuğunu kaldırır)
+## 5. Google ile girişi Play imzasına bağla
 
-Bu adım olmadan uygulama, üstte bir adres çubuğu ile açılır.
+Play, uygulamayı kendi **uygulama imzalama anahtarı** ile yeniden imzalar. Google ile
+giriş, Google Cloud'daki Android OAuth istemcisinde bu anahtarın SHA-1'i yoksa
+mağazadan yüklenen uygulamada çalışmaz.
 
 1. Play Console → **Test et ve yayınla → Uygulama bütünlüğü → Uygulama imzalama**.
-2. **Uygulama imzalama anahtarı sertifikası → SHA-256** değerini kopyala.
-3. Sunucuda `/opt/budgetbuddy/.env.vds` dosyasına ekle:
-   `ANDROID_CERT_SHA256` = `<uygulama imzalama SHA-256>,<yükleme anahtarı SHA-256>`
-   (virgülle ayrılmış; yükleme anahtarınınki GitHub Actions özetinde ve anahtar dosyasıyla gelen notta).
-4. Sunucuda yeniden dağıt (`/opt/budgetbuddy/deploy/vds/deploy.sh`) → https://budgetbuddy.melisauyar.com/.well-known/assetlinks.json içinde iki parmak izi görünmeli.
+2. **Uygulama imzalama anahtarı sertifikası** ve **Yükleme anahtarı sertifikası**
+   altındaki **SHA-1** değerlerini kopyala.
+3. Google Cloud Console → **Credentials** → paket adı `com.melisauyar.budgetbuddy` olan
+   Android OAuth istemcisi. Bir istemci tek SHA-1 alır: her SHA-1 için aynı paket adıyla
+   ayrı bir Android istemcisi oluştur (debug anahtarınınki zaten var).
+4. Kapalı testten yüklenen uygulamada **Google ile devam et**'i dene.
 
 ## 6. Mağaza kaydı
 
@@ -151,17 +158,21 @@ Onaydan sonra **Üretim → Yeni sürüm** ile kapalı testteki paketi üretime 
 
 ## Actions olmadan derleme
 
-GitHub Actions kullanılamıyorsa paket JDK 17+ ve Android SDK (platform 36,
+GitHub Actions kullanılamıyorsa paket JDK 21+ ve Android SDK (platform 36,
 build-tools 36) olan herhangi bir makinede derlenir:
 
 ```bash
-cd android
-echo "sdk.dir=/path/to/android-sdk" > local.properties
-gradle bundleRelease -PversionCode=2 -PversionName=1.0.1
+pnpm install --frozen-lockfile
+pnpm exec cap sync android
+cd mobile/android
+./gradlew bundleRelease -PversionCode=2 -PversionName=1.0.1
 jarsigner -keystore budgetbuddy-upload.p12 -storetype PKCS12 \
   app/build/outputs/bundle/release/app-release.aab upload
 jarsigner -verify app/build/outputs/bundle/release/app-release.aab
 ```
+
+Windows'ta Gradle "Unable to establish loopback connection" hatası verirse kısa bir
+geçici klasör kullan: `JAVA_TOOL_OPTIONS=-Djdk.net.unixdomain.tmpdir=C:/Users/Public/gtmp`.
 
 Supabase'i uyanık tutan günlük kontrol, Actions'a bağlı kalmaması için
 sunucudaki `/etc/cron.d/budgetbuddy-keepalive` zamanlayıcısıyla çalışır (bkz. `docs/vds.md`).

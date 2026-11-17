@@ -1,7 +1,7 @@
 name: Android app bundle
 
-# Builds the Google Play bundle (.aab) for the Trusted Web Activity in android/.
-#  - Pull requests touching android/: unsigned build, to prove it compiles.
+# Builds the Google Play bundle (.aab) for the Capacitor app in mobile/android.
+#  - Pull requests touching the Capacitor app: unsigned build, to prove it compiles.
 #  - Manual run (Actions > Android app bundle > Run workflow): signed with the
 #    upload key from repository secrets and uploaded as a downloadable artifact.
 # The upload key is never stored in the repository (it is public).
@@ -9,7 +9,8 @@ name: Android app bundle
 on:
   pull_request:
     paths:
-      - "android/**"
+      - "mobile/android/**"
+      - "capacitor.config.ts"
       - ".github/workflows/android.yml"
   workflow_dispatch:
     inputs:
@@ -37,11 +38,25 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "21"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: pnpm
+
+      # The Android project links Capacitor and its plugins from node_modules.
+      - name: Install dependencies and sync Capacitor
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec cap sync android
 
       - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.11.1"
 
       - name: Restore upload key
         if: github.event_name == 'workflow_dispatch' && env.HAS_KEY == 'true'
@@ -58,12 +73,12 @@ jobs:
           exit 1
 
       - name: Build release bundle
-        working-directory: android
+        working-directory: mobile/android
         env:
           ANDROID_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
           ANDROID_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
         run: |
-          gradle --no-daemon bundleRelease \
+          ./gradlew --no-daemon bundleRelease \
             -PversionCode="${{ inputs.versionCode || '1' }}" \
             -PversionName="${{ inputs.versionName || '1.0.0' }}"
           ls -la app/build/outputs/bundle/release/
@@ -73,7 +88,7 @@ jobs:
         env:
           ANDROID_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
         run: |
-          jarsigner -verify android/app/build/outputs/bundle/release/app-release.aab | tail -1
+          jarsigner -verify mobile/android/app/build/outputs/bundle/release/app-release.aab | tail -1
           FINGERPRINT=$(keytool -list -v -keystore "$ANDROID_UPLOAD_KEYSTORE_PATH" -storetype PKCS12 \
             -storepass "$ANDROID_UPLOAD_KEYSTORE_PASSWORD" | awk '/SHA256:/ {print $2; exit}')
           {
@@ -88,5 +103,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: budgetbuddy-${{ inputs.versionName }}-${{ inputs.versionCode }}
-          path: android/app/build/outputs/bundle/release/app-release.aab
+          path: mobile/android/app/build/outputs/bundle/release/app-release.aab
           retention-days: 14
