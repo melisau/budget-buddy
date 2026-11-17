@@ -366,3 +366,23 @@ body {
 /* Keep content below the status bar / notch in the native apps and installed PWAs
    (viewport-fit=cover lets the page draw edge to edge). */
 body { padding-top: env(safe-area-inset-top, 0px); }
+
+/* Larger brand and touch targets on phones. */
+@media (max-width: 820px), (hover: none) and (pointer: coarse) {
+  .land-nav .logo { font-size: 1.5rem; }
+  .hamb { display: grid; place-items: center; width: 48px; height: 48px; margin-right: -10px; }
+  .hamb svg { width: 28px; height: 28px; }
+
+  .work > header .mobile-header-brand { font-size: 1.3rem; gap: 10px; }
+  .mobile-header-brand img { width: 34px; height: 34px; }
+
+  .bottom { height: calc(76px + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .bottom button { gap: 4px; font-size: .74rem; font-weight: 600; min-height: 56px; }
+  .bottom button svg { width: 24px; height: 24px; }
+  .bottom button.add svg { padding: 13px; margin-top: -26px; }
+  .content { padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* Category and account stay side by side in the transaction form on phones. */
+.form-grid.tx-pair { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.form-grid.tx-pair [data-slot="select-trigger"] { width: 100%; min-width: 0; }

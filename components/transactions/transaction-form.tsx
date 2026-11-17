@@ -202,7 +202,7 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
         {hasStoredReceipt && !receipt && <p className="receipt-visibility"><ReceiptText />{tr ? "Bu işlemde kayıtlı bir fiş görseli var." : "This transaction already has a saved receipt image."}<button type="button" disabled={isRemovingReceipt} onClick={() => void removeStoredReceipt()}><Trash2 />{isRemovingReceipt ? (tr ? "Kaldırılıyor…" : "Removing…") : (tr ? "Kaldır" : "Remove")}</button></p>}
         {receipt && <p className="receipt-visibility"><ReceiptText />{tr ? "Görsel işlem kaydedildikten sonra güvenli olarak yüklenecek." : "The image will upload securely after the transaction is saved."}<button type="button" onClick={() => { setReceipt(undefined); setReceiptInputKey((current) => current + 1); }}><Trash2 />{tr ? "Kaldır" : "Remove"}</button></p>}
       </div>
-      <div className="form-grid">
+      <div className="form-grid tx-pair">
         <label>
           {tr ? "Kategori" : "Category"}
           <Select onValueChange={(value) => { setCategory(value); setPickedByRule(false); form.setValue("category", value, { shouldValidate: true }); }} value={category}>
