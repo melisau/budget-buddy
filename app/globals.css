@@ -330,8 +330,8 @@
 .wishlist-item:last-child { border-bottom: 0; padding-bottom: 0; }
 .wishlist-item small { overflow-wrap: anywhere; }
 .wishlist-item > button { flex-shrink: 0; }
-.wishlist-item > button:not([data-slot="button"]), .wishlist-card > div > button { width: 32px; height: 32px; display: inline-grid; place-items: center; border-radius: 8px; }
-.wishlist-item > button:hover, .wishlist-card > div > button:hover { background: var(--secondary); }
+.wishlist-item > button:not([data-slot="button"]), .wishlist-card > div:not(.wishlist-share) > button { width: 32px; height: 32px; display: inline-grid; place-items: center; border-radius: 8px; }
+.wishlist-item > button:hover, .wishlist-card > div:not(.wishlist-share) > button:hover { background: var(--secondary); }
 .wishlist-empty { padding-block: 12px; color: var(--muted-foreground); font-size: 13px; }
 .wishlist-add-button { width: 100%; border-top: 1px solid var(--border); border-radius: 0; padding-top: 12px; height: auto; min-height: 40px; color: var(--primary); }
 .wishlist-create-dialog { width: min(560px, calc(100% - 32px)); }
