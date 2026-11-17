@@ -62,7 +62,7 @@ export function NotificationBell() {
           {state.unread > 0 && <span className="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-[#e0483f] px-1 text-[11px] font-bold leading-5 text-white" aria-hidden="true">{state.unread > 9 ? "9+" : state.unread}</span>}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-[min(22rem,calc(100vw-2rem))] p-0">
+      <PopoverContent align="end" collisionPadding={16} className="w-[min(22rem,calc(100vw-2rem))] p-0">
         <p className="border-b px-4 py-3 text-sm font-semibold">{label}</p>
         <div className="max-h-96 overflow-y-auto" aria-live="polite">
           {state.status === "loading" && <p className="px-4 py-6 text-center text-sm text-muted-foreground">{tr ? "Yükleniyor…" : "Loading…"}</p>}
