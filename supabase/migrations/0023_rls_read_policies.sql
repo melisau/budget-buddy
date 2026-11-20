@@ -18,6 +18,21 @@
 --   error_events, rate_limit_buckets - operational data.
 begin;
 
+-- Some environments never ran optional migrations (for example 0005/0006
+-- billing while payments are switched off). Policies are created only for
+-- tables that exist, so this migration runs everywhere.
+create or replace function pg_temp.select_policy(p_table text, p_name text, p_using text)
+returns void language plpgsql as $fn$
+begin
+  if to_regclass(format('public.%I', p_table)) is null then
+    raise notice 'Skipping policy %: table public.% does not exist', p_name, p_table;
+    return;
+  end if;
+  execute format('drop policy if exists %I on public.%I', p_name, p_table);
+  execute format('create policy %I on public.%I for select to authenticated using (%s)', p_name, p_table, p_using);
+end
+$fn$;
+
 -- The app user (public.users.id) behind the current Supabase Auth session.
 create or replace function public.current_app_user_id()
 returns uuid language sql stable security definer set search_path = '' as $$
@@ -42,9 +57,7 @@ grant execute on function public.current_app_user_id() to authenticated, service
 grant execute on function public.is_accepted_family_member(uuid, uuid) to authenticated, service_role;
 
 -- Own row and own personal data.
-drop policy if exists users_select_own on public.users;
-create policy users_select_own on public.users for select to authenticated
-  using (id = (select public.current_app_user_id()));
+select pg_temp.select_policy('users', 'users_select_own', $p$id = (select public.current_app_user_id())$p$);
 
 do $$
 declare
@@ -54,71 +67,45 @@ begin
     'accounts', 'categories', 'budgets', 'goals', 'ai_sessions', 'billing_invoices',
     'allowance_plans', 'notifications', 'recurring_items', 'category_rules'
   ] loop
-    execute format('drop policy if exists %I on public.%I', t || '_select_own', t);
-    execute format(
-      'create policy %I on public.%I for select to authenticated using (user_id = (select public.current_app_user_id()))',
-      t || '_select_own', t
-    );
+    perform pg_temp.select_policy(t, t || '_select_own', 'user_id = (select public.current_app_user_id())');
   end loop;
 end $$;
 
 -- Transactions: mirrors requireTransactionReadAccess in lib/auth/authorization.ts.
 -- Personal rows only to their owner; family rows to accepted group members.
-drop policy if exists transactions_select_visible on public.transactions;
-create policy transactions_select_visible on public.transactions for select to authenticated
-  using (
-    case
+select pg_temp.select_policy('transactions', 'transactions_select_visible', $p$case
       when family_group_id is null then user_id = (select public.current_app_user_id())
       else public.is_accepted_family_member((select public.current_app_user_id()), family_group_id)
-    end
-  );
+    end$p$);
 
 -- Family groups and their shared lists: accepted members only.
-drop policy if exists family_groups_select_member on public.family_groups;
-create policy family_groups_select_member on public.family_groups for select to authenticated
-  using (public.is_accepted_family_member((select public.current_app_user_id()), id));
+select pg_temp.select_policy('family_groups', 'family_groups_select_member', $p$public.is_accepted_family_member((select public.current_app_user_id()), id)$p$);
 
-drop policy if exists family_shopping_notes_select_member on public.family_shopping_notes;
-create policy family_shopping_notes_select_member on public.family_shopping_notes for select to authenticated
-  using (public.is_accepted_family_member((select public.current_app_user_id()), family_group_id));
+select pg_temp.select_policy('family_shopping_notes', 'family_shopping_notes_select_member', $p$public.is_accepted_family_member((select public.current_app_user_id()), family_group_id)$p$);
 
-drop policy if exists family_shopping_items_select_member on public.family_shopping_items;
-create policy family_shopping_items_select_member on public.family_shopping_items for select to authenticated
-  using (public.is_accepted_family_member((select public.current_app_user_id()), family_group_id));
+select pg_temp.select_policy('family_shopping_items', 'family_shopping_items_select_member', $p$public.is_accepted_family_member((select public.current_app_user_id()), family_group_id)$p$);
 
 -- Membership rows: your own row (also a pending invitation), plus the accepted
 -- members of groups you belong to. Pending invitations of others, which hold
 -- invited e-mail addresses, stay hidden.
-drop policy if exists family_members_select_visible on public.family_members;
-create policy family_members_select_visible on public.family_members for select to authenticated
-  using (
-    user_id = (select public.current_app_user_id())
+select pg_temp.select_policy('family_members', 'family_members_select_visible', $p$user_id = (select public.current_app_user_id())
     or (
       invitation_status = 'accepted'
       and public.is_accepted_family_member((select public.current_app_user_id()), family_group_id)
-    )
-  );
+    )$p$);
 
 -- Goal shares (goal ID + group only; goals themselves stay owner-only). Shares
 -- of someone who left the group are no longer returned, as in the API.
-drop policy if exists goal_shares_select_member on public.goal_shares;
-create policy goal_shares_select_member on public.goal_shares for select to authenticated
-  using (
-    public.is_accepted_family_member((select public.current_app_user_id()), family_group_id)
-    and public.is_accepted_family_member(shared_by_user_id, family_group_id)
-  );
+select pg_temp.select_policy('goal_shares', 'goal_shares_select_member', $p$public.is_accepted_family_member((select public.current_app_user_id()), family_group_id)
+    and public.is_accepted_family_member(shared_by_user_id, family_group_id)$p$);
 
 -- Wishlists: the owner, or accepted members of the list's group while the
 -- owner is still a member. Items (and reservations) stay server-only.
-drop policy if exists wishlists_select_visible on public.wishlists;
-create policy wishlists_select_visible on public.wishlists for select to authenticated
-  using (
-    owner_user_id = (select public.current_app_user_id())
+select pg_temp.select_policy('wishlists', 'wishlists_select_visible', $p$owner_user_id = (select public.current_app_user_id())
     or (
       family_group_id is not null
       and public.is_accepted_family_member((select public.current_app_user_id()), family_group_id)
       and public.is_accepted_family_member(owner_user_id, family_group_id)
-    )
-  );
+    )$p$);
 
 commit;
