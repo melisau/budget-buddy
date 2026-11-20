@@ -101,3 +101,10 @@ test("authenticated users cannot write any table directly", async () => {
     assert.equal(updated.affectedRows ?? 0, 0);
   });
 });
+
+test("the migration reruns cleanly and skips tables an environment never created", async () => {
+  // Production never ran the optional billing migrations (0005/0006).
+  await db.exec("drop table public.billing_invoices cascade");
+  await db.exec(await readFile(new URL("../supabase/migrations/0023_rls_read_policies.sql", import.meta.url), "utf8"));
+  assert.deepEqual(await titles(auth.alice, "select title as v from public.transactions"), ["alice private", "family groceries"]);
+});
