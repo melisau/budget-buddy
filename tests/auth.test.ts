@@ -90,7 +90,9 @@ test("new identity creates one empty app workspace; metadata cannot assign a pla
     const b = await db.query("select public.sync_authenticated_user()");
     assert.deepEqual(a.rows, b.rows);
     await assert.rejects(db.query("select public.seed_user_starter_data($1)", [legacyId]), /permission denied/);
-    assert.equal((await db.query("select * from public.users")).rows.length, 0);
+    // RLS read policy (0023): a user sees exactly their own app user row.
+    const visible = await db.query<{ auth_user_id: string }>("select auth_user_id from public.users");
+    assert.deepEqual(visible.rows.map((row) => row.auth_user_id), [otherId]);
   });
   const users = await db.query<{ id: string; name: string; plan: string }>("select id, name, plan from public.users where auth_user_id=$1", [otherId]);
   assert.equal(users.rows.length, 1);
@@ -114,7 +116,9 @@ test("family shopping and gift reservations are private and prevent duplicate cl
   assert.equal(first.rows.length, 1);
   assert.equal(second.rows.length, 0);
   await asUser(otherId, async () => {
-    assert.equal((await db.query("select * from public.family_shopping_items")).rows.length, 0);
+    // An accepted member may read their family's shopping list (0023), but
+    // wishlist items and their reservations stay server-only.
+    assert.deepEqual((await db.query<{ name: string }>("select name from public.family_shopping_items")).rows.map((row) => row.name), ["Milk"]);
     assert.equal((await db.query("select * from public.wishlist_items")).rows.length, 0);
   });
 });
