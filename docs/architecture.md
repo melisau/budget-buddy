@@ -53,6 +53,15 @@ privileged data client is server-only. Proxy refreshes cookies; every protected
 page and API verifies identity using `getUser()` before applying ownership/role
 checks. RLS remains deny-by-default for direct browser table access.
 
+Since migration 0023, RLS also has read-only (SELECT) policies for the
+`authenticated` role that mirror the server's read rules: personal rows only to
+their owner, family rows only to accepted members. They apply to any request
+made with a user's own session; the privileged server client still bypasses
+them. Writes have no policies and stay server-only. `wishlist_items` has no
+policy because surprise mode hides columns, which RLS cannot express.
+`tests/rls-policies.test.ts` runs every migration in PGlite and checks these
+rules as the `authenticated` role.
+
 New identities start with an empty finance workspace; no bank account or
 historical transaction is needed to create a personal goal. Existing starter
 or real rows are never removed by this onboarding change.
@@ -89,6 +98,7 @@ the link replaces the token; turning it off clears it, revoking access.
 
 - Keep Groq credentials and requests on the server.
 - Send only the minimum authorized financial summary required for the user's request.
+- The assistant receives only an aggregated summary (`lib/finance/assistant-summary.ts`): monthly and per-category totals. Transaction titles, notes, accounts, receipts and custom category names are never sent.
 - The assistant does not directly create transactions; a transaction draft requires explicit user confirmation before it is stored.
 - Investment advice and access to data outside the verified scope are outside the product boundary.
 
