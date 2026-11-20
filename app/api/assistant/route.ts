@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { AccessError, requireAppUser } from "@/lib/auth/authorization";
 import { listTransactionData } from "@/lib/finance/transaction-data";
+import { buildAssistantSummary } from "@/lib/finance/assistant-summary";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 
@@ -112,13 +113,8 @@ export async function POST(request: Request) {
         .order("created_at", { ascending: false }).limit(10),
     ]);
     if (historyResult.error) throw new Error(`Unable to load conversation context: ${historyResult.error.message}`);
-    const transactions = data.transactions.slice(0, 100).map((item) => ({
-      date: item.transaction_date,
-      type: item.type,
-      amount: Number(item.amount),
-      title: item.title,
-      family: Boolean(item.family_group_id),
-    }));
+    // Only an anonymous aggregate leaves the server: no titles, notes or accounts.
+    const summary = buildAssistantSummary(data.transactions);
     const selectedLanguageName = selectedLanguage === "tr" ? "Turkish" : "English";
     const { apiKey, model } = getGroqConfiguration();
     if (!apiKey) {
@@ -130,10 +126,10 @@ export async function POST(request: Request) {
     }
     const systemPrompt = [
       "You are Budget Buddy's financial activity assistant.",
-      "Use only the financial data supplied below. If the data cannot answer the question, say so clearly.",
+      "Use only the financial summary supplied below. It contains monthly and per-category totals, not individual transactions. If the summary cannot answer the question, say so clearly.",
       "Explain spending patterns plainly. Do not make investment recommendations and do not claim that you performed an action.",
       `Reply in ${selectedLanguageName}.`,
-      `Financial context: ${JSON.stringify({ currency: "TRY", transactions })}`,
+      `Financial summary: ${JSON.stringify(summary)}`,
     ].join("\n\n");
 
     let response: Response;
@@ -173,7 +169,7 @@ export async function POST(request: Request) {
       user_id: user.id, conversation_id: activeConversationId,
       question: question.trim(),
       response: answer,
-      context_summary: { transactionCount: transactions.length, language: selectedLanguage, provider: "groq", model },
+      context_summary: { transactionCount: summary.transactionCount, language: selectedLanguage, provider: "groq", model },
     }).select("id, conversation_id, question, response, created_at").single();
     if (error) throw new Error(`Unable to save AI history: ${error.message}`);
 
