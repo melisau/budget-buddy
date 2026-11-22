@@ -2,6 +2,7 @@ import type { AppUser } from "@/lib/auth/authorization";
 import { matchCategoryRule } from "@/lib/finance/category-rules";
 import { loadCategoryRules } from "@/lib/finance/category-rules-service";
 import { ensureDefaultCategories } from "@/lib/finance/default-categories";
+import { fetchAllRows } from "@/lib/supabase/query";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export type CsvTransactionInput = { title: string; category: string; accountName: string; transactionDate: string; amount: number; type: "income" | "expense" };
@@ -25,10 +26,11 @@ export async function importPersonalCsvTransactions(user: AppUser, rows: CsvTran
   const [accountsResult, categoriesResult, existingResult, rules] = await Promise.all([
     supabase.from("accounts").select("id, name").eq("user_id", user.id),
     supabase.from("categories").select("id, name, type").eq("user_id", user.id),
-    supabase.from("transactions").select("title, amount, type, transaction_date, account_id").eq("user_id", user.id).is("family_group_id", null),
+    fetchAllRows<{ title: string; amount: number; type: string; transaction_date: string; account_id: string | null }>(() => supabase.from("transactions").select("id, title, amount, type, transaction_date, account_id").eq("user_id", user.id).is("family_group_id", null)),
     loadCategoryRules(user.id),
   ]);
-  for (const result of [accountsResult, categoriesResult, existingResult]) if (result.error) throw new Error(`Unable to prepare the CSV import: ${result.error.message}`);
+  const failed = accountsResult.error ?? categoriesResult.error ?? existingResult.error;
+  if (failed) throw new Error(`Unable to prepare the CSV import: ${(failed as { message?: string }).message ?? "unknown error"}`);
   const accounts = new Map((accountsResult.data ?? []).map((item) => [normal(item.name), item.id]));
   const categories = new Map((categoriesResult.data ?? []).map((item) => [`${item.type}:${normal(item.name)}`, item.id]));
   const existing = new Set((existingResult.data ?? []).map((item) => `${item.account_id}|${item.type}|${item.amount}|${item.transaction_date}|${normal(item.title)}`));

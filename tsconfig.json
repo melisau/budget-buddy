@@ -29,8 +29,7 @@
       ]
     },
     "types": [
-      "node",
-      "@cloudflare/workers-types"
+      "node"
     ]
   },
   "include": [
@@ -43,7 +42,6 @@
   ],
   "exclude": [
     "mobile",
-    "node_modules",
-    "examples"
+    "node_modules"
   ]
 }

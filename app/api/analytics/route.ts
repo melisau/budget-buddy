@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { AccessError, requireAppUser } from "@/lib/auth/authorization";
 import { calculateBudgetUsage, calculateSavingsRate, getBudgetStatus } from "@/lib/finance/calculations";
+import { fetchAllRows } from "@/lib/supabase/query";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { Currency } from "@/types/finance";
 
@@ -28,11 +29,12 @@ export async function GET(request: Request) {
     const familyGroups = (membershipsResult.data ?? []).map((membership) => relation(membership.group)).filter((group): group is { id: string; name: string } => Boolean(group));
     const familyId = scope.startsWith("family:") ? scope.slice(7) : null;
     if (familyId && !familyGroups.some((group) => group.id === familyId)) throw new AccessError("Family group not found.", 404);
-    let transactionQuery = supabase.from("transactions").select("id, title, type, amount, transaction_date, account_id, account:accounts(id, name, currency), category:categories(id, name)");
-    transactionQuery = familyId ? transactionQuery.eq("family_group_id", familyId) : transactionQuery.eq("user_id", user.id).is("family_group_id", null);
-    const transactionResult = await transactionQuery.order("transaction_date", { ascending: false });
+    const transactionResult = await fetchAllRows<Transaction>(() => {
+      const query = supabase.from("transactions").select("id, title, type, amount, transaction_date, account_id, account:accounts(id, name, currency), category:categories(id, name)");
+      return (familyId ? query.eq("family_group_id", familyId) : query.eq("user_id", user.id).is("family_group_id", null)).order("transaction_date", { ascending: false });
+    });
     if (transactionResult.error) throw transactionResult.error;
-    const allTransactions = (transactionResult.data ?? []) as Transaction[];
+    const allTransactions = transactionResult.data;
     const availableAccounts: Account[] = familyId ? [...new Map(allTransactions.map((item) => relation(item.account)).filter((item): item is Account => Boolean(item)).map((item) => [item.id, item])).values()] : ownAccounts;
     const selectedAccount = requestedAccountId === "all" ? null : availableAccounts.find((account) => account.id === requestedAccountId);
     const effectiveCurrency = selectedAccount?.currency ?? currency;

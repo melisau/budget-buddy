@@ -5,6 +5,7 @@ import { isTrustedApiWrite } from "@/lib/auth/request-origin";
 import { deleteStoredReceipts } from "@/lib/finance/receipt-storage";
 import { captureException } from "@/lib/monitoring/sentry";
 import { createSupabaseAuthClient } from "@/lib/supabase/auth-server";
+import { fetchAllRows } from "@/lib/supabase/query";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 const supportedCurrencies = new Set(["TRY", "EUR", "USD", "GBP"]);
@@ -101,13 +102,13 @@ export async function DELETE(request: Request) {
   let receiptPaths: string[] = [];
   let avatarPath: string | null = null;
   try {
-    const { data, error } = await supabase
+    const { data, error } = await fetchAllRows<{ receipt_path: string }>(() => supabase
       .from("transactions")
-      .select("receipt_path")
+      .select("id, receipt_path")
       .eq("user_id", user.id)
-      .not("receipt_path", "is", null);
+      .not("receipt_path", "is", null));
     if (error) throw error;
-    receiptPaths = (data ?? []).map((row) => row.receipt_path as string).filter(Boolean);
+    receiptPaths = data.map((row) => row.receipt_path).filter(Boolean);
     const avatarProfile = await supabase.from("users").select("avatar_path").eq("id", user.id).single();
     if (avatarProfile.error) throw avatarProfile.error;
     avatarPath = avatarProfile.data?.avatar_path ?? null;

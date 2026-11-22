@@ -33,6 +33,7 @@ class Query implements PromiseLike<Result> {
   private payload: Row[] = [];
   private patch: Row = {};
   private limitCount: number | null = null;
+  private window: [number, number] | null = null;
   private returning = false;
   private singleMode: "single" | "maybe" | null = null;
 
@@ -54,6 +55,7 @@ class Query implements PromiseLike<Result> {
   }
   order() { return this; }
   limit(count: number) { this.limitCount = count; return this; }
+  range(from: number, to: number) { this.window = [from, to + 1]; return this; }
   single() { this.singleMode = "single"; return this; }
   maybeSingle() { this.singleMode = "maybe"; return this; }
 
@@ -80,6 +82,7 @@ class Query implements PromiseLike<Result> {
       result = this.matching();
     }
     if (this.limitCount !== null) result = result.slice(0, this.limitCount);
+    if (this.window) result = result.slice(...this.window);
 
     if (this.singleMode) {
       if (result.length > 1) return { data: null, error: { message: "multiple rows returned" } };

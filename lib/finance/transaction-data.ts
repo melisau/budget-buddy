@@ -1,4 +1,5 @@
 import { requireFamilyWriteAccess, type AppUser } from "@/lib/auth/authorization";
+import { fetchAllRows } from "@/lib/supabase/query";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { ensureDefaultCategories } from "@/lib/finance/default-categories";
 
@@ -14,6 +15,8 @@ export type TransactionPayload = {
 };
 
 const transactionSelect = "id, type, amount, title, note, transaction_date, family_group_id, owner_user_id, created_by_user_id, receipt_path, receipt_content_type, account:accounts(id, name), category:categories(id, name)";
+type Named = { id: string; name: string };
+type TransactionRow = { id: string; type: string; amount: number | string; title: string; note: string | null; transaction_date: string; family_group_id: string | null; owner_user_id: string | null; created_by_user_id: string | null; receipt_path: string | null; receipt_content_type: string | null; account: Named | Named[] | null; category: Named | Named[] | null };
 
 async function assertPersonalReferences(user: AppUser, payload: TransactionPayload) {
   const supabase = getSupabaseServerClient();
@@ -44,17 +47,16 @@ export async function listTransactionData(user: AppUser) {
 
   const familyIds = memberships.map((membership) => membership.family_group_id);
   const [personalResult, familyResult, accountsResult, categoriesResult] = await Promise.all([
-    supabase.from("transactions").select(transactionSelect).eq("user_id", user.id).order("transaction_date", { ascending: false }).order("created_at", { ascending: false }),
+    fetchAllRows<TransactionRow>(() => supabase.from("transactions").select(transactionSelect).eq("user_id", user.id).order("transaction_date", { ascending: false }).order("created_at", { ascending: false })),
     familyIds.length
-      ? supabase.from("transactions").select(transactionSelect).in("family_group_id", familyIds).order("transaction_date", { ascending: false }).order("created_at", { ascending: false })
-      : Promise.resolve({ data: [], error: null }),
+      ? fetchAllRows<TransactionRow>(() => supabase.from("transactions").select(transactionSelect).in("family_group_id", familyIds).order("transaction_date", { ascending: false }).order("created_at", { ascending: false }))
+      : Promise.resolve({ data: [] as TransactionRow[], error: null }),
     supabase.from("accounts").select("id, name").eq("user_id", user.id).is("archived_at", null).order("name"),
     supabase.from("categories").select("id, name, type").eq("user_id", user.id).order("name"),
   ]);
 
-  for (const result of [personalResult, familyResult, accountsResult, categoriesResult]) {
-    if (result.error) throw new Error(`Unable to load transaction data: ${result.error.message}`);
-  }
+  const failed = personalResult.error ?? familyResult.error ?? accountsResult.error ?? categoriesResult.error;
+  if (failed) throw new Error(`Unable to load transaction data: ${(failed as { message?: string }).message ?? "unknown error"}`);
 
   const transactions = [...(personalResult.data ?? []), ...(familyResult.data ?? [])];
   const uniqueTransactions = [...new Map(transactions.map((transaction) => [transaction.id, transaction])).values()]

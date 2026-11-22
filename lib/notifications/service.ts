@@ -8,6 +8,7 @@ import {
 } from "@/lib/notifications/rules";
 import { SITE_URL } from "@/lib/site";
 import { isMissingSchemaError } from "@/lib/supabase/schema-errors";
+import { escapeLikePattern, fetchAllRows } from "@/lib/supabase/query";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 type Person = { id: string; email: string | null };
@@ -35,7 +36,7 @@ export async function syncNotificationsForUser(person: Person, currencyHint?: st
     supabase.from("goals").select("id, name, target_amount, current_amount, deadline")
       .eq("user_id", person.id).not("deadline", "is", null).gte("deadline", today).lte("deadline", addDays(today, GOAL_DUE_DAYS)),
     person.email
-      ? supabase.from("family_members").select("id, family_group_id").eq("invitation_status", "pending").ilike("invited_email", person.email.trim().toLowerCase())
+      ? supabase.from("family_members").select("id, family_group_id").eq("invitation_status", "pending").ilike("invited_email", escapeLikePattern(person.email.trim().toLowerCase()))
       : Promise.resolve({ data: [], error: null }),
   ]);
   for (const result of [budgets, goals, invites]) if (result.error) throw result.error;
@@ -43,8 +44,8 @@ export async function syncNotificationsForUser(person: Person, currencyHint?: st
   const candidates: NotificationCandidate[] = [];
 
   if (budgets.data?.length) {
-    const { data: expenses, error } = await supabase.from("transactions").select("category_id, amount, transaction_date")
-      .eq("user_id", person.id).is("family_group_id", null).eq("type", "expense").gte("transaction_date", monthStart);
+    const { data: expenses, error } = await fetchAllRows<{ category_id: string; amount: number | string; transaction_date: string }>(() => supabase.from("transactions").select("id, category_id, amount, transaction_date")
+      .eq("user_id", person.id).is("family_group_id", null).eq("type", "expense").gte("transaction_date", monthStart));
     if (error) throw error;
     for (const budget of budgets.data) {
       const spent = (expenses ?? []).reduce((total, expense) =>
