@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { AccessError, requireAppUser } from "@/lib/auth/authorization";
 import { getBudgetStatus, calculateBudgetUsage } from "@/lib/finance/calculations";
+import { fetchAllRows } from "@/lib/supabase/query";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { ensureDefaultCategories } from "@/lib/finance/default-categories";
 
@@ -86,13 +87,13 @@ export async function GET(request: Request) {
     const earliestStart = budgets?.reduce<string | null>((earliest, budget) =>
       !earliest || budget.start_date < earliest ? budget.start_date : earliest, null) ?? null;
     const { data: expenses, error: expensesError } = earliestStart
-      ? await supabase
+      ? await fetchAllRows<{ category_id: string; amount: number | string; transaction_date: string }>(() => supabase
         .from("transactions")
-        .select("category_id, amount, transaction_date")
+        .select("id, category_id, amount, transaction_date")
         .eq("user_id", user.id)
         .is("family_group_id", null)
         .eq("type", "expense")
-        .gte("transaction_date", earliestStart)
+        .gte("transaction_date", earliestStart))
       : { data: [], error: null };
 
     if (expensesError) throw expensesError;

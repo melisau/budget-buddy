@@ -19,12 +19,8 @@ const PRIVATE_PATHS = [
 ];
 
 export default function robots(): MetadataRoute.Robots {
-  // Only production should be indexed; previews would duplicate content.
-  const isProduction = !process.env.VERCEL_ENV || process.env.VERCEL_ENV === "production";
   return {
-    rules: isProduction
-      ? [{ userAgent: "*", allow: "/", disallow: PRIVATE_PATHS }]
-      : [{ userAgent: "*", disallow: "/" }],
+    rules: [{ userAgent: "*", allow: "/", disallow: PRIVATE_PATHS }],
     sitemap: `${SITE_URL}/sitemap.xml`,
     host: SITE_URL,
   };

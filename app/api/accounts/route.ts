@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { AccessError, requireAppUser } from "@/lib/auth/authorization";
+import { fetchAllRows } from "@/lib/supabase/query";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { Currency } from "@/types/finance";
 
@@ -24,7 +25,7 @@ export async function GET(request: Request) {
     if (!includeArchived) accountQuery = accountQuery.is("archived_at", null);
     const [accountsResult, transactionsResult] = await Promise.all([
       accountQuery,
-      supabase.from("transactions").select("account_id, type, amount").eq("user_id", user.id),
+      fetchAllRows<{ account_id: string | null; type: string; amount: number | string }>(() => supabase.from("transactions").select("id, account_id, type, amount").eq("user_id", user.id)),
     ]);
     if (accountsResult.error || transactionsResult.error) throw accountsResult.error ?? transactionsResult.error;
     const accounts = (accountsResult.data ?? []).map((account) => ({

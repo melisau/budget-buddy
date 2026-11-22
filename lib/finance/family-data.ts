@@ -1,4 +1,5 @@
 import { AccessError, type AppUser, type FamilyRole } from "@/lib/auth/authorization";
+import { escapeLikePattern } from "@/lib/supabase/query";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 import { resolveAvatars } from "@/lib/profile/avatar-server";
@@ -152,7 +153,7 @@ export async function createFamilyInvite(user: AppUser, familyGroupId: string, e
     .from("family_members")
     .select("id")
     .eq("family_group_id", familyGroupId)
-    .ilike("invited_email", invitationEmail)
+    .ilike("invited_email", escapeLikePattern(invitationEmail))
     .in("invitation_status", ["pending", "accepted"])
     .maybeSingle();
   if (existingError) throw new Error(`Unable to check the invitation: ${existingError.message}`);
@@ -195,7 +196,7 @@ export async function listPendingFamilyInvites(user: AppUser) {
     .from("family_members")
     .select("id, family_group_id, role, invited_email")
     .eq("invitation_status", "pending")
-    .ilike("invited_email", normalizedEmail(user.email));
+    .ilike("invited_email", escapeLikePattern(normalizedEmail(user.email)));
   if (error) throw new Error(`Unable to load family invitations: ${error.message}`);
   const groupIds = (invitations ?? []).map((invite) => invite.family_group_id);
   const { data: groups, error: groupsError } = groupIds.length

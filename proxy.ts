@@ -64,7 +64,7 @@ export const config = {
     "/", "/en",
     "/sign-in", "/sign-up", "/auth/:path*", "/forgot-password", "/update-password",
     "/dashboard/:path*", "/accounts/:path*", "/analytics/:path*", "/assistant/:path*",
-    "/budgets/:path*", "/family/:path*", "/goals/:path*", "/settings/:path*",
+    "/budgets/:path*", "/family/:path*", "/goals/:path*", "/recurring/:path*", "/settings/:path*",
     "/transactions/:path*", "/wishlists/:path*", "/api/:path*",
   ],
 };

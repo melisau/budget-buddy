@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { AccessError, requireAppUser } from "@/lib/auth/authorization";
 import { materializeDueRecurringSafely } from "@/lib/finance/recurring-service";
 import { calculateSavingsRate } from "@/lib/finance/calculations";
+import { fetchAllRows } from "@/lib/supabase/query";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { Currency } from "@/types/finance";
 
@@ -38,11 +39,12 @@ export async function GET(request: Request) {
     const familyId = scope.startsWith("family:") ? scope.slice(7) : null;
     if (familyId && !familyGroups.some((group) => group.id === familyId)) throw new AccessError("Family group not found.", 404);
 
-    let transactionQuery = supabase.from("transactions").select("id, title, type, amount, transaction_date, account_id, account:accounts(id, name, currency), category:categories(name)");
-    transactionQuery = familyId ? transactionQuery.eq("family_group_id", familyId) : transactionQuery.eq("user_id", user.id).is("family_group_id", null);
-    const transactionResult = await transactionQuery.order("transaction_date", { ascending: false }).order("created_at", { ascending: false });
+    const transactionResult = await fetchAllRows<Transaction>(() => {
+      const query = supabase.from("transactions").select("id, title, type, amount, transaction_date, account_id, account:accounts(id, name, currency), category:categories(name)");
+      return (familyId ? query.eq("family_group_id", familyId) : query.eq("user_id", user.id).is("family_group_id", null)).order("transaction_date", { ascending: false }).order("created_at", { ascending: false });
+    });
     if (transactionResult.error) throw transactionResult.error;
-    const allTransactions = (transactionResult.data ?? []) as Transaction[];
+    const allTransactions = transactionResult.data;
     const availableAccounts = familyId
       ? [...new Map(allTransactions.map((item) => relation(item.account)).filter((account): account is NonNullable<ReturnType<typeof relation<{ id: string; name: string; currency: Currency }>>> => Boolean(account)).map((account) => [account.id, account])).values()]
       : ownAccounts.map(({ id, name, currency: accountCurrency }) => ({ id, name, currency: accountCurrency }));

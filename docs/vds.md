@@ -1,12 +1,11 @@
 # VDS hosting
 
-BudgetBuddy production (`budgetbuddy.melisauyar.com`) runs on a shared VDS hosted by Keyubu, not on Vercel.
+BudgetBuddy production (`budgetbuddy.melisauyar.com`) runs on a shared VDS hosted by Keyubu.
 
 ## Layout
 
 - The app runs in a Docker container named `budgetbuddy`, behind the server's shared Caddy reverse proxy.
 - Code lives in `/opt/budgetbuddy` on the server.
-- Vercel no longer serves the site. Settings in `vercel.json` (such as crons) and Vercel environment variables have no effect.
 
 ## Deploying
 
