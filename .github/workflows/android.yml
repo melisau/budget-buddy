@@ -1,30 +1,47 @@
 name: Android app bundle
 
-# Builds the Google Play bundle (.aab) for the Capacitor app in mobile/android.
-#  - Pull requests touching the Capacitor app: unsigned build, to prove it compiles.
+# Builds the Google Play bundle (.aab) for the Flutter app in apps/mobile.
+#  - Pull requests touching the Flutter app: analyze, test, and an unsigned build.
 #  - Manual run (Actions > Android app bundle > Run workflow): signed with the
 #    upload key from repository secrets and uploaded as a downloadable artifact.
-# The upload key is never stored in the repository (it is public).
+# The upload key is never stored in the repository (it is public). The manual
+# run inputs are public client settings that the website already serves.
 
 on:
   pull_request:
     paths:
-      - "mobile/android/**"
-      - "capacitor.config.ts"
+      - "apps/mobile/**"
       - ".github/workflows/android.yml"
   workflow_dispatch:
     inputs:
       versionCode:
         description: "versionCode (integer, must increase on every Play upload)"
         required: true
-        default: "1"
+        default: "100"
       versionName:
         description: "versionName shown to users"
         required: true
-        default: "1.0.0"
+        default: "1.1.0"
+      apiUrl:
+        description: "Public site URL"
+        required: true
+        default: "https://budgetbuddy.melisauyar.com"
+      supabaseUrl:
+        description: "Public Supabase project URL"
+        required: true
+      supabasePublishableKey:
+        description: "Supabase publishable key (never a secret key)"
+        required: true
+      googleWebClientId:
+        description: "Public Google web client ID"
+        required: true
 
 permissions:
   contents: read
+
+env:
+  FLUTTER_VERSION: 3.47.7
+  GRADLE_OPTS: '"-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g"'
 
 jobs:
   bundle:
@@ -40,60 +57,77 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          run_install: false
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.13.0
-          cache: pnpm
-
-      # The Android project links Capacitor and its plugins from node_modules.
-      - name: Install dependencies and sync Capacitor
+      - name: Install Flutter
         run: |
-          pnpm install --frozen-lockfile
-          pnpm exec cap sync android
+          git clone --depth 1 --branch "$FLUTTER_VERSION" https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Analyze and test
+        working-directory: apps/mobile
+        run: |
+          flutter pub get --enforce-lockfile
+          dart analyze lib test
+          flutter test
+
+      - name: Check manual run settings
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          API_URL: ${{ inputs.apiUrl }}
+          SUPABASE_URL: ${{ inputs.supabaseUrl }}
+          SUPABASE_KEY: ${{ inputs.supabasePublishableKey }}
+        run: |
+          if [ "$HAS_KEY" != "true" ]; then
+            echo "::error::Add the ANDROID_UPLOAD_KEYSTORE_BASE64 and ANDROID_UPLOAD_KEYSTORE_PASSWORD repository secrets first."
+            exit 1
+          fi
+          case "$API_URL" in https://*) ;; *) echo "::error::apiUrl must use https."; exit 1 ;; esac
+          case "$SUPABASE_URL" in https://*) ;; *) echo "::error::supabaseUrl must use https."; exit 1 ;; esac
+          case "$SUPABASE_KEY" in sb_publishable_*) ;; *) echo "::error::Use the Supabase publishable key."; exit 1 ;; esac
+
       - name: Restore upload key
-        if: github.event_name == 'workflow_dispatch' && env.HAS_KEY == 'true'
+        if: github.event_name == 'workflow_dispatch'
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
         run: |
           echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/upload.p12"
           echo "ANDROID_UPLOAD_KEYSTORE_PATH=$RUNNER_TEMP/upload.p12" >> "$GITHUB_ENV"
 
-      - name: Fail if a manual run has no upload key
-        if: github.event_name == 'workflow_dispatch' && env.HAS_KEY != 'true'
-        run: |
-          echo "::error::Add the ANDROID_UPLOAD_KEYSTORE_BASE64 and ANDROID_UPLOAD_KEYSTORE_PASSWORD repository secrets first."
-          exit 1
-
       - name: Build release bundle
-        working-directory: mobile/android
+        working-directory: apps/mobile
         env:
           ANDROID_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
           ANDROID_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          VERSION_CODE: ${{ inputs.versionCode || '100' }}
+          VERSION_NAME: ${{ inputs.versionName || '1.1.0' }}
+          API_URL: ${{ inputs.apiUrl }}
+          SUPABASE_URL: ${{ inputs.supabaseUrl }}
+          SUPABASE_KEY: ${{ inputs.supabasePublishableKey }}
+          GOOGLE_ID: ${{ inputs.googleWebClientId }}
         run: |
-          ./gradlew --no-daemon bundleRelease \
-            -PversionCode="${{ inputs.versionCode || '1' }}" \
-            -PversionName="${{ inputs.versionName || '1.0.0' }}"
-          ls -la app/build/outputs/bundle/release/
+          flutter build appbundle --release \
+            --build-number="$VERSION_CODE" \
+            --build-name="$VERSION_NAME" \
+            --dart-define=API_URL="$API_URL" \
+            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_KEY" \
+            --dart-define=GOOGLE_WEB_CLIENT_ID="$GOOGLE_ID"
+          ls -la build/app/outputs/bundle/release/
 
       - name: Verify signature and show upload key fingerprint
         if: env.ANDROID_UPLOAD_KEYSTORE_PATH != ''
         env:
           ANDROID_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+          VERSION_CODE: ${{ inputs.versionCode }}
+          VERSION_NAME: ${{ inputs.versionName }}
         run: |
-          jarsigner -verify mobile/android/app/build/outputs/bundle/release/app-release.aab | tail -1
+          jarsigner -verify apps/mobile/build/app/outputs/bundle/release/app-release.aab | tail -1
           FINGERPRINT=$(keytool -list -v -keystore "$ANDROID_UPLOAD_KEYSTORE_PATH" -storetype PKCS12 \
             -storepass "$ANDROID_UPLOAD_KEYSTORE_PASSWORD" | awk '/SHA256:/ {print $2; exit}')
           {
             echo "### Signed bundle ready"
-            echo "- versionCode: \`${{ inputs.versionCode }}\`, versionName: \`${{ inputs.versionName }}\`"
+            echo "- versionCode: \`$VERSION_CODE\`, versionName: \`$VERSION_NAME\`"
             echo "- Upload key SHA-256: \`$FINGERPRINT\`"
           } >> "$GITHUB_STEP_SUMMARY"
           rm -f "$ANDROID_UPLOAD_KEYSTORE_PATH"
@@ -103,5 +137,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: budgetbuddy-${{ inputs.versionName }}-${{ inputs.versionCode }}
-          path: mobile/android/app/build/outputs/bundle/release/app-release.aab
+          path: apps/mobile/build/app/outputs/bundle/release/app-release.aab
           retention-days: 14
