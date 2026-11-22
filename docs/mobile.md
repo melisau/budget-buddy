@@ -44,3 +44,7 @@ Setup in Google Cloud Console → Credentials (same project as `NEXT_PUBLIC_GOOG
 
 The web client ID stays the token audience on Android, so no Supabase change is needed there.
 Because the apps load the deployed site, these changes take effect after a deploy.
+
+The Flutter app (`apps/mobile`) uses `google_sign_in` with the same Android OAuth clients.
+Pass the public web client ID at build time with
+`--dart-define=GOOGLE_WEB_CLIENT_ID=<web client id>`; without it the Google button is hidden.

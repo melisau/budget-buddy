@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/config.dart';
+import '../core/google_auth.dart';
 import '../core/theme.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -41,6 +43,22 @@ class _SignInScreenState extends State<SignInScreen> {
     } catch (_) {
       if (mounted) {
         setState(() => _error = 'Bağlantı kurulamadı. Lütfen tekrar deneyin.');
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _google() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await signInWithGoogle();
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'Google ile giriş yapılamadı. Tekrar deneyin.');
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -127,6 +145,17 @@ class _SignInScreenState extends State<SignInScreen> {
                           )
                         : const Text('Giriş yap'),
                   ),
+                  if (AppConfig.googleEnabled) ...[
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: _busy ? null : _google,
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(52),
+                      ),
+                      icon: const Icon(Icons.account_circle_outlined),
+                      label: const Text('Google ile giriş yap'),
+                    ),
+                  ],
                 ],
               ),
             ),
