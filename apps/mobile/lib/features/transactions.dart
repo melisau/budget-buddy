@@ -82,6 +82,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                 '${categoryLabel('${t['category']}')} · ${shortDate('${t['transactionDate']}')}',
             amount: t['amount'] as num,
             isIncome: t['type'] == 'income',
+            onTap: () => showEditTransaction(context, t),
           ),
         );
       },
@@ -89,18 +90,37 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   }
 }
 
-Future<void> showAddTransaction(BuildContext context) => showModalBottomSheet(
+Future<void> showAddTransaction(BuildContext context) =>
+    _showSheet(context, null);
+
+Future<void> showEditTransaction(
+  BuildContext context,
+  Map<String, dynamic> transaction,
+) => _showSheet(context, transaction);
+
+Future<void> _showSheet(
+  BuildContext context,
+  Map<String, dynamic>? existing,
+) => showModalBottomSheet(
   context: context,
   isScrollControlled: true,
+  useRootNavigator: true,
   useSafeArea: true,
   shape: const RoundedRectangleBorder(
     borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
   ),
-  builder: (_) => const _AddSheet(),
+  builder: (_) => _AddSheet(existing),
 );
 
+/// Plain editable text that [parseAmount] reads back to the same value.
+String amountText(num amount) => amount == amount.truncate()
+    ? amount.toInt().toString()
+    : amount.toString().replaceAll('.', ',');
+
 class _AddSheet extends ConsumerStatefulWidget {
-  const _AddSheet();
+  const _AddSheet(this.existing);
+
+  final Map<String, dynamic>? existing;
 
   @override
   ConsumerState<_AddSheet> createState() => _AddSheetState();
@@ -116,6 +136,24 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
   String? _error;
   DateTime _date = DateTime.now();
   bool _busy = false;
+
+  bool get _editing => widget.existing != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _container = ProviderScope.containerOf(context, listen: false);
+    final t = widget.existing;
+    if (t == null) return;
+    _type = t['type'] == 'income' ? 'income' : 'expense';
+    _amount.text = amountText(t['amount'] as num);
+    _title.text = '${t['title']}';
+    final category = '${t['categoryId'] ?? ''}';
+    final account = '${t['accountId'] ?? ''}';
+    _category = category.isEmpty ? null : category;
+    _account = account.isEmpty ? null : account;
+    _date = DateTime.tryParse('${t['transactionDate']}') ?? _date;
+  }
 
   @override
   void dispose() {
@@ -133,28 +171,72 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
     final d = _date;
     final date =
         '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    final body = <String, dynamic>{
+      'type': _type,
+      'amount': parseAmount(_amount.text),
+      'title': _title.text.trim(),
+      'category': _category,
+      'account': _account ?? '',
+      'date': date,
+    };
+    // The API clears an omitted note, and the form has no note field yet.
+    final note = widget.existing?['note'];
+    if (note is String && note.isNotEmpty) body['note'] = note;
+    final api = ref.read(apiProvider);
+    await _write(
+      () => _editing
+          ? api.patch('transactions/${widget.existing!['id']}', body)
+          : api.post('transactions', body),
+    );
+  }
+
+  Future<void> _delete() async {
+    final hasReceipt = widget.existing!['hasReceipt'] == true;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialog) => AlertDialog(
+        title: const Text('İşlem silinsin mi?'),
+        content: Text(
+          hasReceipt
+              ? 'Bu işlem ve eklenmiş fişi kalıcı olarak silinecek.'
+              : 'Bu işlem kalıcı olarak silinecek.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialog, false),
+            child: const Text('Vazgeç'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialog, true),
+            style: TextButton.styleFrom(foregroundColor: expense),
+            child: const Text('Sil'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final api = ref.read(apiProvider);
+    await _write(() => api.delete('transactions/${widget.existing!['id']}'));
+  }
+
+  Future<void> _write(Future<Object?> Function() action) async {
     try {
-      await ref.read(apiProvider).post('transactions', {
-        'type': _type,
-        'amount': parseAmount(_amount.text),
-        'title': _title.text.trim(),
-        'category': _category,
-        'account': _account ?? '',
-        'date': date,
-      });
+      await action();
       HapticFeedback.mediumImpact();
-      ref.invalidate(transactionsProvider);
-      ref.invalidate(dashboardProvider);
       if (mounted) Navigator.pop(context);
+      _refreshLists();
     } on ApiException catch (e) {
       if (e.outcomeUnknown) {
-        ref.invalidate(transactionsProvider);
-        ref.invalidate(dashboardProvider);
         if (mounted) {
           final messenger = ScaffoldMessenger.of(context);
           Navigator.pop(context);
           messenger.showSnackBar(SnackBar(content: Text(e.message)));
         }
+        _refreshLists();
       } else if (mounted) {
         setState(() {
           _error = e.message;
@@ -171,12 +253,23 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
     }
   }
 
+  void _refreshLists() {
+    _container.invalidate(transactionsProvider);
+    _container.invalidate(dashboardProvider);
+  }
+
+  // Still valid after the sheet closes, unlike ref.
+  late final ProviderContainer _container;
+
   Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final earliest = DateTime(2015);
+    final latest = now.add(const Duration(days: 365));
     final picked = await showDatePicker(
       context: context,
       initialDate: _date,
-      firstDate: DateTime(2015),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      firstDate: _date.isBefore(earliest) ? _date : earliest,
+      lastDate: _date.isAfter(latest) ? _date : latest,
     );
     if (picked != null) setState(() => _date = picked);
   }
@@ -207,7 +300,20 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
         .cast<Map<String, dynamic>>()
         .where((c) => c['type'] == _type)
         .toList();
-    final accounts = (data['accounts'] as List).cast<Map<String, dynamic>>();
+    final accounts = [
+      ...(data['accounts'] as List).cast<Map<String, dynamic>>(),
+    ];
+    // Archived accounts are not listed, but editing must not drop them.
+    if (_account != null && !accounts.any((a) => '${a['id']}' == _account)) {
+      accounts.add({
+        'id': _account,
+        'name': widget.existing?['accountName'] ?? 'Hesap',
+      });
+    }
+    // A category outside this list must be chosen again before saving.
+    if (_category != null && !categories.any((c) => '${c['id']}' == _category)) {
+      _category = null;
+    }
     return SingleChildScrollView(
       child: Form(
         key: _form,
@@ -215,9 +321,9 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'İşlem ekle',
-              style: TextStyle(
+            Text(
+              _editing ? 'İşlemi düzenle' : 'İşlem ekle',
+              style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
                 color: ink,
@@ -238,7 +344,7 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _amount,
-              autofocus: true,
+              autofocus: !_editing,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
@@ -325,6 +431,18 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
               onPressed: _busy ? null : _save,
               child: Text(_busy ? 'Kaydediliyor…' : 'Kaydet'),
             ),
+            if (_editing) ...[
+              const SizedBox(height: 6),
+              TextButton.icon(
+                onPressed: _busy ? null : _delete,
+                style: TextButton.styleFrom(
+                  foregroundColor: expense,
+                  minimumSize: const Size.fromHeight(48),
+                ),
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('İşlemi sil'),
+              ),
+            ],
           ],
         ),
       ),
