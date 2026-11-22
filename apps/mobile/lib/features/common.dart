@@ -27,8 +27,11 @@ class ApiPage extends ConsumerWidget {
     required this.builder,
     this.onAdd,
     this.addLabel,
+    this.refreshAlso = const [],
   });
 
+  /// Other GET paths shown on this page, reloaded by pull to refresh.
+  final List<String> refreshAlso;
   final String title;
   final String path;
   final List<Widget> Function(BuildContext, WidgetRef, Map<String, dynamic>)
@@ -51,7 +54,12 @@ class ApiPage extends ConsumerWidget {
             )
           : null,
       body: RefreshIndicator(
-        onRefresh: () => ref.refresh(pageProvider(path).future),
+        onRefresh: () {
+          for (final other in refreshAlso) {
+            ref.invalidate(pageProvider(other));
+          }
+          return ref.refresh(pageProvider(path).future);
+        },
         child: data.when(
           skipLoadingOnRefresh: true,
           loading: () => const LoadingList(),
