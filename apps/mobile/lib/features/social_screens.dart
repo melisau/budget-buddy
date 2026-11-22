@@ -1,9 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/api.dart';
 import '../core/theme.dart';
 import 'common.dart';
 import 'data.dart';
+
+const _invitationsPath = 'family/invitations';
+const _inviteRoles = {'member': 'Üye', 'viewer': 'İzleyici'};
+
+bool isInviteEmail(String value) =>
+    RegExp(r'^\S+@\S+\.\S+$').hasMatch(value.trim());
+
+Future<bool> _confirm(
+  BuildContext context, {
+  required String title,
+  required String message,
+  required String action,
+}) async =>
+    await showDialog<bool>(
+      context: context,
+      builder: (dialog) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialog, false),
+            child: const Text('Vazgeç'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialog, true),
+            child: Text(action, style: const TextStyle(color: expense)),
+          ),
+        ],
+      ),
+    ) ??
+    false;
 
 const _occasions = {
   'birthday': 'Doğum günü',
@@ -21,6 +53,7 @@ class FamilyScreen extends StatelessWidget {
     title: 'Aile Grubu',
     path: _path,
     addLabel: 'Grup oluştur',
+    refreshAlso: const [_invitationsPath],
     onAdd: (context, ref, _) => showFormSheet(
       context,
       title: 'Aile grubu oluştur',
@@ -32,8 +65,11 @@ class FamilyScreen extends StatelessWidget {
     ),
     builder: (context, ref, d) {
       final groups = rows(d['groups']);
-      if (groups.isEmpty) return const [EmptyNote('Henüz aile grubun yok.')];
+      if (groups.isEmpty) {
+        return const [_Invitations(), EmptyNote('Henüz aile grubun yok.')];
+      }
       return [
+        const _Invitations(),
         for (final g in groups) ...[
           Card(
             child: Column(
@@ -50,7 +86,25 @@ class FamilyScreen extends StatelessWidget {
                     leading: const Icon(Icons.person_outline),
                     title: Text('${m['name'] ?? m['email'] ?? 'Üye'}'),
                     subtitle: Text(_memberState(m)),
+                    trailing: g['role'] == 'owner' && m['role'] != 'owner'
+                        ? _memberMenu(context, ref, '${g['id']}', m)
+                        : null,
                   ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                  child: g['role'] == 'owner'
+                      ? TextButton.icon(
+                          onPressed: () => _invite(context, ref, '${g['id']}'),
+                          icon: const Icon(Icons.person_add_alt_1_outlined),
+                          label: const Text('Üye davet et'),
+                        )
+                      : TextButton.icon(
+                          onPressed: () => _leave(context, ref, g),
+                          style: TextButton.styleFrom(foregroundColor: expense),
+                          icon: const Icon(Icons.logout),
+                          label: const Text('Gruptan ayrıl'),
+                        ),
+                ),
               ],
             ),
           ),
@@ -65,6 +119,206 @@ class FamilyScreen extends StatelessWidget {
   static String _memberState(Map<String, dynamic> m) {
     final role = const {'owner': 'Sahip', 'member': 'Üye', 'viewer': 'İzleyici'}[m['role']] ?? '${m['role']}';
     return m['invitationStatus'] == 'pending' ? '$role · davet bekliyor' : role;
+  }
+
+  static void _invite(BuildContext context, WidgetRef ref, String groupId) {
+    final messenger = ScaffoldMessenger.of(context);
+    showFormSheet(
+      context,
+      title: 'Üye davet et',
+      fields: [
+        const FieldSpec('email', 'E-posta'),
+        FieldSpec(
+          'role',
+          'Yetki',
+          kind: FieldKind.choice,
+          initial: 'member',
+          options: (_) => _inviteRoles,
+        ),
+      ],
+      onSubmit: (v) async {
+        final email = '${v['email']}'.trim().toLowerCase();
+        if (!isInviteEmail(email)) {
+          throw ApiException('Geçerli bir e-posta girin.');
+        }
+        final Map<String, dynamic> result;
+        try {
+          result = await ref.read(apiProvider).post(_invitationsPath, {
+            'familyGroupId': groupId,
+            'email': email,
+            'role': v['role'],
+          });
+        } on ApiException catch (e) {
+          if (e.status == 403) {
+            throw ApiException('Bu e-posta zaten davetli veya grupta.');
+          }
+          rethrow;
+        }
+        ref.invalidate(pageProvider(_path));
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              result['emailed'] == true
+                  ? 'Davet e-postası gönderildi.'
+                  : 'Davet oluşturuldu. Kişi bu e-postayla giriş yapınca görecek.',
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  static Widget _memberMenu(
+    BuildContext context,
+    WidgetRef ref,
+    String groupId,
+    Map<String, dynamic> m,
+  ) {
+    final path = 'family/$groupId/members/${m['id']}';
+    final pending = m['invitationStatus'] == 'pending';
+    final name = '${m['name'] ?? m['email'] ?? 'Üye'}';
+    return PopupMenuButton<String>(
+      tooltip: 'Üye seçenekleri',
+      onSelected: (choice) async {
+        if (choice != 'remove') {
+          await runAction(context, ref, _path, (api) => api.patch(path, {'role': choice}));
+          return;
+        }
+        final confirmed = await _confirm(
+          context,
+          title: pending ? 'Davet iptal edilsin mi?' : 'Üye çıkarılsın mı?',
+          message: pending
+              ? '$name için gönderilen davet iptal edilecek.'
+              : '$name aile grubundan çıkarılacak.',
+          action: pending ? 'İptal et' : 'Çıkar',
+        );
+        if (confirmed && context.mounted) {
+          await runAction(context, ref, _path, (api) => api.delete(path));
+        }
+      },
+      itemBuilder: (_) => [
+        for (final role in _inviteRoles.entries)
+          if (role.key != m['role'])
+            PopupMenuItem(value: role.key, child: Text('${role.value} yap')),
+        PopupMenuItem(
+          value: 'remove',
+          child: Text(
+            pending ? 'Daveti iptal et' : 'Gruptan çıkar',
+            style: const TextStyle(color: expense),
+          ),
+        ),
+      ],
+    );
+  }
+
+  static Future<void> _leave(
+    BuildContext context,
+    WidgetRef ref,
+    Map<String, dynamic> g,
+  ) async {
+    final confirmed = await _confirm(
+      context,
+      title: 'Gruptan ayrılınsın mı?',
+      message: '"${g['name']}" grubuna erişimin sona erecek.',
+      action: 'Ayrıl',
+    );
+    if (confirmed && context.mounted) {
+      await runAction(
+        context,
+        ref,
+        _path,
+        (api) => api.post('family/${g['id']}/leave', const {}),
+      );
+    }
+  }
+}
+
+class _Invitations extends ConsumerWidget {
+  const _Invitations();
+
+  Future<void> _respond(
+    BuildContext context,
+    WidgetRef ref,
+    Map<String, dynamic> invite,
+    bool accept,
+  ) async {
+    if (!accept) {
+      final confirmed = await _confirm(
+        context,
+        title: 'Davet reddedilsin mi?',
+        message: '"${invite['groupName']}" grubuna katılmayacaksın.',
+        action: 'Reddet',
+      );
+      if (!confirmed || !context.mounted) return;
+    }
+    await runAction(
+      context,
+      ref,
+      _invitationsPath,
+      (api) => api.post('$_invitationsPath/${invite['id']}/respond', {'accept': accept}),
+    );
+    ref.invalidate(pageProvider(FamilyScreen._path));
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final data = ref.watch(pageProvider(_invitationsPath));
+    return data.when(
+      skipLoadingOnRefresh: true,
+      loading: () => const SizedBox.shrink(),
+      error: (e, _) => Card(
+        child: TextButton(
+          onPressed: () => ref.invalidate(pageProvider(_invitationsPath)),
+          child: Text('Davetler yüklenemedi · Tekrar dene'),
+        ),
+      ),
+      data: (d) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final invite in rows(d['invitations']))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        '${invite['groupName']}',
+                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: ink),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Aile grubu daveti · ${_inviteRoles[invite['role']] ?? invite['role']}',
+                        style: const TextStyle(color: muted),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => _respond(context, ref, invite, false),
+                              child: const Text('Reddet'),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: FilledButton(
+                              onPressed: () => _respond(context, ref, invite, true),
+                              child: const Text('Kabul et'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 
