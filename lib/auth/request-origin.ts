@@ -1,3 +1,4 @@
+import { parseBearerCredential } from "@/lib/auth/bearer";
 import { SITE_URL } from "@/lib/site";
 
 // A proxied request URL may use an internal host; Host identifies the browser-facing origin.
@@ -18,6 +19,16 @@ export function sameOriginFormOrigin(request: Request): string | null {
   if (submittedOrigin === publicOrigin) return publicOrigin;
   if (submittedOrigin === null && request.headers.get("sec-fetch-site") === "same-origin") return publicOrigin;
   return null;
+}
+
+/**
+ * CSRF gate for sensitive API writes. Browsers cannot attach a Bearer token by
+ * themselves, so a mobile client passes here. This does not authenticate: the
+ * route must still verify the token with requireAppUser().
+ */
+export function isTrustedApiWrite(request: Request): boolean {
+  return parseBearerCredential(request.headers.get("authorization")).kind === "token"
+    || sameOriginFormOrigin(request) !== null;
 }
 
 /**

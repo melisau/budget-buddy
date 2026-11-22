@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { publicUrl, sameOriginFormOrigin } from "../lib/auth/request-origin.ts";
+import { isTrustedApiWrite, publicUrl, sameOriginFormOrigin } from "../lib/auth/request-origin.ts";
 
 function formRequest(url: string, headers: Record<string, string>) {
   return new Request(url, { method: "POST", headers });
@@ -42,4 +42,14 @@ test("redirects use the public site URL in production, not the container address
 test("redirects keep the request origin in development", () => {
   const request = new Request("http://localhost:3000/auth/callback?code=x");
   assert.equal(publicUrl("/dashboard", request, false).toString(), "http://localhost:3000/dashboard");
+});
+
+test("sensitive API writes accept same-origin browsers and well-formed bearer tokens only", () => {
+  const url = "http://localhost:5173/api/account";
+  assert.equal(isTrustedApiWrite(formRequest(url, { host: "localhost:5173", origin: "http://localhost:5173" })), true);
+  assert.equal(isTrustedApiWrite(formRequest(url, { host: "localhost:5173", authorization: "Bearer aaa.bbb.ccc" })), true);
+  assert.equal(isTrustedApiWrite(formRequest(url, { host: "localhost:5173" })), false);
+  assert.equal(isTrustedApiWrite(formRequest(url, { host: "localhost:5173", origin: "https://evil.example" })), false);
+  assert.equal(isTrustedApiWrite(formRequest(url, { host: "localhost:5173", origin: "https://evil.example", authorization: "Bearer nope" })), false);
+  assert.equal(isTrustedApiWrite(formRequest(url, { host: "localhost:5173", authorization: "Basic abc" })), false);
 });
