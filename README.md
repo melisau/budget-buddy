@@ -2,7 +2,7 @@
 
 Budget Buddy is a bilingual personal-finance app for individuals and families. It helps people track money, make shared plans, and turn everyday financial habits into goals that are easy to start and maintain.
 
-The application uses **Supabase Auth** for authentication and Supabase/PostgreSQL for application data. Clerk has been removed from the running application.
+The application uses **Supabase Auth** for authentication and Supabase/PostgreSQL for application data.
 
 ## What you can do
 
@@ -15,15 +15,38 @@ The application uses **Supabase Auth** for authentication and Supabase/PostgreSQ
 - Share selected goal progress with a family group without exposing private transactions.
 - Create a private monthly allowance plan with a savings percentage.
 - Manage family groups, invitations, roles, shared transactions, a shared shopping note, and a live shopping checklist.
-- Build occasion wishlists for birthdays, housewarmings, New Year, and other events, on your own or with a family group. Family members can reserve a gift so it is not bought twice.
+- Build occasion wishlists for birthdays, housewarmings, New Year, and other events, on your own or with a family group. Family members can reserve a gift so it is not bought twice. A personal wishlist can also have a revocable, read-only share link.
 - Choose surprise mode for a wishlist: the owner cannot see reservations, while other family members can.
 - Upload private receipt images, import/export CSV data, and use the Groq-powered financial assistant and voice transaction drafts.
 - Choose a profile photo or an icon avatar.
-- Use the interface in Turkish or English, in the browser, as an installable web app (PWA), or as an Android app packaged for Google Play (Trusted Web Activity).
+- Use the interface in Turkish or English, in the browser or as an installable web app (PWA).
+
+## Mobile app
+
+The Flutter app in `apps/mobile` is the only mobile release channel. It calls the same API as the website and authenticates with verified Supabase bearer tokens.
+
+**The Flutter app is not feature-complete and has not replaced the current test build.** It has email and password sign-in, overview, transactions list and entry, assistant, accounts, budgets, goals, recurring items, analytics, family, wishlists, and basic settings. These are still missing:
+
+- Google sign-in (in progress, not merged or verified)
+- Sign-up, password recovery, and two-step verification
+- Transaction edit and delete
+- Receipt scanning
+- Family invitations
+- Some settings
+
+The Google Play closed test (Alpha 1, version 1.0.0) still runs the earlier Capacitor build. The Capacitor project in `mobile/` and the Trusted Web Activity project in `android/` receive no new releases.
+
+To run the app against the local stack from an Android emulator:
+
+```bash
+cd apps/mobile
+flutter pub get
+flutter run --dart-define=API_URL=http://10.0.2.2:5173 --dart-define=SUPABASE_URL=http://10.0.2.2:54321 --dart-define=SUPABASE_PUBLISHABLE_KEY=<PUBLISHABLE_KEY>
+```
 
 ## Plans
 
-The Free plan includes manual tracking, personal goals, family wishlists, the shared shopping list, and allowance planning. Core and Pro provide additional account, reporting, and AI capabilities. Paid plans are switched off: no payment provider is connected yet, so every feature is free during launch.
+Every feature is currently free. No payment provider is connected and paid plans are switched off. Subscriptions are only planned.
 
 ## Local development
 
@@ -41,7 +64,7 @@ The Free plan includes manual tracking, personal goals, family wishlists, the sh
    ```bash
    git clone https://github.com/melisau/budget-buddy.git
    cd budget-buddy
-   pnpm install
+   pnpm install --frozen-lockfile
    ```
 
 2. Create a local environment file. Never commit real keys.
@@ -82,13 +105,7 @@ The Free plan includes manual tracking, personal goals, family wishlists, the sh
 
    Visit [http://localhost:5173](http://localhost:5173).
 
-Use separate Supabase and Groq projects/keys for development and production.
-
-## Migrating from Clerk
-
-Clerk is not used for current sign-in or authorization. Migration `0014_supabase_auth.sql` keeps the old `clerk_user_id` only as a legacy audit/mapping field; it is not a credential and is not used at runtime.
-
-Existing financial rows are preserved and are **not** automatically matched solely by email. Before an existing user can access legacy data, an administrator must independently verify and explicitly link the old app identity with the confirmed Supabase Auth identity. Follow the complete safety checklist in [docs/supabase-auth-migration.md](docs/supabase-auth-migration.md). Apply and test migrations on the local Supabase stack first; do not use this setup guide to change production data.
+Use a separate Groq key for development. Never use production Supabase or Groq credentials locally.
 
 ## Quality checks
 
@@ -101,7 +118,8 @@ pnpm build
 
 ## Technology
 
-- **App:** Next.js 16, React 19, TypeScript
+- **Web app:** Next.js 16 App Router, React 19, TypeScript
+- **Mobile app:** Flutter, Riverpod, go_router, `supabase_flutter`
 - **UI:** Tailwind CSS, shadcn/ui, Lucide, Recharts
 - **Data and authentication:** Supabase PostgreSQL, Supabase Auth, `@supabase/ssr`, Row Level Security, private Storage buckets
 - **AI:** Groq API
@@ -113,23 +131,25 @@ pnpm build
 
 ## Security model
 
-- Supabase Auth sessions use SSR cookies; server routes verify the signed-in user before accessing application data.
+- The website uses Supabase Auth SSR cookies and mobile clients use Supabase bearer tokens. Server routes verify the user before accessing application data, and a rejected bearer token never falls back to a cookie session.
 - Browser clients do not receive privileged database credentials. Server routes perform ownership and family-role checks before using the server-only Supabase key.
-- New family collaboration tables are protected with RLS; the server enforces membership and surprise-wishlist visibility.
+- Row Level Security is deny-by-default, with read-only policies for a user's own rows and accepted family groups. Writes stay server-only, and the server enforces membership and surprise-wishlist visibility.
 - Receipts live in a private Storage bucket and are served through short-lived signed URLs.
 - Production data is backed up daily; the off-site copy is encrypted on the server before upload, and the restore procedure is tested against a local stack.
 - The AI assistant receives authorized, sanitized financial summaries and cannot create a transaction without an explicit confirmation step.
 
 ## Project documentation
 
-- [Supabase Auth migration runbook](docs/supabase-auth-migration.md)
 - [Architecture](docs/architecture.md)
 - [Deployment and release process](docs/deployment.md)
 - [VDS hosting](docs/vds.md)
+- [Google Play release guide](docs/play-store.md) (describes the earlier Capacitor build)
+- [Capacitor notes](docs/mobile.md) (legacy, no new releases)
+- [Legacy account migration runbook](docs/supabase-auth-migration.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 
-Active work is tracked in Linear. Changes should be developed in a dedicated branch and reach `main` through a pull request; `main` is protected and only accepts changes whose CI checks pass on an up-to-date branch. Merging does not deploy: production is deployed from `main` on the VDS (see [VDS hosting](docs/vds.md)), and database migrations are applied to production as a separate, approved step.
+Active work is tracked in Linear. Changes should be developed in a dedicated branch and reach `main` through a pull request; `main` is protected and only accepts changes whose CI checks pass on an up-to-date branch. Merging does not deploy by itself: production is deployed from `main` on the VDS by hand, or by the optional [auto-deploy cron](docs/vds.md#automatic-deploys) if it is enabled on the server. Database migrations are applied to production as a separate, approved step.
 
 ## License
 
