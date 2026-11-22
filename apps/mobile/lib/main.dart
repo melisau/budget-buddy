@@ -9,6 +9,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/config.dart';
+import 'core/error_reporter.dart';
 import 'core/session_storage.dart';
 import 'core/theme.dart';
 import 'features/assistant.dart';
@@ -22,6 +23,7 @@ import 'features/transactions.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  ErrorReporter.install();
   await initializeDateFormatting('tr_TR');
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
