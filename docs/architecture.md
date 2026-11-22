@@ -53,6 +53,11 @@ privileged data client is server-only. Proxy refreshes cookies; every protected
 page and API verifies identity using `getUser()` before applying ownership/role
 checks. RLS remains deny-by-default for direct browser table access.
 
+Native mobile clients call the same API with `Authorization: Bearer <Supabase access token>`.
+The token is verified with `auth.getUser(token)` and goes through the same two-step and
+ownership checks. A malformed or rejected Bearer token fails closed and never falls back to
+a cookie session.
+
 Since migration 0023, RLS also has read-only (SELECT) policies for the
 `authenticated` role that mirror the server's read rules: personal rows only to
 their owner, family rows only to accepted members. They apply to any request

@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { parseBearerCredential } from "@/lib/auth/bearer";
 import { readSupabasePublicConfig } from "@/lib/supabase/config";
 import { LANDING_LANGUAGE_BY_PATH, PAGE_LANGUAGE_HEADER } from "@/lib/seo/i18n";
 
@@ -14,6 +15,14 @@ export async function proxy(request: NextRequest) {
     const headers = new Headers(request.headers);
     headers.set(PAGE_LANGUAGE_HEADER, landingLanguage);
     return NextResponse.next({ request: { headers } });
+  }
+
+  // Mobile API calls carry their own token: no cookie session to refresh or set.
+  if (request.nextUrl.pathname.startsWith("/api/") && parseBearerCredential(request.headers.get("authorization")).kind !== "none") {
+    const response = NextResponse.next({ request });
+    response.headers.set("Cache-Control", "private, no-store");
+    response.headers.set("Vary", "Authorization");
+    return response;
   }
 
   const config = readSupabasePublicConfig();
@@ -46,7 +55,7 @@ export async function proxy(request: NextRequest) {
     console.error("[auth] session refresh failed", error instanceof Error ? error.message : error);
   }
   response.headers.set("Cache-Control", "private, no-store");
-  response.headers.set("Vary", "Cookie");
+  response.headers.set("Vary", "Cookie, Authorization");
   return response;
 }
 
