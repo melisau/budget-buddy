@@ -53,6 +53,7 @@ class TransactionTile extends StatelessWidget {
     required this.amount,
     required this.isIncome,
     this.currency = 'TRY',
+    this.onTap,
   });
 
   final String title;
@@ -60,11 +61,13 @@ class TransactionTile extends StatelessWidget {
   final String currency;
   final num amount;
   final bool isIncome;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final color = isIncome ? income : brand;
     return ListTile(
+      onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
       leading: CircleAvatar(
         backgroundColor: color.withValues(alpha: .12),
