@@ -103,6 +103,8 @@ class Api {
   String _messageFor(int status) => switch (status) {
     400 => 'Lütfen alanları kontrol edin.',
     401 => 'Oturumunuz sona erdi. Tekrar giriş yapın.',
+    403 => 'Bu işlem için yetkiniz yok.',
+    404 => 'Kayıt bulunamadı. Listeyi yenileyin.',
     429 => 'Çok fazla istek gönderildi. Biraz sonra deneyin.',
     _ => 'Bir sorun oluştu. Lütfen tekrar deneyin.',
   };
