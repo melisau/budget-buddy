@@ -29,11 +29,25 @@ android {
         versionName = flutter.versionName
     }
 
+    // Same upload key as the Play listing. Without it the release stays unsigned.
+    val keystorePath = System.getenv("ANDROID_UPLOAD_KEYSTORE_PATH")
+    if (!keystorePath.isNullOrBlank()) {
+        signingConfigs {
+            create("upload") {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("ANDROID_UPLOAD_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_UPLOAD_KEY_ALIAS")
+                keyPassword = System.getenv("ANDROID_UPLOAD_KEY_PASSWORD")
+                    ?: System.getenv("ANDROID_UPLOAD_KEYSTORE_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            if (!keystorePath.isNullOrBlank()) {
+                signingConfig = signingConfigs.getByName("upload")
+            }
         }
     }
 }
