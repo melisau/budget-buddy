@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { deleteAvatarFiles } from "@/lib/profile/avatar-server";
 import { AccessError, requireAppUser } from "@/lib/auth/authorization";
-import { sameOriginFormOrigin } from "@/lib/auth/request-origin";
+import { isTrustedApiWrite } from "@/lib/auth/request-origin";
 import { deleteStoredReceipts } from "@/lib/finance/receipt-storage";
 import { captureException } from "@/lib/monitoring/sentry";
 import { createSupabaseAuthClient } from "@/lib/supabase/auth-server";
@@ -84,7 +84,7 @@ async function logDeletionFailure(userId: string, step: string, error: unknown) 
  * (MB-26); a deleted user must never keep being billed.
  */
 export async function DELETE(request: Request) {
-  if (!sameOriginFormOrigin(request)) {
+  if (!isTrustedApiWrite(request)) {
     return NextResponse.json({ error: "Same-origin request required." }, { status: 403 });
   }
 

@@ -4,9 +4,42 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/theme.dart';
 import 'common.dart';
+import 'data.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
+
+  Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => const _DeleteAccountDialog(),
+    );
+    if (confirmed != true || !context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context, rootNavigator: true);
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      useRootNavigator: true,
+      builder: (_) => const PopScope(
+        canPop: false,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+    );
+    try {
+      await ref.read(apiProvider).delete('account');
+      navigator.pop();
+      messenger.showSnackBar(const SnackBar(content: Text('Hesabın silindi.')));
+      try {
+        await Supabase.instance.client.auth.signOut(scope: SignOutScope.local);
+      } catch (_) {
+        // The identity is gone; the local session may already be invalid.
+      }
+    } catch (e) {
+      navigator.pop();
+      messenger.showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -60,11 +93,15 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           const Gap(),
-          const Card(
+          Card(
             child: ListTile(
-              leading: Icon(Icons.manage_accounts_outlined),
-              title: Text('Hesabı silme'),
-              subtitle: Text('budgetbuddy.melisauyar.com/account-deletion'),
+              leading: const Icon(Icons.delete_forever_outlined, color: expense),
+              title: const Text(
+                'Hesabı sil',
+                style: TextStyle(color: expense, fontWeight: FontWeight.w700),
+              ),
+              subtitle: const Text('Hesabın ve tüm verilerin kalıcı olarak silinir'),
+              onTap: () => _deleteAccount(context, ref),
             ),
           ),
           const Gap(),
@@ -77,6 +114,61 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _DeleteAccountDialog extends StatefulWidget {
+  const _DeleteAccountDialog();
+
+  @override
+  State<_DeleteAccountDialog> createState() => _DeleteAccountDialogState();
+}
+
+class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
+  static const _accepted = {'SİL', 'SIL', 'Sil', 'sil'};
+  final _input = TextEditingController();
+
+  @override
+  void dispose() {
+    _input.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ready = _accepted.contains(_input.text.trim());
+    return AlertDialog(
+      title: const Text('Hesabın silinsin mi?'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Hesabın, işlemlerin, bütçelerin, hedeflerin ve fişlerin kalıcı olarak silinir. Bu işlem geri alınamaz.',
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _input,
+            autocorrect: false,
+            decoration: const InputDecoration(labelText: 'Onaylamak için SİL yaz'),
+            onChanged: (_) => setState(() {}),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Vazgeç'),
+        ),
+        TextButton(
+          onPressed: ready ? () => Navigator.pop(context, true) : null,
+          child: Text(
+            'Kalıcı olarak sil',
+            style: TextStyle(color: ready ? expense : muted),
+          ),
+        ),
+      ],
     );
   }
 }
