@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { AccessError, requireAppUser, requireTransactionReadAccess, requireTransactionWriteAccess } from "@/lib/auth/authorization";
-import { createReceiptUrl, deleteStoredReceipt, uploadReceipt } from "@/lib/finance/receipt-storage";
+import { createReceiptUrl, deleteStoredReceipt } from "@/lib/finance/receipt-storage";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 type RouteContext = { params: Promise<{ transactionId: string }> };
@@ -26,19 +26,12 @@ export async function GET(_: Request, context: RouteContext) {
   } catch (error) { return errorResponse(error); }
 }
 
-export async function POST(request: Request, context: RouteContext) {
+export async function POST(_: Request, context: RouteContext) {
   try {
     const user = await requireAppUser(); const { transactionId } = await context.params;
     await requireTransactionWriteAccess(user.id, transactionId);
-    const file = (await request.formData()).get("receipt");
-    if (!(file instanceof File)) throw new AccessError("Choose a receipt image.", 404);
-    const previous = await getSupabaseServerClient().from("transactions").select("receipt_path").eq("id", transactionId).maybeSingle();
-    if (previous.error) throw new Error(`Unable to look up the existing receipt: ${previous.error.message}`);
-    const uploaded = await uploadReceipt(transactionId, file);
-    const { error } = await getSupabaseServerClient().from("transactions").update({ receipt_path: uploaded.path, receipt_content_type: uploaded.contentType }).eq("id", transactionId);
-    if (error) { await deleteStoredReceipt(uploaded.path); throw new Error(`Unable to save the receipt: ${error.message}`); }
-    await deleteStoredReceipt(previous.data?.receipt_path);
-    return NextResponse.json({ ok: true }, { status: 201 });
+    // New images are no longer stored. Existing ones can still be opened and removed.
+    return NextResponse.json({ error: "Receipt image uploads are no longer available." }, { status: 410 });
   } catch (error) { return errorResponse(error); }
 }
 

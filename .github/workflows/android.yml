@@ -35,6 +35,11 @@ on:
       googleWebClientId:
         description: "Public Google web client ID"
         required: true
+      receiptScanEnabled:
+        description: "Enable receipt scanning (internal test builds only)"
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -105,6 +110,7 @@ jobs:
           SUPABASE_URL: ${{ inputs.supabaseUrl }}
           SUPABASE_KEY: ${{ inputs.supabasePublishableKey }}
           GOOGLE_ID: ${{ inputs.googleWebClientId }}
+          RECEIPT_SCAN: ${{ inputs.receiptScanEnabled == true }}
         run: |
           flutter build appbundle --release \
             --build-number="$VERSION_CODE" \
@@ -112,7 +118,8 @@ jobs:
             --dart-define=API_URL="$API_URL" \
             --dart-define=SUPABASE_URL="$SUPABASE_URL" \
             --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_KEY" \
-            --dart-define=GOOGLE_WEB_CLIENT_ID="$GOOGLE_ID"
+            --dart-define=GOOGLE_WEB_CLIENT_ID="$GOOGLE_ID" \
+            --dart-define=RECEIPT_SCAN_ENABLED="$RECEIPT_SCAN"
           ls -la build/app/outputs/bundle/release/
 
       - name: Verify signature and show upload key fingerprint

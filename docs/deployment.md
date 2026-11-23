@@ -73,6 +73,10 @@ When application code depends on a schema change:
 
 Do not run a production migration command or Dashboard operation without explicit team approval.
 
+## Migration 0026 — scanned receipts
+
+Apply `0026_scanned_receipts.sql` before deploying the application that serves `POST /api/receipts`. It is additive. Mobile scanning stays off unless the Android workflow is run with `receiptScanEnabled` for an internal test build.
+
 ## Migration 0012 — shared rate limits
 
 `0012_rate_limits.sql` adds the `rate_limit_buckets` table and the service-role-only

@@ -45,6 +45,10 @@ android {
 
     buildTypes {
         release {
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
             if (!keystorePath.isNullOrBlank()) {
                 signingConfig = signingConfigs.getByName("upload")
             }
