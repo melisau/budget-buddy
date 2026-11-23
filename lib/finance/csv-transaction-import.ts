@@ -1,6 +1,7 @@
 import type { AppUser } from "@/lib/auth/authorization";
 import { matchCategoryRule } from "@/lib/finance/category-rules";
 import { loadCategoryRules } from "@/lib/finance/category-rules-service";
+import { ensureDefaultAccount } from "@/lib/finance/default-account";
 import { ensureDefaultCategories } from "@/lib/finance/default-categories";
 import { fetchAllRows } from "@/lib/supabase/query";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -16,7 +17,7 @@ const fallbackCategory = { income: "Other income", expense: "Other expenses" } a
  * Imports reviewed CSV rows. A row's category is, in order: the category named
  * in the file (when the user has it), the user's first matching category rule,
  * or "Other income" / "Other expenses". A row never fails because its category
- * is unknown, and an unknown or missing account just leaves the row without one.
+ * is unknown, and an unknown or missing account uses the user's default account.
  */
 export async function importPersonalCsvTransactions(user: AppUser, rows: CsvTransactionInput[]) {
   if (!rows.length) return { imported: 0, duplicates: 0, categorizedByRule: 0, uncategorized: 0 };
@@ -38,8 +39,9 @@ export async function importPersonalCsvTransactions(user: AppUser, rows: CsvTran
   let duplicates = 0;
   let categorizedByRule = 0;
   let uncategorized = 0;
+  let defaultAccountId: string | null = null;
   for (const row of rows) {
-    const accountId = accounts.get(normal(row.accountName)) ?? null;
+    const accountId = accounts.get(normal(row.accountName)) ?? (defaultAccountId ??= await ensureDefaultAccount(user.id));
     let categoryId = unspecifiedCategories.has(normal(row.category)) ? undefined : categories.get(`${row.type}:${normal(row.category)}`);
     let byRule = false;
     if (!categoryId) {
