@@ -121,3 +121,6 @@ export function isSupabaseConfigured() {
 export function getSupabaseServerClient() {
   return client;
 }
+
+export const getSupabaseAdminClient = getSupabaseServerClient;
+export const isSelfHostedData = () => false;

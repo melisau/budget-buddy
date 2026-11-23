@@ -92,6 +92,10 @@ the link replaces the token; turning it off clears it, revoking access.
 - Split breaking changes across releases with expand-contract: add the new structure, deploy compatible code, migrate data, then remove the old structure in a later release.
 - Do not make undocumented production schema changes through the Supabase Dashboard.
 
+## Self-hosted data boundary
+
+Supabase Auth remains the identity provider. When `DATA_API_URL` is set, application data is read and written through a self-hosted PostgREST and PostgreSQL (`deploy/vds/data/`), and the server syncs the app user from the identity it verified with Auth (`sync_verified_user`). That database has no `auth.users` foreign key, so account deletion removes the app user explicitly. Receipt and avatar files stay in Supabase Storage until they are moved separately. Without `DATA_API_URL`, behavior is unchanged. PostgreSQL publishes no host port, and PostgREST has no anonymous role.
+
 ## Payment boundary
 
 - No payment provider is connected. The Stripe integration was removed because Stripe is not available in Turkey; `NEXT_PUBLIC_BILLING_ENABLED` stays `false` and every user has full access.

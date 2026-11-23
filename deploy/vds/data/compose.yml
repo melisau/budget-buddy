@@ -1,0 +1,51 @@
+# BudgetBuddy data services on the VDS. Nothing here publishes a host port.
+# Copy .env.example to .env and fill it in; never commit .env.
+name: budgetbuddy-data
+
+services:
+  db:
+    container_name: budgetbuddy-db
+    image: postgres:17-alpine
+    restart: unless-stopped
+    mem_limit: 512m
+    environment:
+      POSTGRES_DB: budgetbuddy
+      POSTGRES_USER: budgetbuddy_admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+      AUTHENTICATOR_PASSWORD: ${AUTHENTICATOR_PASSWORD:?required}
+    command: ["postgres", "-c", "shared_buffers=128MB", "-c", "max_connections=40"]
+    volumes:
+      - budgetbuddy-db:/var/lib/postgresql/data
+      - ./init.sh:/docker-entrypoint-initdb.d/10-init.sh:ro
+      - ${MIGRATIONS_DIR:-../../../supabase/migrations}:/migrations:ro
+    networks: [data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U budgetbuddy_admin -d budgetbuddy"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  rest:
+    container_name: budgetbuddy-rest
+    image: public.ecr.aws/supabase/postgrest:v16.4
+    restart: unless-stopped
+    mem_limit: 128m
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${AUTHENTICATOR_PASSWORD}@db:5432/budgetbuddy
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_MAX_ROWS: 1000
+      PGRST_DB_POOL: 10
+      PGRST_JWT_SECRET: ${DATA_API_JWT_SECRET:?required}
+    networks: [data, app]
+
+volumes:
+  budgetbuddy-db:
+
+networks:
+  data:
+    internal: true
+  app:
+    name: budgetbuddy-data-api
