@@ -107,6 +107,14 @@ the link replaces the token; turning it off clears it, revoking access.
 - The assistant does not directly create transactions; a transaction draft requires explicit user confirmation before it is stored.
 - Investment advice and access to data outside the verified scope are outside the product boundary.
 
+## Receipt data boundary
+
+- Flutter reads receipts on the device with ML Kit. The photo and raw OCR text are never sent to the server or stored.
+- The user confirms the form. `POST /api/receipts` then saves the transaction, `receipts` and optional `receipt_items` atomically through the server-only `save_scanned_receipt` function.
+- Scanning is off unless a mobile build sets `RECEIPT_SCAN_ENABLED=true`. Use it only for internal test builds until real-receipt accuracy is measured.
+- `receipts.*_edited` records only whether a field was corrected, so accuracy can be measured without reading receipt contents.
+- New receipt image uploads are closed. Existing images can still be opened and removed.
+
 ## Updating this document
 
 Update this file in the same pull request whenever a new service, persistent data model, security boundary, or deployment approach is introduced. Keep temporary implementation plans and active task details in Linear.

@@ -7,6 +7,9 @@ class AppConfig {
     'GOOGLE_WEB_CLIENT_ID',
   );
 
+  /// Off unless a build opts in, so receipt scanning can stay in internal testing.
+  static const receiptScanEnabled = bool.fromEnvironment('RECEIPT_SCAN_ENABLED');
+
   static bool get googleEnabled => googleWebClientId.isNotEmpty;
 
   static bool get isValid =>

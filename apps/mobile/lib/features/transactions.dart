@@ -3,9 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/api.dart';
+import '../core/config.dart';
+import '../core/receipt_parser.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import 'data.dart';
+import 'receipt_scan.dart';
 
 class TransactionsScreen extends ConsumerStatefulWidget {
   const TransactionsScreen({super.key});
@@ -136,8 +139,42 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
   String? _error;
   DateTime _date = DateTime.now();
   bool _busy = false;
+  bool _scanning = false;
+  bool _saveItems = false;
+  ParsedReceipt? _scan;
+  String? _scanId;
 
   bool get _editing => widget.existing != null;
+
+  Future<void> _scanReceipt() async {
+    setState(() {
+      _scanning = true;
+      _error = null;
+    });
+    try {
+      final scan = await scanReceipt();
+      if (scan == null || !mounted) return;
+      if (scan.total == null && scan.date == null && scan.merchant == null) {
+        setState(() => _error = 'Fiş okunamadı. Daha aydınlık bir fotoğraf dene.');
+        return;
+      }
+      setState(() {
+        _scan = scan;
+        _scanId = newScanId();
+        _saveItems = false;
+        if (_type != 'expense') _category = null;
+        _type = 'expense';
+        if (scan.total != null) _amount.text = amountText(scan.total!);
+        if ((scan.merchant ?? '').length >= 2) _title.text = scan.merchant!;
+        final date = DateTime.tryParse(scan.date ?? '');
+        if (date != null) _date = date;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _error = 'Fiş taranamadı. Tekrar dene.');
+    } finally {
+      if (mounted) setState(() => _scanning = false);
+    }
+  }
 
   @override
   void initState() {
@@ -183,6 +220,25 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
     final note = widget.existing?['note'];
     if (note is String && note.isNotEmpty) body['note'] = note;
     final api = ref.read(apiProvider);
+    final scan = _scan;
+    if (!_editing && scan != null && _type == 'expense') {
+      await _write(
+        () => api.post(
+          'receipts',
+          receiptRequest(
+            scan: scan,
+            scanId: _scanId!,
+            title: _title.text.trim(),
+            category: _category!,
+            account: _account,
+            total: parseAmount(_amount.text)!,
+            date: date,
+            includeItems: _saveItems,
+          ),
+        ),
+      );
+      return;
+    }
     await _write(
       () => _editing
           ? api.patch('transactions/${widget.existing!['id']}', body)
@@ -295,6 +351,34 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
     );
   }
 
+  List<Widget> _scanSummary(ParsedReceipt scan) => [
+    const SizedBox(height: 8),
+    Text(
+      scan.tax == null
+          ? 'Fişten dolduruldu. Kaydetmeden önce kontrol et.'
+          : 'Fişten dolduruldu, KDV ${money(scan.tax!)}. Kaydetmeden önce kontrol et.',
+      style: const TextStyle(color: muted, fontSize: 13),
+    ),
+    if (scan.itemsMatchTotal)
+      CheckboxListTile(
+        contentPadding: EdgeInsets.zero,
+        controlAffinity: ListTileControlAffinity.leading,
+        value: _saveItems,
+        onChanged: (v) => setState(() => _saveItems = v ?? false),
+        title: Text('${scan.items.length} ürünü de kaydet'),
+        subtitle: Text(
+          scan.items.take(4).map((e) => e.name).join(', '),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      )
+    else if (scan.items.isNotEmpty)
+      const Text(
+        'Ürün satırları toplamla uyuşmadığı için kaydedilmeyecek.',
+        style: TextStyle(color: muted, fontSize: 13),
+      ),
+  ];
+
   Widget _formBody(Map<String, dynamic> data) {
     final categories = (data['categories'] as List)
         .cast<Map<String, dynamic>>()
@@ -339,8 +423,19 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
               onSelectionChanged: (v) => setState(() {
                 _type = v.first;
                 _category = null;
+                // A receipt is always an expense.
+                if (_type != 'expense') _scan = null;
               }),
             ),
+            if (!_editing && AppConfig.receiptScanEnabled) ...[
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: _busy || _scanning ? null : _scanReceipt,
+                icon: const Icon(Icons.document_scanner_outlined),
+                label: Text(_scanning ? 'Fiş okunuyor…' : 'Fiş tara'),
+              ),
+            ],
+            if (_scan != null) ..._scanSummary(_scan!),
             const SizedBox(height: 12),
             TextFormField(
               controller: _amount,
