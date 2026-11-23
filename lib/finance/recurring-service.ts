@@ -1,5 +1,6 @@
 import "server-only";
 import type { AppUser } from "@/lib/auth/authorization";
+import { ensureDefaultAccount } from "@/lib/finance/default-account";
 import { ensureDefaultCategories } from "@/lib/finance/default-categories";
 import { dueOccurrences, monthlyEquivalent, nextOccurrenceAfter, type Frequency } from "@/lib/finance/recurring";
 import { todayInIstanbul } from "@/lib/notifications/rules";
@@ -89,10 +90,11 @@ export async function materializeDueRecurring(user: AppUser): Promise<number> {
   for (const item of due.data ?? []) {
     const result = dueOccurrences({ startDate: item.start_date, frequency: item.frequency as Frequency, nextDate: item.next_date, endDate: item.end_date }, today);
     if (result.dates.length) {
+      const accountId = item.account_id ?? await ensureDefaultAccount(user.id);
       const { data, error } = await supabase.from("transactions").upsert(
         result.dates.map((date) => ({
           user_id: user.id, owner_user_id: user.id, created_by_user_id: user.id,
-          account_id: item.account_id, category_id: item.category_id, type: item.type,
+          account_id: accountId, category_id: item.category_id, type: item.type,
           amount: item.amount, title: item.title, transaction_date: date, recurring_item_id: item.id,
         })),
         { onConflict: "recurring_item_id,transaction_date", ignoreDuplicates: true },
