@@ -22,6 +22,8 @@ Store real values only in a developer's `.env.local`, the server's `/opt/budgetb
 | `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Browser | No |
 | `NEXT_PUBLIC_SUPABASE_URL` | Browser + server | No |
 | `SUPABASE_SECRET_KEY` | Server | Yes |
+| `DATA_API_URL` | Server | No. Optional self-hosted PostgREST. Unset keeps application data in Supabase |
+| `DATA_API_KEY` | Server | Yes. `service_role` token signed with `DATA_API_JWT_SECRET` |
 | `GROQ_API_KEY` | Server | Yes |
 | `GROQ_MODEL` | Server | No |
 | `SENTRY_DSN` | Server | No, but keep it environment-specific |

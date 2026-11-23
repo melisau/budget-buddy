@@ -6,7 +6,7 @@ import { deleteStoredReceipts } from "@/lib/finance/receipt-storage";
 import { captureException } from "@/lib/monitoring/sentry";
 import { createSupabaseAuthClient } from "@/lib/supabase/auth-server";
 import { fetchAllRows } from "@/lib/supabase/query";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseAdminClient, getSupabaseServerClient, isSelfHostedData } from "@/lib/supabase/server";
 
 const supportedCurrencies = new Set(["TRY", "EUR", "USD", "GBP"]);
 const supportedLanguages = new Set(["en", "tr"]);
@@ -117,10 +117,20 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Unable to delete the account." }, { status: 500 });
   }
 
-  const { error: deleteError } = await supabase.auth.admin.deleteUser(user.authUserId);
+  const { error: deleteError } = await getSupabaseAdminClient().auth.admin.deleteUser(user.authUserId);
   if (deleteError) {
     await logDeletionFailure(user.id, "delete-identity", deleteError);
     return NextResponse.json({ error: "Unable to delete the account." }, { status: 500 });
+  }
+
+  // A separate data database has no foreign key to Auth, so nothing cascades.
+  let appDataDeleted = true;
+  if (isSelfHostedData()) {
+    const { error: appUserError } = await supabase.from("users").delete().eq("id", user.id);
+    if (appUserError) {
+      appDataDeleted = false;
+      await logDeletionFailure(user.id, "delete-app-user", appUserError);
+    }
   }
 
   try {
@@ -134,6 +144,8 @@ export async function DELETE(request: Request) {
   } catch (error) {
     await logDeletionFailure(user.id, "delete-avatar", error);
   }
+
+  if (!appDataDeleted) return NextResponse.json({ error: "Unable to delete the account." }, { status: 500 });
 
   try {
     const client = await createSupabaseAuthClient();

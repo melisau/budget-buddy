@@ -1,4 +1,4 @@
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseAdminClient, getSupabaseServerClient } from "@/lib/supabase/server";
 import { avatarMaxBytes, isAvatarIcon, ownedAvatarPath, validateAvatarFile, type ProfileAvatarData, type AvatarIcon } from "@/lib/profile/avatar";
 
 const bucket = "budgetbuddy-avatars";
@@ -10,7 +10,7 @@ export async function resolveAvatars(profiles: Profile[]): Promise<Map<string, P
   if (!paths.length) return result;
   // A storage outage should not prevent family access: icons remain available.
   try {
-    const { data, error } = await getSupabaseServerClient().storage.from(bucket).createSignedUrls(paths, 3600);
+    const { data, error } = await getSupabaseAdminClient().storage.from(bucket).createSignedUrls(paths, 3600);
     if (!error) for (const profile of profiles) {
       const signed = data?.find((item) => item.path === profile.avatar_path && item.signedUrl && !item.error);
       if (signed) result.get(profile.id)!.url = signed.signedUrl;
@@ -28,7 +28,7 @@ export async function readOwnAvatar(userId: string) {
 }
 
 async function ensureAvatarBucket() {
-  const storage = getSupabaseServerClient().storage;
+  const storage = getSupabaseAdminClient().storage;
   const { data, error } = await storage.getBucket(bucket);
   if (data) {
     if (data.public) throw new Error("Avatar storage must be private.");
@@ -42,7 +42,7 @@ async function ensureAvatarBucket() {
 export async function deleteAvatarFiles(userId: string, paths: string[]) {
   const safePaths = paths.filter((path) => ownedAvatarPath(userId, path));
   if (!safePaths.length) return;
-  const { error } = await getSupabaseServerClient().storage.from(bucket).remove(safePaths);
+  const { error } = await getSupabaseAdminClient().storage.from(bucket).remove(safePaths);
   if (error) throw new Error("Unable to remove old profile picture.");
 }
 
@@ -56,7 +56,7 @@ export async function saveOwnAvatar(userId: string, selection: AvatarIcon | File
     await ensureAvatarBucket();
     const ext = selection.type === "image/png" ? "png" : selection.type === "image/webp" ? "webp" : "jpg";
     newPath = `${userId}/${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage.from(bucket).upload(newPath, await selection.arrayBuffer(), { contentType: selection.type, upsert: false, cacheControl: "3600" });
+    const { error } = await getSupabaseAdminClient().storage.from(bucket).upload(newPath, await selection.arrayBuffer(), { contentType: selection.type, upsert: false, cacheControl: "3600" });
     if (error) throw new Error("Unable to upload profile picture.");
   }
   let update = supabase.from("users").update({ avatar_icon: icon, avatar_path: newPath }).eq("id", userId);
