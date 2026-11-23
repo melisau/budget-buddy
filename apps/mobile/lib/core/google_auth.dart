@@ -20,8 +20,23 @@ String _newNonce() {
 final String _rawNonce = _newNonce();
 Future<void>? _initialized;
 
-/// Returns false when the user closes the Google account picker.
-Future<bool> signInWithGoogle() async {
+/// Short failure reason safe to show on screen: no tokens or e-mail addresses.
+String googleErrorCode(Object error) {
+  final raw = switch (error) {
+    GoogleSignInException e => 'google:${e.code.name} ${e.description ?? ''}',
+    AuthException e =>
+      'supabase:${e.statusCode ?? '-'}:${e.code ?? '-'} ${e.message}',
+    _ => 'app:${error.runtimeType}',
+  };
+  final clean = raw
+      .replaceAll(RegExp(r'\S+@\S+'), '[e-posta]')
+      .replaceAll(RegExp(r'eyJ[\w-]+(\.[\w-]+)*'), '[token]')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+  return clean.length <= 160 ? clean : clean.substring(0, 160);
+}
+
+Future<void> signInWithGoogle() async {
   final google = GoogleSignIn.instance;
   _initialized ??= google.initialize(
     serverClientId: AppConfig.googleWebClientId,
@@ -30,13 +45,7 @@ Future<bool> signInWithGoogle() async {
   await _initialized;
   // Clear the previous Google choice so the account picker is shown.
   await google.signOut();
-  final GoogleSignInAccount account;
-  try {
-    account = await google.authenticate();
-  } on GoogleSignInException catch (e) {
-    if (e.code == GoogleSignInExceptionCode.canceled) return false;
-    rethrow;
-  }
+  final account = await google.authenticate();
   final idToken = account.authentication.idToken;
   if (idToken == null) throw StateError('Google did not return an ID token.');
   await Supabase.instance.client.auth.signInWithIdToken(
@@ -44,5 +53,4 @@ Future<bool> signInWithGoogle() async {
     idToken: idToken,
     nonce: _rawNonce,
   );
-  return true;
 }

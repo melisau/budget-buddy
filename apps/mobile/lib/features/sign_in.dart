@@ -56,9 +56,12 @@ class _SignInScreenState extends State<SignInScreen> {
     });
     try {
       await signInWithGoogle();
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
-        setState(() => _error = 'Google ile giriş yapılamadı. Tekrar deneyin.');
+        setState(
+          () => _error =
+              'Google ile giriş yapılamadı. Kod: ${googleErrorCode(e)}',
+        );
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -80,8 +83,14 @@ class _SignInScreenState extends State<SignInScreen> {
                   const Text.rich(
                     TextSpan(
                       children: [
-                        TextSpan(text: 'Budget', style: TextStyle(color: ink)),
-                        TextSpan(text: 'Buddy', style: TextStyle(color: brand)),
+                        TextSpan(
+                          text: 'Budget',
+                          style: TextStyle(color: ink),
+                        ),
+                        TextSpan(
+                          text: 'Buddy',
+                          style: TextStyle(color: brand),
+                        ),
                       ],
                     ),
                     style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900),
