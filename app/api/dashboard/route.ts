@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { AccessError, requireAppUser } from "@/lib/auth/authorization";
 import { materializeDueRecurringSafely } from "@/lib/finance/recurring-service";
 import { calculateSavingsRate } from "@/lib/finance/calculations";
+import { createServerTiming } from "@/lib/observability/server-timing";
 import { fetchAllRows } from "@/lib/supabase/query";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { Currency } from "@/types/finance";
@@ -39,8 +40,9 @@ function errorResponse(error: unknown) { if (error instanceof AccessError) retur
 
 export async function GET(request: Request) {
   try {
-    const user = await requireAppUser();
-    await materializeDueRecurringSafely(user);
+    const timing = createServerTiming();
+    const user = await timing.measure("auth", requireAppUser);
+    await timing.measure("recurring", () => materializeDueRecurringSafely(user));
     const params = new URL(request.url).searchParams;
     const requestedMonth = params.get("month") ?? new Date().toISOString().slice(0, 7);
     const month = monthPattern.test(requestedMonth) ? requestedMonth : new Date().toISOString().slice(0, 7);
@@ -49,11 +51,11 @@ export async function GET(request: Request) {
     const currency: Currency = requestedCurrency && currencies.includes(requestedCurrency) ? requestedCurrency : "TRY";
     const requestedAccountId = params.get("account") ?? "all";
     const supabase = getSupabaseServerClient();
-    const [accountsResult, membershipsResult, goalsResult] = await Promise.all([
+    const [accountsResult, membershipsResult, goalsResult] = await timing.measure("base", () => Promise.all([
       supabase.from("accounts").select("id, name, currency, initial_balance").eq("user_id", user.id).is("archived_at", null).order("name"),
       supabase.from("family_members").select("family_group_id, group:family_groups(id, name)").eq("user_id", user.id).eq("invitation_status", "accepted"),
       supabase.from("goals").select("id", { count: "exact", head: true }).eq("user_id", user.id).is("family_group_id", null),
-    ]);
+    ]));
     if (accountsResult.error || membershipsResult.error || goalsResult.error) throw accountsResult.error ?? membershipsResult.error ?? goalsResult.error;
     const ownAccounts = (accountsResult.data ?? []) as Account[];
     const familyGroups = (membershipsResult.data ?? []).map((membership) => relation(membership.group)).filter((group): group is { id: string; name: string } => Boolean(group));
@@ -82,7 +84,7 @@ export async function GET(request: Request) {
     const effectiveCurrency = selectedAccount?.currency ?? currency;
     const openingBalance = familyId ? 0 : ownAccounts.filter((account) => account.currency === effectiveCurrency && (!selectedAccount || account.id === selectedAccount.id)).reduce((sum, account) => sum + Number(account.initial_balance), 0);
 
-    let totals = allTransactions ? null : await loadTotals();
+    let totals = allTransactions ? null : await timing.measure("totals", loadTotals);
     async function loadTotals(): Promise<Totals | null> {
       const { data, error } = await supabase.rpc("dashboard_totals", { p_user_id: user.id, p_family_group_id: familyId, p_account_id: selectedAccount?.id ?? null, p_currency: effectiveCurrency, p_month_start: start, p_month_end: end, p_flow_start: `${flowMonths[0]}-01` });
       if (isMissingFunction(error)) return null;
@@ -94,7 +96,7 @@ export async function GET(request: Request) {
       let recentQuery = supabase.from("transactions").select("id, title, type, amount, transaction_date, account_id, account:accounts!inner(id, name, currency), category:categories(name)").eq("account.currency", effectiveCurrency).gte("transaction_date", start).lte("transaction_date", end);
       recentQuery = familyId ? recentQuery.eq("family_group_id", familyId) : recentQuery.eq("user_id", user.id).is("family_group_id", null);
       if (selectedAccount) recentQuery = recentQuery.eq("account_id", selectedAccount.id);
-      const recentResult = await recentQuery.order("transaction_date", { ascending: false }).order("created_at", { ascending: false }).order("id").limit(5);
+      const recentResult = await timing.measure("recent", () => recentQuery.order("transaction_date", { ascending: false }).order("created_at", { ascending: false }).order("id").limit(5));
       if (recentResult.error) throw recentResult.error;
       recent = recentResult.data ?? [];
     } else {
@@ -109,6 +111,6 @@ export async function GET(request: Request) {
     const flowByMonth = new Map(totals.cashFlow.map((entry) => [entry.month, entry]));
     const cashFlow = flowMonths.map((value) => ({ month: value, income: Number(flowByMonth.get(value)?.income ?? 0), expense: Number(flowByMonth.get(value)?.expense ?? 0) }));
     const categories = totals.categories.map(({ name, value }) => ({ name, value: Number(value) })).sort((a, b) => b.value - a.value);
-    return NextResponse.json({ hasGoals: (goalsResult.count ?? 0) > 0, filters: { month, scope: familyId ? scope : "personal", accountId: selectedAccount?.id ?? "all", currency: effectiveCurrency, accounts: availableAccounts, familyGroups, currencies }, summary: { balance, income, expenses, savingsRate: calculateSavingsRate(income, expenses) }, categories, recent, cashFlow });
+    return NextResponse.json({ hasGoals: (goalsResult.count ?? 0) > 0, filters: { month, scope: familyId ? scope : "personal", accountId: selectedAccount?.id ?? "all", currency: effectiveCurrency, accounts: availableAccounts, familyGroups, currencies }, summary: { balance, income, expenses, savingsRate: calculateSavingsRate(income, expenses) }, categories, recent, cashFlow }, { headers: { "Server-Timing": timing.header() } });
   } catch (error) { return errorResponse(error); }
 }
