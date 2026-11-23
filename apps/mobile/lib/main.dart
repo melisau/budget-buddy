@@ -12,6 +12,7 @@ import 'core/config.dart';
 import 'core/error_reporter.dart';
 import 'core/session_storage.dart';
 import 'core/theme.dart';
+import 'features/app_navigation.dart';
 import 'features/assistant.dart';
 import 'features/finance_screens.dart';
 import 'features/more.dart';
@@ -159,40 +160,16 @@ class _Shell extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
     body: shell,
-    floatingActionButton: shell.currentIndex < 2
-        ? FloatingActionButton(
-            tooltip: 'İşlem ekle',
-            backgroundColor: brand,
-            foregroundColor: Colors.white,
-            onPressed: () => showAddTransaction(context),
-            child: const Icon(Icons.add, size: 30),
-          )
-        : null,
-    bottomNavigationBar: NavigationBar(
-      backgroundColor: Colors.white,
-      selectedIndex: shell.currentIndex,
-      onDestinationSelected: (i) {
+    bottomNavigationBar: AppNavigationBar(
+      currentIndex: shell.currentIndex,
+      onTabSelected: (i) {
         HapticFeedback.selectionClick();
         shell.goBranch(i, initialLocation: i == shell.currentIndex);
       },
-      destinations: const [
-        NavigationDestination(
-          icon: Icon(Icons.home_outlined),
-          selectedIcon: Icon(Icons.home),
-          label: 'Ana Sayfa',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.receipt_long_outlined),
-          selectedIcon: Icon(Icons.receipt_long),
-          label: 'İşlemler',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.auto_awesome_outlined),
-          selectedIcon: Icon(Icons.auto_awesome),
-          label: 'AI Asistan',
-        ),
-        NavigationDestination(icon: Icon(Icons.more_horiz), label: 'Diğer'),
-      ],
+      onAdd: () {
+        HapticFeedback.selectionClick();
+        showAddTransaction(context);
+      },
     ),
   );
 }

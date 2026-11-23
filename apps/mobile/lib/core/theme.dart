@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-const brand = Color(0xFF5267DF);
+const brand = Color(0xFF4258D5);
 const ink = Color(0xFF17213C);
 const muted = Color(0xFF737C91);
 const line = Color(0xFFE3E6EE);
