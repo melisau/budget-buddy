@@ -1,6 +1,7 @@
 import { requireFamilyWriteAccess, type AppUser } from "@/lib/auth/authorization";
 import { fetchAllRows } from "@/lib/supabase/query";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { ensureDefaultAccount } from "@/lib/finance/default-account";
 import { ensureDefaultCategories } from "@/lib/finance/default-categories";
 
 export type TransactionPayload = {
@@ -76,6 +77,7 @@ export async function createTransaction(user: AppUser, payload: TransactionPaylo
   if (payload.familyGroupId) {
     await requireFamilyWriteAccess(user.id, payload.familyGroupId);
   }
+  const accountId = payload.accountId ?? await ensureDefaultAccount(user.id);
 
   const { data, error } = await supabase
     .from("transactions")
@@ -84,7 +86,7 @@ export async function createTransaction(user: AppUser, payload: TransactionPaylo
       owner_user_id: user.id,
       created_by_user_id: user.id,
       family_group_id: payload.familyGroupId ?? null,
-      account_id: payload.accountId ?? null,
+      account_id: accountId,
       category_id: payload.categoryId,
       type: payload.type,
       amount: payload.amount,
@@ -102,10 +104,11 @@ export async function createTransaction(user: AppUser, payload: TransactionPaylo
 export async function updateTransaction(user: AppUser, transactionId: string, payload: TransactionPayload) {
   await assertPersonalReferences(user, payload);
   const supabase = getSupabaseServerClient();
+  const accountId = payload.accountId ?? await ensureDefaultAccount(user.id);
   const { data, error } = await supabase
     .from("transactions")
     .update({
-      account_id: payload.accountId ?? null,
+      account_id: accountId,
       category_id: payload.categoryId,
       type: payload.type,
       amount: payload.amount,
