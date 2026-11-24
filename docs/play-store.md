@@ -9,8 +9,7 @@ adresini tam ekran açar ve Google ile girişi telefonun kendi hesap seçicisiyl
 anında yansır; yeni paket yalnızca Android tarafında (ikon, eklenti, izin, hedef API)
 bir şey değiştiğinde gerekir.
 
-Eski Trusted Web Activity paketi (`android/`) aynı paket adını kullanır ve artık
-yayınlanmaz; Play'e yalnızca Capacitor paketi yüklenir.
+Eski Trusted Web Activity paketi (`android/`) da repodan kaldırıldı.
 
 | Bilgi | Değer |
 | --- | --- |
