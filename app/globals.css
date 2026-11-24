@@ -378,3 +378,9 @@ body[data-scroll-locked] { margin-right: 0 !important; padding-right: 0 !importa
 .dashboard-plans .plans-row > div { display: flex; justify-content: space-between; gap: 12px; font-size: .86rem; }
 .dashboard-plans .plans-row span { color: var(--c-t-66708b); }
 .dashboard-plans .plans-more { display: inline-block; margin-top: 10px; color: var(--c-t-4258d5); font-weight: 700; font-size: .85rem; }
+
+/* One-tap category chips in the transaction form. */
+.category-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.category-chips button { padding: 7px 12px; border: 1px solid var(--c-s-dfe3ed); border-radius: 999px; background: var(--c-s-ffffff); color: var(--c-t-17213c); font-size: .8rem; font-weight: 600; }
+.category-chips button:hover { border-color: var(--c-s-4258d5); }
+.category-chips button.active { border-color: var(--c-s-4258d5); background: var(--c-s-eef1ff); color: var(--c-t-4258d5); }
