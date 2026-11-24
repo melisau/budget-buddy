@@ -1,7 +1,7 @@
 "use client";
 import { useAuthUser } from "@/components/providers/auth-provider";
 import {useContext,useState,type ReactNode} from "react";
-import {ChartNoAxesCombined,ChevronRight,Gift,Home,Landmark,LayoutDashboard,MoreHorizontal,Plus,ReceiptText,Repeat,Settings,Sparkles,Target,Users} from "lucide-react";
+import {ChartNoAxesCombined,ChevronRight,Gift,Home,Landmark,LayoutDashboard,MoreHorizontal,Plus,ReceiptText,Repeat,Settings,Sparkles,Users} from "lucide-react";
 import {Progress} from "@/components/ui/progress";
 import {Sheet,SheetClose,SheetContent,SheetDescription,SheetHeader,SheetTitle,SheetTrigger} from "@/components/ui/sheet";
 import {LanguageContext,LanguageSelect,useT} from "@/components/providers/language-provider";
@@ -22,13 +22,15 @@ export const APP_NAVIGATION=[
  ["wishlists","Wishlists",Gift],
  ["transactions","Transactions",ReceiptText],
  ["recurring","Recurring",Repeat],
- ["budgets","Budgets",SavingsJarIcon],
+ ["budgets","Budgets and goals",SavingsJarIcon],
  ["accounts","Accounts",Landmark],
- ["goals","Goals",Target],
  ["analytics","Analytics",ChartNoAxesCombined],
  ["assistant","AI Assistant",Sparkles],
  ["settings","Settings",Settings],
 ] as const;
+
+/** Goals share the "Budgets and goals" menu entry. */
+const navId=(view:AppView):AppView=>view==="goals"?"budgets":view;
 
 export function AppSidebar({view,go,prefetch}:{view:AppView;go:Navigate;prefetch?:Prefetch}){
  const t=useT();
@@ -39,7 +41,7 @@ export function AppSidebar({view,go,prefetch}:{view:AppView;go:Navigate;prefetch
   <Logo go={()=>go("landing")}/>
   <small>{t("WORKSPACE")}</small>
   <nav aria-label={t("Main navigation")}>{APP_NAVIGATION.map(([id,label,Icon])=>
-   <button type="button" className={view===id?"active":""} aria-current={view===id?"page":undefined} onClick={()=>go(id)} onMouseEnter={()=>prefetch?.(id)} onFocus={()=>prefetch?.(id)} key={id}><Icon aria-hidden="true"/>{t(label)}{id==="assistant"&&<em>AI</em>}</button>
+   <button type="button" className={navId(view)===id?"active":""} aria-current={navId(view)===id?"page":undefined} onClick={()=>go(id)} onMouseEnter={()=>prefetch?.(id)} onFocus={()=>prefetch?.(id)} key={id}><Icon aria-hidden="true"/>{t(label)}{id==="assistant"&&<em>AI</em>}</button>
   )}</nav>
   {BILLING_ENABLED
    ? <div className="plan"><b><Sparkles aria-hidden="true"/>{t("Core plan")}</b><small>{t("12 days in trial")}</small><Progress value={60} aria-label={t("Trial progress")} /><button type="button" onClick={()=>go("settings")}>{t("View plan")}<ChevronRight aria-hidden="true"/></button></div>
@@ -51,7 +53,7 @@ export function AppSidebar({view,go,prefetch}:{view:AppView;go:Navigate;prefetch
 export function AppHeader({view,quickAdd}:{view:AppView;quickAdd:ReactNode}){
  const t=useT();
  const {language}=useContext(LanguageContext);
- const label=APP_NAVIGATION.find(([id])=>id===view)?.[1]??"Dashboard";
+ const label=APP_NAVIGATION.find(([id])=>id===navId(view))?.[1]??"Dashboard";
  const locale=language==="tr"?"tr-TR":"en-US";
  const today=new Intl.DateTimeFormat(locale,{weekday:"long",day:"numeric",month:"long",timeZone:"Europe/Istanbul"}).format(new Date());
  return <header>
@@ -68,7 +70,7 @@ export function MobileNavigation({view,go,prefetch}:{view:AppView;go:Navigate;pr
  const [moreOpen,setMoreOpen]=useState(false);
  const items=[["dashboard","Home",Home],["transactions","Transactions",ReceiptText],["add","Add",Plus],["assistant","AI Assistant",Sparkles]] as const;
  const moreItems=APP_NAVIGATION.filter(([id])=>!["dashboard","transactions","assistant"].includes(id));
- const moreActive=moreItems.some(([id])=>id===view);
+ const moreActive=moreItems.some(([id])=>id===navId(view));
  const navigate=(destination:AppView)=>{
   setMoreOpen(false);
   go(destination);

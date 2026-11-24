@@ -362,3 +362,19 @@ body[data-scroll-locked] { margin-right: 0 !important; padding-right: 0 !importa
 .view-settings-dialog .view-settings-fields { padding: 0; }
 .view-settings-dialog [data-slot=dialog-footer] button { min-height: 44px; }
 .field-label { display: inline; }
+
+/* Budgets and goals: one page, two tabs with a one-line explanation. */
+.plans-tabs { display: grid; gap: 10px; margin-bottom: 18px; }
+.plans-tabs h2 { margin: 0; font-size: 1.35rem; }
+.plans-tabs nav { display: inline-flex; width: fit-content; gap: 4px; padding: 4px; border-radius: 14px; background: var(--c-s-eef0f4); }
+.plans-tabs nav a { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 10px; color: var(--c-t-5f6982); font-weight: 700; font-size: .9rem; }
+.plans-tabs nav a svg { width: 18px; height: 18px; }
+.plans-tabs nav a.active { background: var(--c-s-ffffff); color: var(--c-t-4258d5); box-shadow: 0 1px 3px rgb(0 0 0 / .08); }
+.plans-tabs p { margin: 0; padding: 10px 14px; border-radius: 12px; background: var(--c-s-eef1ff); color: var(--c-t-34415f); font-size: .86rem; }
+.dashboard-plans .plans-switch { display: inline-flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--c-s-eef0f4); }
+.dashboard-plans .plans-switch button { padding: 5px 10px; border-radius: 8px; color: var(--c-t-5f6982); font-size: .78rem; font-weight: 700; }
+.dashboard-plans .plans-switch button.active { background: var(--c-s-ffffff); color: var(--c-t-4258d5); }
+.dashboard-plans .plans-row { display: grid; gap: 6px; padding: 10px 0; border-bottom: 1px solid var(--c-s-e6e9f2); }
+.dashboard-plans .plans-row > div { display: flex; justify-content: space-between; gap: 12px; font-size: .86rem; }
+.dashboard-plans .plans-row span { color: var(--c-t-66708b); }
+.dashboard-plans .plans-more { display: inline-block; margin-top: 10px; color: var(--c-t-4258d5); font-weight: 700; font-size: .85rem; }

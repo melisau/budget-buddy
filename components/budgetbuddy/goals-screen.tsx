@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { AllowancePlan } from "@/components/budgetbuddy/allowance-plan";
 import { RequiredMark } from "@/components/ui/required-mark";
+import { PlansTabs } from "@/components/budgetbuddy/plans-tabs";
 
 type Goal = { id: string; name: string; target_amount: number; current_amount: number; deadline: string | null; sharedFamilyGroupIds?: string[] };
 type GoalDraft = { name: string; targetAmount: string; deadline: string };
@@ -39,6 +40,7 @@ export function GoalsScreen() {
   const formatDate = (value: string | null) => value ? new Intl.DateTimeFormat(tr ? "tr-TR" : "en-US", { dateStyle: "medium" }).format(new Date(`${value}T00:00:00`)) : (tr ? "Hedef tarih yok" : "No target date");
 
   return <>
+    <PlansTabs active="goals" />
     <AllowancePlan />
     <div className="page-head"><div><h2>{t("Your savings goals")}</h2><p>{t("Big plans become easier when progress is visible.")}</p></div><Button onClick={openCreate}><Plus />{t("Create goal")}</Button></div>
     {error && <p className="form-error" role="alert">{error}</p>}

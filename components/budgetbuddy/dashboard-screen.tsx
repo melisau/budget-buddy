@@ -23,6 +23,7 @@ import type { Navigate } from "@/components/budgetbuddy/view-types";
 import { LanguageContext, useT } from "@/components/providers/language-provider";
 
 import type { Currency } from "@/types/finance";
+import { PlansCard } from "@/components/dashboard/plans-card";
 
 type DashboardData = {
 
@@ -133,7 +134,7 @@ export function DashboardScreen({ go }: { go: Navigate }) {
 
       <div className="dash">
 
-        <article className="panel dashboard-cashflow"><div className="panel-head"><div><h3>{t("Cash flow")}</h3><p>{t("Income and expenses · Last 6 months")}</p></div></div><div className="chart" role="img" aria-label={language === "tr" ? "Son altı ayın gelir ve gider grafiği" : "Income and expenses chart for the last six months"}><ResponsiveContainer minWidth={0} initialDimension={{ width: 320, height: 220 }}><AreaChart data={chartData}><CartesianGrid vertical={false} /><XAxis dataKey="label" /><YAxis width={52} tickFormatter={(value: number) => new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value)} /><Tooltip formatter={(value) => money(Number(value))} /><Area dataKey="income" name={t("Income")} stroke="#249779" fill="#24977922" /><Area dataKey="expense" name={t("Expenses")} stroke="#f18470" fill="#f1847018" /></AreaChart></ResponsiveContainer></div><ul className="sr-only">{chartData.map((item) => <li key={item.month}>{item.label}: {t("Income")} {money(item.income)}, {t("Expenses")} {money(item.expense)}</li>)}</ul></article>
+        <article className="panel dashboard-cashflow"><div className="panel-head"><div><h3>{t("Cash flow")}</h3><p>{t("Income and expenses · Last 6 months")}</p></div></div><div className="chart" role="img" aria-label={language === "tr" ? "Son altı ayın gelir ve gider grafiği" : "Income and expenses chart for the last six months"}><ResponsiveContainer minWidth={0} initialDimension={{ width: 320, height: 220 }}><AreaChart data={chartData}><CartesianGrid vertical={false} /><XAxis dataKey="label" /><YAxis width={52} tickFormatter={(value: number) => new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value)} /><Tooltip formatter={(value) => money(Number(value))} /><Area dataKey="income" name={t("Income")} stroke="#249779" fill="#24977922" /><Area dataKey="expense" name={t("Expenses")} stroke="#f18470" fill="#f1847018" /></AreaChart></ResponsiveContainer></div><ul className="sr-only">{chartData.map((item) => <li key={item.month}>{item.label}: {t("Income")} {money(item.income)}, {t("Expenses")} {money(item.expense)}</li>)}</ul></article><PlansCard month={view.month} />
 
         <article className="panel"><div className="panel-head"><div><h3>{t("Spending by category")}</h3><p>{monthLabel}</p></div></div><div className="live-list">{data?.categories.length ? data.categories.map((item, index) => <div key={item.name}><i style={{ background: ["#5267df", "#249779", "#f18470", "#d7a33c"][index % 4] }} />{t(item.name)}<b>{money(item.value)}</b></div>) : <p>{t("No expenses this month.")}</p>}</div></article>
 
