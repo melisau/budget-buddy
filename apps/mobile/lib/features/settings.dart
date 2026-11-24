@@ -6,6 +6,7 @@ import '../core/theme.dart';
 import '../core/theme_mode.dart';
 import 'avatar.dart';
 import 'common.dart';
+import 'csv.dart';
 import 'data.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -184,6 +185,8 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
           ),
+          const Gap(),
+          const CsvCard(),
           const Gap(),
           Card(
             child: ListTile(

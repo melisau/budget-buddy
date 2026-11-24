@@ -25,6 +25,44 @@ class Api {
 
   Future<Map<String, dynamic>> get(String path) => _send('GET', path);
 
+  /// A GET whose response is text (for example a CSV download), not JSON.
+  Future<List<int>> getBytes(String path) async {
+    final auth = Supabase.instance.client.auth;
+    var session = auth.currentSession;
+    if (session == null) throw ApiException('Oturum açmanız gerekiyor.', 401);
+    try {
+      if (session.isExpired) {
+        session = (await auth.refreshSession()).session ?? session;
+      }
+      final request = await _client.openUrl(
+        'GET',
+        Uri.parse('${AppConfig.apiUrl}/api/$path'),
+      );
+      request.headers.set(
+        HttpHeaders.authorizationHeader,
+        'Bearer ${session.accessToken}',
+      );
+      final response = await request.close().timeout(
+        const Duration(seconds: 60),
+      );
+      final bytes = await response.fold<List<int>>(
+        <int>[],
+        (all, chunk) => all..addAll(chunk),
+      );
+      if (response.statusCode >= 400) {
+        throw ApiException(
+          _messageFor(response.statusCode),
+          response.statusCode,
+        );
+      }
+      return bytes;
+    } on SocketException {
+      throw ApiException('İnternet bağlantısı yok. Lütfen tekrar deneyin.');
+    } on TimeoutException {
+      throw ApiException('Sunucu yanıt vermedi. Lütfen tekrar deneyin.');
+    }
+  }
+
   /// [requestId] makes a retried create safe: the server stores it only once.
   Future<Map<String, dynamic>> post(
     String path,
