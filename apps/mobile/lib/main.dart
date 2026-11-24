@@ -8,9 +8,11 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'core/api.dart';
 import 'core/config.dart';
 import 'core/dashboard_cache.dart';
 import 'core/error_reporter.dart';
+import 'core/onboarding.dart';
 import 'core/session_storage.dart';
 import 'core/theme.dart';
 import 'core/theme_mode.dart';
@@ -21,6 +23,7 @@ import 'features/category_rules.dart';
 import 'features/finance_screens.dart';
 import 'features/more.dart';
 import 'features/notifications.dart';
+import 'features/onboarding.dart';
 import 'features/overview.dart';
 import 'features/settings.dart';
 import 'features/sign_in.dart';
@@ -53,6 +56,7 @@ Future<void> main() async {
   }
   await Future.wait([
     dates,
+    Onboarding.load(),
     Supabase.initialize(
       url: AppConfig.supabaseUrl,
       publishableKey: AppConfig.supabaseKey,
@@ -61,6 +65,10 @@ Future<void> main() async {
       ),
     ),
   ]);
+  if (!Onboarding.done &&
+      Supabase.instance.client.auth.currentSession != null) {
+    await Onboarding.skipForSignedInUser();
+  }
   runApp(ProviderScope(child: BudgetBuddyApp(router: _buildRouter())));
 }
 
@@ -71,6 +79,9 @@ class _AuthRefresh extends ChangeNotifier {
     ) {
       // No cached financial data survives a sign-out on a shared phone.
       if (state.event == AuthChangeEvent.signedOut) DashboardCache.clear();
+      if (state.event == AuthChangeEvent.signedIn) {
+        unawaited(_applyOnboardingChoice());
+      }
       notifyListeners();
     });
   }
@@ -84,16 +95,31 @@ class _AuthRefresh extends ChangeNotifier {
   }
 }
 
+/// Sends the language and currency picked on the welcome screens to the account, once.
+Future<void> _applyOnboardingChoice() async {
+  final choice = await Onboarding.takePending();
+  if (choice == null) return;
+  try {
+    await Api().patch('account', choice);
+  } catch (_) {
+    // Not worth an error: both can be changed later in Ayarlar.
+  }
+}
+
 GoRouter _buildRouter() => GoRouter(
   initialLocation: '/overview',
   refreshListenable: _AuthRefresh(),
   redirect: (_, state) {
     final signedIn = Supabase.instance.client.auth.currentSession != null;
     final atSignIn = state.matchedLocation == '/sign-in';
+    final atWelcome = state.matchedLocation == '/welcome';
+    if (!signedIn && !Onboarding.done) return atWelcome ? null : '/welcome';
     if (!signedIn) return atSignIn ? null : '/sign-in';
+    if (atWelcome) return '/overview';
     return atSignIn ? '/overview' : null;
   },
   routes: [
+    GoRoute(path: '/welcome', builder: (_, _) => const OnboardingScreen()),
     GoRoute(path: '/sign-in', builder: (_, _) => const SignInScreen()),
     StatefulShellRoute.indexedStack(
       builder: (_, _, shell) => _Shell(shell),
