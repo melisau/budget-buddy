@@ -24,6 +24,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
+import Link from "next/link";
 import { Logo } from "@/components/layout/logo";
 import { LanguageSelect, useT } from "@/components/providers/language-provider";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -96,7 +97,7 @@ export function LandingScreen({ go }: { go: Navigate }) {
           <a href="#how" onClick={closeMenu}>{t("How it works")}</a>
           <a href="#pricing" onClick={closeMenu}>{t("Pricing")}</a>
           <a href="#about" onClick={closeMenu}>{t("About")}</a>
-          <Button asChild><a href="/sign-in" onClick={closeMenu}>{t("Sign in")}</a></Button>
+          <Button asChild><Link href="/sign-in" onClick={closeMenu}>{t("Sign in")}</Link></Button>
         </nav>
         <button
           type="button"
@@ -116,7 +117,7 @@ export function LandingScreen({ go }: { go: Navigate }) {
             <h1>{t("Take control of your money without complicated spreadsheets.")}</h1>
             <p>{t("Track income, expenses and budgets in one place, then let BudgetBuddy turn your financial data into simple, useful insights.")}</p>
             <div className="hero-btns">
-              <Button size="lg" asChild><a href="/sign-up">{t("Start for free")} <ArrowRight /></a></Button>
+              <Button size="lg" asChild><Link href="/sign-up">{t("Start for free")} <ArrowRight /></Link></Button>
               <Button size="lg" variant="outline" onClick={() => go("dashboard")}><Play /> {t("See how it works")}</Button>
             </div>
             <div className="trust">
@@ -177,11 +178,11 @@ export function LandingScreen({ go }: { go: Navigate }) {
 
         <section className="cta">
           <div><span className="eyebrow">{t("A calmer money routine starts here")}</span><h2>{t("Make your money make sense.")}</h2></div>
-          <Button size="lg" variant="secondary" asChild><a href="/sign-up">{t("Start for free")} <ArrowRight /></a></Button>
+          <Button size="lg" variant="secondary" asChild><Link href="/sign-up">{t("Start for free")} <ArrowRight /></Link></Button>
         </section>
       </main>
 
-      <footer id="about"><div className="footer-brand"><Logo mark={false} /><p>{t("Personal finance clarity, without the clutter.")}</p></div><div className="footer-meta"><span><a href="/privacy">{t("Privacy")}</a> · <a href="/terms">{t("Terms")}</a></span><LanguageSelect /></div><small>{`© ${new Date().getFullYear()} BudgetBuddy`}</small></footer>
+      <footer id="about"><div className="footer-brand"><Logo mark={false} /><p>{t("Personal finance clarity, without the clutter.")}</p></div><div className="footer-meta"><span><Link href="/privacy">{t("Privacy")}</Link> · <Link href="/terms">{t("Terms")}</Link></span><LanguageSelect /></div><small>{`© ${new Date().getFullYear()} BudgetBuddy`}</small></footer>
     </div>
   );
 }
@@ -216,9 +217,9 @@ function Pricing() {
           <div className="plan-card-top"><span>{t(plan.name)}</span>{BILLING_ENABLED ? plan.featured && <em>{t("Most popular")}</em> : plan.name !== "Free" && <em>{t("Coming soon")}</em>}</div>
           <strong>{BILLING_ENABLED || plan.name === "Free" ? <>{plan.price}<small>{t("/month")}</small></> : t("Coming soon")}</strong><p>{t(plan.description)}</p>
           {BILLING_ENABLED
-            ? <Button variant={plan.featured ? "default" : "outline"} asChild><a href="/sign-up">{t("Start full trial")}</a></Button>
+            ? <Button variant={plan.featured ? "default" : "outline"} asChild><Link href="/sign-up">{t("Start full trial")}</Link></Button>
             : plan.name === "Free"
-              ? <Button asChild><a href="/sign-up">{t("Start for free")}</a></Button>
+              ? <Button asChild><Link href="/sign-up">{t("Start for free")}</Link></Button>
               : <Button variant="outline" disabled aria-disabled="true">{t("Coming soon")}</Button>}
           <ul>{plan.features.map((feature) => <li key={feature}><Check />{t(feature)}</li>)}</ul>
         </article>)}
