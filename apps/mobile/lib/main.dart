@@ -9,6 +9,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/config.dart';
+import 'core/dashboard_cache.dart';
 import 'core/error_reporter.dart';
 import 'core/session_storage.dart';
 import 'core/theme.dart';
@@ -25,7 +26,8 @@ import 'features/transactions.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   ErrorReporter.install();
-  await initializeDateFormatting('tr_TR');
+  // Started now, awaited with Supabase below, so the two load in parallel.
+  final dates = initializeDateFormatting('tr_TR');
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -35,6 +37,7 @@ Future<void> main() async {
     ),
   );
   if (!AppConfig.isValid) {
+    await dates;
     runApp(
       const MaterialApp(
         home: Scaffold(
@@ -44,21 +47,28 @@ Future<void> main() async {
     );
     return;
   }
-  await Supabase.initialize(
-    url: AppConfig.supabaseUrl,
-    publishableKey: AppConfig.supabaseKey,
-    authOptions: const FlutterAuthClientOptions(
-      localStorage: SecureSessionStorage(),
+  await Future.wait([
+    dates,
+    Supabase.initialize(
+      url: AppConfig.supabaseUrl,
+      publishableKey: AppConfig.supabaseKey,
+      authOptions: const FlutterAuthClientOptions(
+        localStorage: SecureSessionStorage(),
+      ),
     ),
-  );
+  ]);
   runApp(ProviderScope(child: BudgetBuddyApp(router: _buildRouter())));
 }
 
 class _AuthRefresh extends ChangeNotifier {
   _AuthRefresh() {
-    _subscription = Supabase.instance.client.auth.onAuthStateChange.listen(
-      (_) => notifyListeners(),
-    );
+    _subscription = Supabase.instance.client.auth.onAuthStateChange.listen((
+      state,
+    ) {
+      // No cached financial data survives a sign-out on a shared phone.
+      if (state.event == AuthChangeEvent.signedOut) DashboardCache.clear();
+      notifyListeners();
+    });
   }
 
   late final StreamSubscription<AuthState> _subscription;

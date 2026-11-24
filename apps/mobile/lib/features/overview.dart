@@ -12,13 +12,23 @@ class OverviewScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final data = ref.watch(dashboardProvider);
+    final cached = ref.watch(cachedDashboardProvider).value;
     return Scaffold(
       appBar: AppBar(title: const Text('Genel Bakış')),
       body: RefreshIndicator(
         onRefresh: () => ref.refresh(dashboardProvider.future),
         child: data.when(
           skipLoadingOnRefresh: true,
-          loading: () => const LoadingList(),
+          // The previous visit's numbers appear at once; a thin bar shows the
+          // fresh ones are still loading.
+          loading: () => cached == null
+              ? const LoadingList()
+              : Column(
+                  children: [
+                    const LinearProgressIndicator(minHeight: 2),
+                    Expanded(child: _Content(cached)),
+                  ],
+                ),
           error: (e, _) => ErrorRetry(
             message: '$e',
             onRetry: () => ref.invalidate(dashboardProvider),
@@ -128,7 +138,10 @@ class _Content extends StatelessWidget {
           const Card(
             child: Padding(
               padding: EdgeInsets.all(24),
-              child: Text('Bu ay henüz işlem yok.', textAlign: TextAlign.center),
+              child: Text(
+                'Bu ay henüz işlem yok.',
+                textAlign: TextAlign.center,
+              ),
             ),
           )
         else
