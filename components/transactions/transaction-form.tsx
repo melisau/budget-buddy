@@ -16,6 +16,11 @@ import { matchCategoryRule, type CategoryRule } from "@/lib/finance/category-rul
 import type { StoredTransaction, TransactionOption } from "@/types/finance";
 
 const NO_ACCOUNT = "none";
+/** Default category names shown as chips, most used first. */
+const QUICK_CATEGORIES = {
+  expense: ["Groceries", "Dining", "Transport", "Utilities", "Entertainment", "Shopping"],
+  income: ["Salary", "Freelance income", "Other income"],
+} as const;
 
 interface TransactionFormProps {
   transaction?: StoredTransaction;
@@ -139,6 +144,10 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
     setPickedByRule(true);
   }
   const availableCategories = categories.filter((item) => !item.type || item.type === type);
+  // One-tap chips for the most common categories; the list below still has every category.
+  const quickCategories = QUICK_CATEGORIES[type]
+    .map((name) => availableCategories.find((item) => item.name === name))
+    .filter((item): item is (typeof availableCategories)[number] => Boolean(item));
   const removeStoredReceipt = async () => {
     if (!transaction) return;
     setIsRemovingReceipt(true);
@@ -189,6 +198,9 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
       </label>
       {hasStoredReceipt && <div className="receipt-field">
         <p className="receipt-visibility"><ReceiptText />{tr ? "Bu işlemde kayıtlı bir fiş görseli var." : "This transaction already has a saved receipt image."}<button type="button" disabled={isRemovingReceipt} onClick={() => void removeStoredReceipt()}><Trash2 />{isRemovingReceipt ? (tr ? "Kaldırılıyor…" : "Removing…") : (tr ? "Kaldır" : "Remove")}</button></p>
+      </div>}
+      {quickCategories.length > 0 && <div className="category-chips" role="group" aria-label={tr ? "Sık kullanılan kategoriler" : "Common categories"}>
+        {quickCategories.map((item) => <button type="button" key={item.id} aria-pressed={category === item.id} className={category === item.id ? "active" : ""} onClick={() => { setCategory(item.id); setPickedByRule(false); form.setValue("category", item.id, { shouldValidate: true }); }}>{t(item.name)}</button>)}
       </div>}
       <div className="form-grid tx-pair">
         <label>
