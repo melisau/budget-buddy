@@ -18,6 +18,7 @@ import 'features/app_navigation.dart';
 import 'features/assistant.dart';
 import 'features/finance_screens.dart';
 import 'features/more.dart';
+import 'features/notifications.dart';
 import 'features/overview.dart';
 import 'features/settings.dart';
 import 'features/sign_in.dart';
@@ -125,14 +126,39 @@ GoRouter _buildRouter() => GoRouter(
               path: '/more',
               builder: (_, _) => const MoreScreen(),
               routes: [
-                GoRoute(path: 'family', builder: (_, _) => const FamilyScreen()),
-                GoRoute(path: 'wishlists', builder: (_, _) => const WishlistsScreen()),
-                GoRoute(path: 'recurring', builder: (_, _) => const RecurringScreen()),
-                GoRoute(path: 'budgets', builder: (_, _) => const BudgetsScreen()),
-                GoRoute(path: 'accounts', builder: (_, _) => const AccountsScreen()),
+                GoRoute(
+                  path: 'family',
+                  builder: (_, _) => const FamilyScreen(),
+                ),
+                GoRoute(
+                  path: 'wishlists',
+                  builder: (_, _) => const WishlistsScreen(),
+                ),
+                GoRoute(
+                  path: 'recurring',
+                  builder: (_, _) => const RecurringScreen(),
+                ),
+                GoRoute(
+                  path: 'budgets',
+                  builder: (_, _) => const BudgetsScreen(),
+                ),
+                GoRoute(
+                  path: 'accounts',
+                  builder: (_, _) => const AccountsScreen(),
+                ),
                 GoRoute(path: 'goals', builder: (_, _) => const GoalsScreen()),
-                GoRoute(path: 'analytics', builder: (_, _) => const AnalyticsScreen()),
-                GoRoute(path: 'settings', builder: (_, _) => const SettingsScreen()),
+                GoRoute(
+                  path: 'analytics',
+                  builder: (_, _) => const AnalyticsScreen(),
+                ),
+                GoRoute(
+                  path: 'settings',
+                  builder: (_, _) => const SettingsScreen(),
+                ),
+                GoRoute(
+                  path: 'notifications',
+                  builder: (_, _) => const NotificationsScreen(),
+                ),
               ],
             ),
           ],

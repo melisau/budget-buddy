@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { AccessError, requireAppUser } from "@/lib/auth/authorization";
-import { sameOriginFormOrigin } from "@/lib/auth/request-origin";
+import { isTrustedApiWrite } from "@/lib/auth/request-origin";
 import { loadNotifications, markNotificationsRead, setEmailNotifications } from "@/lib/notifications/service";
 import { isMissingSchemaError } from "@/lib/supabase/schema-errors";
 
@@ -23,7 +23,7 @@ export async function GET() {
 
 /** Marks notifications as read: the listed ids, or every unread one when no ids are sent. */
 export async function POST(request: Request) {
-  if (!sameOriginFormOrigin(request)) return NextResponse.json({ error: "Same-origin request required." }, { status: 403 });
+  if (!isTrustedApiWrite(request)) return NextResponse.json({ error: "Same-origin request required." }, { status: 403 });
   try {
     const user = await requireAppUser();
     const body = await request.json().catch(() => ({})) as { ids?: unknown };
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
 
 /** Turns the e-mail copy of notifications on or off. */
 export async function PATCH(request: Request) {
-  if (!sameOriginFormOrigin(request)) return NextResponse.json({ error: "Same-origin request required." }, { status: 403 });
+  if (!isTrustedApiWrite(request)) return NextResponse.json({ error: "Same-origin request required." }, { status: 403 });
   try {
     const user = await requireAppUser();
     const body = await request.json().catch(() => ({})) as { emailEnabled?: unknown };

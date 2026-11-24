@@ -42,6 +42,24 @@ class SettingsScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _save(
+    BuildContext context,
+    WidgetRef ref,
+    String path,
+    String method,
+    Map<String, dynamic> body,
+    String? done,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(apiProvider).patch(path, body);
+      ref.invalidate(pageProvider(path));
+      if (done != null) messenger.showSnackBar(SnackBar(content: Text(done)));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = Supabase.instance.client.auth;
@@ -55,7 +73,13 @@ class SettingsScreen extends ConsumerWidget {
           Card(
             child: ListTile(
               leading: const CircleAvatar(child: Icon(Icons.person)),
-              title: Text('Hesabım', style: TextStyle(fontWeight: FontWeight.w700, color: context.ink)),
+              title: Text(
+                'Hesabım',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: context.ink,
+                ),
+              ),
               subtitle: Text(auth.currentUser?.email ?? ''),
             ),
           ),
@@ -66,16 +90,35 @@ class SettingsScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Görünüm', style: TextStyle(fontWeight: FontWeight.w700, color: context.ink)),
+                  Text(
+                    'Görünüm',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: context.ink,
+                    ),
+                  ),
                   const SizedBox(height: 10),
                   SegmentedButton<ThemeMode>(
                     segments: const [
-                      ButtonSegment(value: ThemeMode.system, label: Text('Sistem'), icon: Icon(Icons.brightness_auto_outlined)),
-                      ButtonSegment(value: ThemeMode.light, label: Text('Açık'), icon: Icon(Icons.light_mode_outlined)),
-                      ButtonSegment(value: ThemeMode.dark, label: Text('Koyu'), icon: Icon(Icons.dark_mode_outlined)),
+                      ButtonSegment(
+                        value: ThemeMode.system,
+                        label: Text('Sistem'),
+                        icon: Icon(Icons.brightness_auto_outlined),
+                      ),
+                      ButtonSegment(
+                        value: ThemeMode.light,
+                        label: Text('Açık'),
+                        icon: Icon(Icons.light_mode_outlined),
+                      ),
+                      ButtonSegment(
+                        value: ThemeMode.dark,
+                        label: Text('Koyu'),
+                        icon: Icon(Icons.dark_mode_outlined),
+                      ),
                     ],
                     selected: {ref.watch(themeModeProvider)},
-                    onSelectionChanged: (v) => ref.read(themeModeProvider.notifier).set(v.first),
+                    onSelectionChanged: (v) =>
+                        ref.read(themeModeProvider.notifier).set(v.first),
                   ),
                 ],
               ),
@@ -86,7 +129,6 @@ class SettingsScreen extends ConsumerWidget {
             child: ListTile(
               leading: const Icon(Icons.currency_exchange),
               title: const Text('Para birimi'),
-              subtitle: const Text('Şimdilik web sitesinden değiştirilir'),
               trailing: account.maybeWhen(
                 data: (d) => DropdownButton<String>(
                   value: '${d['currency']}',
@@ -95,10 +137,18 @@ class SettingsScreen extends ConsumerWidget {
                     for (final c in const ['TRY', 'EUR', 'USD', 'GBP'])
                       DropdownMenuItem(value: c, child: Text(c)),
                   ],
-                  // The account API only accepts same-origin web requests for now.
-                  onChanged: null,
+                  onChanged: (v) {
+                    if (v != null && v != d['currency']) {
+                      _save(context, ref, 'account', 'patch', {
+                        'currency': v,
+                      }, 'Para birimi güncellendi.');
+                    }
+                  },
                 ),
-                orElse: () => const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                orElse: () => const SizedBox.square(
+                  dimension: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
               ),
             ),
           ),
@@ -109,21 +159,38 @@ class SettingsScreen extends ConsumerWidget {
                 secondary: const Icon(Icons.mail_outline),
                 title: const Text('E-posta bildirimleri'),
                 value: d['emailEnabled'] == true,
-                subtitle: const Text('Şimdilik web sitesinden değiştirilir'),
-                onChanged: null,
+                subtitle: const Text(
+                  'Bütçe ve hedef uyarılarının günlük özeti',
+                ),
+                onChanged: (v) => _save(
+                  context,
+                  ref,
+                  'notifications',
+                  'patch',
+                  {'emailEnabled': v},
+                  null,
+                ),
               ),
-              orElse: () => const ListTile(leading: Icon(Icons.mail_outline), title: Text('E-posta bildirimleri')),
+              orElse: () => const ListTile(
+                leading: Icon(Icons.mail_outline),
+                title: Text('E-posta bildirimleri'),
+              ),
             ),
           ),
           const Gap(),
           Card(
             child: ListTile(
-              leading: const Icon(Icons.delete_forever_outlined, color: expense),
+              leading: const Icon(
+                Icons.delete_forever_outlined,
+                color: expense,
+              ),
               title: const Text(
                 'Hesabı sil',
                 style: TextStyle(color: expense, fontWeight: FontWeight.w700),
               ),
-              subtitle: const Text('Hesabın ve tüm verilerin kalıcı olarak silinir'),
+              subtitle: const Text(
+                'Hesabın ve tüm verilerin kalıcı olarak silinir',
+              ),
               onTap: () => _deleteAccount(context, ref),
             ),
           ),
@@ -131,7 +198,10 @@ class SettingsScreen extends ConsumerWidget {
           Card(
             child: ListTile(
               leading: const Icon(Icons.logout, color: expense),
-              title: const Text('Çıkış yap', style: TextStyle(color: expense, fontWeight: FontWeight.w700)),
+              title: const Text(
+                'Çıkış yap',
+                style: TextStyle(color: expense, fontWeight: FontWeight.w700),
+              ),
               onTap: () => auth.signOut(scope: SignOutScope.local),
             ),
           ),
@@ -174,7 +244,9 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
           TextField(
             controller: _input,
             autocorrect: false,
-            decoration: const InputDecoration(labelText: 'Onaylamak için SİL yaz'),
+            decoration: const InputDecoration(
+              labelText: 'Onaylamak için SİL yaz',
+            ),
             onChanged: (_) => setState(() {}),
           ),
         ],
