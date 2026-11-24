@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,9 +21,86 @@ class TransactionsScreen extends ConsumerStatefulWidget {
 
 class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   String _query = '';
+  Timer? _debounce;
+  int _generation = 0;
+  bool _loadingMore = false;
+  bool _searching = false;
+  String? _pageError;
+
+  /// Pages after the first, or every page of a search.
+  final List<Map<String, dynamic>> _more = [];
+  String? _cursor;
+  bool _ownCursor = false;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  void _reset() {
+    _generation++;
+    _more.clear();
+    _cursor = null;
+    _ownCursor = false;
+    _loadingMore = false;
+    _pageError = null;
+  }
+
+  void _onSearch(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 350), () {
+      final query = value.trim();
+      if (query == _query) return;
+      setState(() {
+        _query = query;
+        _reset();
+      });
+      if (query.isNotEmpty) _load(first: true);
+    });
+  }
+
+  Future<void> _load({bool first = false}) async {
+    if (_loadingMore) return;
+    final generation = _generation;
+    setState(() {
+      _loadingMore = true;
+      _searching = first;
+      _pageError = null;
+    });
+    try {
+      final page = await ref
+          .read(apiProvider)
+          .get(
+            transactionPagePath(cursor: first ? null : _cursor, query: _query),
+          );
+      if (!mounted || generation != _generation) return;
+      setState(() {
+        _more.addAll(
+          (page['transactions'] as List).cast<Map<String, dynamic>>(),
+        );
+        _cursor = page['nextCursor'] as String?;
+        _ownCursor = true;
+      });
+    } catch (e) {
+      if (mounted && generation == _generation) {
+        setState(() => _pageError = '$e');
+      }
+    } finally {
+      if (mounted && generation == _generation) {
+        setState(() {
+          _loadingMore = false;
+          _searching = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(transactionsProvider, (_, next) {
+      if (!next.isLoading) setState(_reset);
+    });
     final data = ref.watch(transactionsProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('İşlemler')),
@@ -30,7 +109,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
             child: TextField(
-              onChanged: (v) => setState(() => _query = v.toLowerCase()),
+              onChanged: _onSearch,
               decoration: const InputDecoration(
                 hintText: 'İşlemlerde ara',
                 prefixIcon: Icon(Icons.search),
@@ -58,37 +137,72 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   }
 
   Widget _list(Map<String, dynamic> data) {
-    final items = (data['transactions'] as List)
-        .cast<Map<String, dynamic>>()
-        .where(
-          (t) => '${t['title']} ${t['category']}'.toLowerCase().contains(_query),
-        )
-        .toList();
+    final searching = _query.isNotEmpty;
+    final items = [
+      if (!searching)
+        ...(data['transactions'] as List).cast<Map<String, dynamic>>(),
+      ..._more,
+    ];
+    final cursor = searching || _ownCursor
+        ? _cursor
+        : data['nextCursor'] as String?;
+    if (_searching) return const LoadingList();
     if (items.isEmpty) {
       return ListView(
-        children: const [
-          SizedBox(height: 120),
-          Text('İşlem bulunamadı.', textAlign: TextAlign.center),
+        children: [
+          const SizedBox(height: 120),
+          Text(_pageError ?? 'İşlem bulunamadı.', textAlign: TextAlign.center),
         ],
       );
     }
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 110),
-      itemCount: items.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
-      itemBuilder: (_, i) {
-        final t = items[i];
-        return Card(
-          child: TransactionTile(
-            title: '${t['title']}',
-            subtitle:
-                '${categoryLabel('${t['category']}')} · ${shortDate('${t['transactionDate']}')}',
-            amount: t['amount'] as num,
-            isIncome: t['type'] == 'income',
-            onTap: () => showEditTransaction(context, t),
-          ),
-        );
+    final footer = cursor != null || _pageError != null;
+    return NotificationListener<ScrollNotification>(
+      onNotification: (n) {
+        if (cursor != null &&
+            !_loadingMore &&
+            _pageError == null &&
+            n.metrics.extentAfter < 400) {
+          if (!_ownCursor) _cursor = cursor;
+          _load();
+        }
+        return false;
       },
+      child: ListView.separated(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 110),
+        itemCount: items.length + (footer ? 1 : 0),
+        separatorBuilder: (_, _) => const SizedBox(height: 8),
+        itemBuilder: (_, i) {
+          if (i == items.length) {
+            return Padding(
+              padding: const EdgeInsets.all(16),
+              child: Center(
+                child: _pageError != null
+                    ? TextButton(
+                        onPressed: () {
+                          if (!_ownCursor) _cursor = cursor;
+                          _load();
+                        },
+                        child: const Text(
+                          'Daha fazla yüklenemedi. Tekrar dene',
+                        ),
+                      )
+                    : const CircularProgressIndicator(),
+              ),
+            );
+          }
+          final t = items[i];
+          return Card(
+            child: TransactionTile(
+              title: '${t['title']}',
+              subtitle:
+                  '${categoryLabel('${t['category']}')} · ${shortDate('${t['transactionDate']}')}',
+              amount: t['amount'] as num,
+              isIncome: t['type'] == 'income',
+              onTap: () => showEditTransaction(context, t),
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -101,19 +215,17 @@ Future<void> showEditTransaction(
   Map<String, dynamic> transaction,
 ) => _showSheet(context, transaction);
 
-Future<void> _showSheet(
-  BuildContext context,
-  Map<String, dynamic>? existing,
-) => showModalBottomSheet(
-  context: context,
-  isScrollControlled: true,
-  useRootNavigator: true,
-  useSafeArea: true,
-  shape: const RoundedRectangleBorder(
-    borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-  ),
-  builder: (_) => _AddSheet(existing),
-);
+Future<void> _showSheet(BuildContext context, Map<String, dynamic>? existing) =>
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useRootNavigator: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (_) => _AddSheet(existing),
+    );
 
 /// Plain editable text that [parseAmount] reads back to the same value.
 String amountText(num amount) => amount == amount.truncate()
@@ -155,7 +267,9 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
       final scan = await scanReceipt();
       if (scan == null || !mounted) return;
       if (scan.total == null && scan.date == null && scan.merchant == null) {
-        setState(() => _error = 'Fiş okunamadı. Daha aydınlık bir fotoğraf dene.');
+        setState(
+          () => _error = 'Fiş okunamadı. Daha aydınlık bir fotoğraf dene.',
+        );
         return;
       }
       setState(() {
@@ -345,7 +459,8 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
           height: 240,
           child: Center(child: CircularProgressIndicator()),
         ),
-        error: (e, _) => SizedBox(height: 240, child: Center(child: Text('$e'))),
+        error: (e, _) =>
+            SizedBox(height: 240, child: Center(child: Text('$e'))),
         data: _formBody,
       ),
     );
@@ -395,7 +510,8 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
       });
     }
     // A category outside this list must be chosen again before saving.
-    if (_category != null && !categories.any((c) => '${c['id']}' == _category)) {
+    if (_category != null &&
+        !categories.any((c) => '${c['id']}' == _category)) {
       _category = null;
     }
     return SingleChildScrollView(
@@ -440,7 +556,9 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
             TextFormField(
               controller: _amount,
               autofocus: !_editing,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
               ],
