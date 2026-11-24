@@ -14,12 +14,12 @@ import { RequiredMark } from "@/components/ui/required-mark";
 
 type Item = {
   id: string; kind: "regular" | "subscription"; type: "income" | "expense"; title: string; amount: number; frequency: Frequency;
-  monthlyAmount: number; startDate: string; nextDate: string; endDate: string | null; active: boolean; reminderDays: number | null;
+  monthlyAmount: number; startDate: string; nextDate: string; endDate: string | null; active: boolean; reminderDays: number | null; sharedFamilyGroupId: string | null;
   categoryId: string; categoryName: string; accountId: string; accountName: string;
 };
 type Option = { id: string; name: string; type?: "income" | "expense" };
-type Data = { available: boolean; items: Item[]; categories: Option[]; accounts: Option[]; currency: string };
-type Form = { id: string | null; kind: Item["kind"]; type: Item["type"]; title: string; amount: string; category: string; account: string; frequency: Frequency; startDate: string; endDate: string; reminderDays: string };
+type Data = { available: boolean; items: Item[]; categories: Option[]; accounts: Option[]; currency: string; familyGroups?: { id: string; name: string }[] };
+type Form = { id: string | null; kind: Item["kind"]; type: Item["type"]; title: string; amount: string; category: string; account: string; frequency: Frequency; startDate: string; endDate: string; reminderDays: string; sharedFamilyGroupId: string };
 
 const selectClass = "h-9 rounded-md border border-[var(--c-s-dfe3ed)] bg-[var(--c-s-ffffff)] px-3";
 const frequencyLabels: Record<Frequency, { tr: string; en: string }> = {
@@ -65,11 +65,11 @@ export function RecurringScreen() {
     const categories = (data?.categories ?? []).filter((category) => category.type === "expense");
     const preferred = kind === "subscription" ? categories.find((category) => category.name === "Subscriptions") : undefined;
     setFormError("");
-    setForm({ id: null, kind, type: "expense", title, amount: "", category: preferred?.id ?? "", account: "", frequency: "monthly", startDate: todayLocal(), endDate: "", reminderDays: "" });
+    setForm({ id: null, kind, type: "expense", title, amount: "", category: preferred?.id ?? "", account: "", frequency: "monthly", startDate: todayLocal(), endDate: "", reminderDays: "", sharedFamilyGroupId: "" });
   }
   function openEdit(item: Item) {
     setFormError("");
-    setForm({ id: item.id, kind: item.kind, type: item.type, title: item.title, amount: String(item.amount), category: item.categoryId, account: item.accountId, frequency: item.frequency, startDate: item.startDate, endDate: item.endDate ?? "", reminderDays: item.reminderDays === null ? "" : String(item.reminderDays) });
+    setForm({ id: item.id, kind: item.kind, type: item.type, title: item.title, amount: String(item.amount), category: item.categoryId, account: item.accountId, frequency: item.frequency, startDate: item.startDate, endDate: item.endDate ?? "", reminderDays: item.reminderDays === null ? "" : String(item.reminderDays), sharedFamilyGroupId: item.sharedFamilyGroupId ?? "" });
   }
 
   async function send(url: string, method: "POST" | "PATCH" | "DELETE", body: Record<string, unknown> | undefined, success: string) {
@@ -86,7 +86,7 @@ export function RecurringScreen() {
     event.preventDefault();
     if (!form) return;
     if (!form.category) { setFormError(tr ? "Bir kategori seç." : "Choose a category."); return; }
-    const body = { kind: form.kind, type: form.type, title: form.title, amount: form.amount, category: form.category, account: form.account, frequency: form.frequency, startDate: form.startDate, endDate: form.endDate, reminderDays: form.reminderDays };
+    const body = { kind: form.kind, type: form.type, title: form.title, amount: form.amount, category: form.category, account: form.account, frequency: form.frequency, startDate: form.startDate, endDate: form.endDate, reminderDays: form.reminderDays, sharedFamilyGroupId: form.sharedFamilyGroupId };
     const done = form.id
       ? await send(`/api/recurring/${form.id}`, "PATCH", body, tr ? "Güncellendi." : "Updated.")
       : await send("/api/recurring", "POST", body, tr ? "Eklendi." : "Added.");
@@ -106,6 +106,7 @@ export function RecurringScreen() {
           {item.categoryName && ` · ${categoryDisplayName(item.categoryName, language)}`}
           {item.active ? ` · ${tr ? "Sonraki" : "Next"}: ${dateText(item.nextDate)}` : ` · ${tr ? "Duraklatıldı" : "Paused"}`}
         </small>
+        {item.sharedFamilyGroupId && <small className="block text-[var(--c-t-66708b)]">👪 {tr ? "Ailede görünür" : "Visible to family"}: {data?.familyGroups?.find((group) => group.id === item.sharedFamilyGroupId)?.name ?? ""}</small>}
         {item.reminderDays !== null && <small className="block text-[var(--c-t-66708b)]">🔔 {reminderLabel(item.reminderDays, tr)}</small>}
         {soon && <small className="block font-semibold text-[var(--c-t-b45309)]">{days === 0 ? (tr ? "Bugün yenileniyor" : "Renews today") : tr ? `${days} gün sonra yenileniyor` : `Renews in ${days} days`}</small>}
       </div>
@@ -154,6 +155,7 @@ export function RecurringScreen() {
           <label className="grid gap-1 text-sm font-semibold"><span className="field-label">{tr ? "İlk / sonraki ödeme tarihi" : "First / next payment date"}<RequiredMark /></span><Input type="date" required value={form.startDate} onChange={(event) => setForm({ ...form, startDate: event.target.value })} /></label>
           <label className="grid gap-1 text-sm font-semibold">{tr ? "Bitiş tarihi (isteğe bağlı)" : "End date (optional)"}<Input type="date" value={form.endDate} min={form.startDate} onChange={(event) => setForm({ ...form, endDate: event.target.value })} /></label>
           <label className="grid gap-1 text-sm font-semibold sm:col-span-2">{tr ? "Hatırlatma" : "Reminder"}<select className={selectClass} value={form.reminderDays} onChange={(event) => setForm({ ...form, reminderDays: event.target.value })}><option value="">{tr ? "Hatırlatma yok (otomatik kaydedilir)" : "No reminder (recorded automatically)"}</option>{reminderOptions.map((days) => <option key={days} value={days}>{reminderLabel(days, tr)}</option>)}</select>{form.reminderDays !== "" && <small className="font-normal text-[var(--c-t-66708b)]">{tr ? "Ödeme günü gelince otomatik kaydedilmez; bildirimden “Ödedim” veya “Bu sefer ödemedim” seçersin." : "It is not recorded automatically; you mark it as paid or skipped from the reminder."}</small>}</label>
+          {(data?.familyGroups?.length ?? 0) > 0 && <label className="grid gap-1 text-sm font-semibold sm:col-span-2">{tr ? "Aileyle paylaş" : "Share with family"}<select className={selectClass} value={form.sharedFamilyGroupId} onChange={(event) => setForm({ ...form, sharedFamilyGroupId: event.target.value })}><option value="">{tr ? "Paylaşma (yalnızca sen görürsün)" : "Don't share (only you)"}</option>{data!.familyGroups!.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select><small className="font-normal text-[var(--c-t-66708b)]">{tr ? "Seçersen bu ödeme, aile sayfasındaki “Yaklaşan ödemeler”de adınla, tutarı ve tarihiyle görünür. İşlemlerin görünmez." : "If chosen, this payment appears under Upcoming payments on the family page with your name, amount and date. Your transactions stay private."}</small></label>}
           <label className="grid gap-1 text-sm font-semibold"><span className="field-label">{tr ? "Kategori" : "Category"}<RequiredMark /></span><select className={selectClass} value={form.category} required onChange={(event) => setForm({ ...form, category: event.target.value })}><option value="">{tr ? "Seç…" : "Choose…"}</option>{formCategories.map((category) => <option key={category.id} value={category.id}>{categoryDisplayName(category.name, language)}</option>)}</select></label>
           <label className="grid gap-1 text-sm font-semibold">{tr ? "Hesap (isteğe bağlı)" : "Account (optional)"}<select className={selectClass} value={form.account} onChange={(event) => setForm({ ...form, account: event.target.value })}><option value="">{tr ? "Hesap yok" : "No account"}</option>{(data?.accounts ?? []).map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}</select></label>
           {formError && <p role="alert" className="form-error sm:col-span-2">{formError}</p>}

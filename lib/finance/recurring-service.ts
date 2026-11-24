@@ -1,5 +1,5 @@
 import "server-only";
-import type { AppUser } from "@/lib/auth/authorization";
+import { AccessError, getAcceptedFamilyRole, type AppUser } from "@/lib/auth/authorization";
 import { createDailyGate } from "@/lib/finance/daily-gate";
 import { ensureDefaultAccount } from "@/lib/finance/default-account";
 import { ensureDefaultCategories } from "@/lib/finance/default-categories";
@@ -20,13 +20,15 @@ export type RecurringInput = {
   endDate?: string;
   /** Days before the date to remind; null creates the transaction automatically. */
   reminderDays?: ReminderDays | null;
+  /** A family group the user belongs to that sees this item as an upcoming payment. */
+  sharedFamilyGroupId?: string | null;
 };
 
 type Joined = { id: string; name: string } | { id: string; name: string }[] | null;
 const first = (value: Joined) => (Array.isArray(value) ? value[0] ?? null : value);
 
 const baseColumns = "id, kind, type, title, amount, frequency, start_date, next_date, end_date, active, category:categories(id, name), account:accounts(id, name)";
-const columns = "id, kind, type, title, amount, frequency, start_date, next_date, end_date, active, reminder_days, category:categories(id, name), account:accounts(id, name)";
+const columns = "id, kind, type, title, amount, frequency, start_date, next_date, end_date, active, reminder_days, shared_family_group_id, category:categories(id, name), account:accounts(id, name)";
 
 /**
  * Runs a query that reads reminder_days, and again without it while migration
@@ -55,6 +57,7 @@ function toClient(row: Record<string, unknown>) {
     endDate: typeof row.end_date === "string" ? row.end_date : null,
     active: row.active === true,
     reminderDays: typeof row.reminder_days === "number" ? row.reminder_days : null,
+    sharedFamilyGroupId: typeof row.shared_family_group_id === "string" ? row.shared_family_group_id : null,
     categoryId: category?.id ?? "",
     categoryName: category?.name ?? "",
     accountId: account?.id ?? "",
@@ -71,6 +74,8 @@ async function assertReferences(user: AppUser, input: RecurringInput) {
   if (category.error) throw category.error;
   if (account.error) throw account.error;
   if (!category.data || !account.data || category.data.type !== input.type) throw new Error("The selected account or category is unavailable.");
+  // Sharing is only possible with a group the user is an accepted member of.
+  if (input.sharedFamilyGroupId && !await getAcceptedFamilyRole(user.id, input.sharedFamilyGroupId)) throw new AccessError("Family group not found.", 404);
 }
 
 /** Dates before today are never back-filled; the schedule starts at the first date that is not in the past. */
@@ -152,20 +157,22 @@ export type RecurringList = Awaited<ReturnType<typeof listRecurring>>;
 export async function listRecurring(user: AppUser) {
   await ensureDefaultCategories(user.id);
   const supabase = getSupabaseServerClient();
-  const unavailable = { available: false as const, items: [], categories: [], accounts: [], currency: "TRY" };
+  const unavailable = { available: false as const, items: [], categories: [], accounts: [], currency: "TRY", familyGroups: [] };
   try {
     await materializeDueRecurring(user);
   } catch (error) {
     // A failed run must not hide the items that exist.
     console.error("[recurring] could not create due transactions", error instanceof Error ? error.message : error);
   }
-  const [items, categories, accounts, profile] = await Promise.all([
+  const [items, categories, accounts, profile, memberships] = await Promise.all([
     withReminderFallback((withReminder) => supabase.from("recurring_items").select(withReminder ? columns : baseColumns).eq("user_id", user.id).order("next_date")),
     supabase.from("categories").select("id, name, type").eq("user_id", user.id).order("name"),
     supabase.from("accounts").select("id, name").eq("user_id", user.id).is("archived_at", null).order("name"),
     supabase.from("users").select("currency").eq("id", user.id).single(),
+    supabase.from("family_members").select("group:family_groups(id, name)").eq("user_id", user.id).eq("invitation_status", "accepted"),
   ]);
   if (isMissingSchemaError(items.error)) return unavailable;
+  if (memberships.error) throw memberships.error;
   for (const result of [items, categories, accounts, profile]) if (result.error) throw result.error;
   return {
     available: true as const,
@@ -173,6 +180,7 @@ export async function listRecurring(user: AppUser) {
     categories: categories.data ?? [],
     accounts: accounts.data ?? [],
     currency: (profile.data?.currency as string | undefined) ?? "TRY",
+    familyGroups: (memberships.data ?? []).map((row) => first(row.group as Joined)).filter((group): group is { id: string; name: string } => Boolean(group)),
   };
 }
 
@@ -184,6 +192,7 @@ export async function createRecurring(user: AppUser, input: RecurringInput) {
     category_id: input.categoryId, account_id: input.accountId ?? null, frequency: input.frequency,
     start_date: input.startDate, next_date: firstNextDate(input, today), end_date: input.endDate ?? null,
     reminder_days: input.reminderDays ?? null,
+    ...(input.sharedFamilyGroupId !== undefined ? { shared_family_group_id: input.sharedFamilyGroupId } : {}),
   }).select(columns).single();
   if (error) throw error;
   dailyCheck.forget(user.id);
@@ -199,6 +208,7 @@ export async function updateRecurring(user: AppUser, id: string, input: Recurrin
     category_id: input.categoryId, account_id: input.accountId ?? null, frequency: input.frequency,
     start_date: input.startDate, next_date: firstNextDate(input, today), end_date: input.endDate ?? null,
     reminder_days: input.reminderDays ?? null,
+    ...(input.sharedFamilyGroupId !== undefined ? { shared_family_group_id: input.sharedFamilyGroupId } : {}),
     updated_at: new Date().toISOString(),
   }).eq("id", id).eq("user_id", user.id).select(columns).maybeSingle();
   if (error) throw error;
@@ -284,4 +294,28 @@ function addDaysTo(date: string, days: number) {
   const value = new Date(`${date}T00:00:00Z`);
   value.setUTCDate(value.getUTCDate() + days);
   return value.toISOString().slice(0, 10);
+}
+
+export type FamilyUpcoming = { id: string; ownerUserId: string; title: string; amount: number; type: "income" | "expense"; frequency: Frequency; nextDate: string };
+
+/**
+ * Items family members chose to show to this group, due within `days` days.
+ * Only accepted members of the group may read them.
+ */
+export async function listFamilyUpcoming(user: AppUser, familyGroupId: string, days = 31): Promise<FamilyUpcoming[]> {
+  if (!await getAcceptedFamilyRole(user.id, familyGroupId)) throw new AccessError("Family group not found.", 404);
+  const today = todayInIstanbul();
+  const until = new Date(`${today}T00:00:00Z`);
+  until.setUTCDate(until.getUTCDate() + days);
+  const { data, error } = await getSupabaseServerClient().from("recurring_items")
+    .select("id, user_id, title, amount, type, frequency, next_date")
+    .eq("shared_family_group_id", familyGroupId).eq("active", true)
+    .gte("next_date", today).lte("next_date", until.toISOString().slice(0, 10))
+    .order("next_date");
+  if (isMissingSchemaError(error)) return [];
+  if (error) throw error;
+  return (data ?? []).map((row) => ({
+    id: row.id, ownerUserId: row.user_id, title: row.title, amount: Number(row.amount),
+    type: row.type === "income" ? "income" : "expense", frequency: row.frequency as Frequency, nextDate: row.next_date,
+  }));
 }
