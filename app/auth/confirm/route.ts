@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { authDestination } from "@/lib/auth/redirect";
 import { publicUrl } from "@/lib/auth/request-origin";
 import { createSupabaseAuthClient } from "@/lib/supabase/auth-server";
 
@@ -10,7 +11,7 @@ export async function GET(request: NextRequest) {
     const client = await createSupabaseAuthClient();
     const { error } = await client.auth.verifyOtp({ token_hash, type });
     if (!error) {
-      const response = NextResponse.redirect(publicUrl(type === "recovery" ? "/update-password" : "/dashboard", request));
+      const response = NextResponse.redirect(publicUrl(type === "recovery" ? "/update-password" : authDestination(request.nextUrl.searchParams.get("next")), request));
       response.headers.set("Cache-Control", "private, no-store");
       response.headers.set("Referrer-Policy", "no-referrer");
       return response;

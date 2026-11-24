@@ -350,3 +350,8 @@
 /* Keep the scrollbar's space reserved so opening a menu or dialog does not shift the page sideways. */
 html { scrollbar-gutter: stable; }
 body[data-scroll-locked] { margin-right: 0 !important; padding-right: 0 !important; }
+
+.family-invite-banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; padding: 12px 16px; border: 1px solid var(--c-s-cbd3ff); border-radius: 14px; background: var(--c-s-eef1ff); color: var(--c-t-17213c); font-size: 14px; }
+.family-invite-banner svg { width: 18px; height: 18px; color: var(--c-t-4258d5); flex-shrink: 0; }
+.family-invite-banner span { flex: 1; min-width: 180px; }
+.family-invite-banner a { font-weight: 700; color: var(--c-t-4258d5); }

@@ -7,7 +7,8 @@ import { landingPath } from "@/lib/seo/i18n";
 import { usePathname, useRouter } from "next/navigation";
 import { AddTransaction } from "@/components/budgetbuddy/shared";
 import { VIEW_PATHS } from "@/components/budgetbuddy/view-paths";
-import { AppHeader, AppSidebar, MobileNavigation, type AppView } from "@/components/layout/app-navigation";
+import { FamilyInviteBanner } from "@/components/layout/family-invite-banner";
+import { AppHeader,AppSidebar, MobileNavigation, type AppView } from "@/components/layout/app-navigation";
 
 const PATH_VIEWS: Record<string, AppView> = {
   "/dashboard": "dashboard",
@@ -33,7 +34,7 @@ export function ProtectedShell({ children }: { children: ReactNode }) {
 
   return <div className="shell">
     <AppSidebar view={view} go={go} prefetch={prefetch} />
-    <main className="work" id="main-content" tabIndex={-1}><AppHeader view={view} quickAdd={<AddTransaction />} /><div className="content">{children}</div></main>
+    <main className="work" id="main-content" tabIndex={-1}><AppHeader view={view} quickAdd={<AddTransaction />} /><div className="content"><FamilyInviteBanner />{children}</div></main>
     <MobileNavigation view={view} go={go} prefetch={prefetch} />
   </div>;
 }
