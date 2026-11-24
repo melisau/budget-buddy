@@ -43,6 +43,22 @@ import 'data.dart';
             'Hedefe ${amount(data['remaining'])} kaldı (son tarih ${data['deadline'] ?? ''}).',
         route: '/more/goals',
       );
+    case 'recurring_due':
+      final days = int.tryParse('${data['daysLeft']}') ?? 0;
+      final when = days <= 0
+          ? 'bugün'
+          : days == 1
+          ? 'yarın'
+          : '$days gün sonra';
+      final income = data['type'] == 'income';
+      return (
+        title: income
+            ? "${data['title']} geliri $when"
+            : "${data['title']} ödemesi $when",
+        body:
+            '${amount(data['amount'])} · ${data['dueDate'] ?? ''}. Ödendiğinde web sitesindeki hatırlatmadan işaretle.',
+        route: '/more/recurring',
+      );
     case 'family_invite':
       return (
         title: '“${data['groupName']}” grubuna davet edildin',
