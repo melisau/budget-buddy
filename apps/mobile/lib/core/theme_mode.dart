@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-/// Light by default; a choice in Ayarlar is remembered.
+/// Follows the phone by default; a choice in Ayarlar is remembered.
 class ThemeModeController extends Notifier<ThemeMode> {
   static const _storage = FlutterSecureStorage();
   static const _key = 'theme_mode';
@@ -10,7 +10,7 @@ class ThemeModeController extends Notifier<ThemeMode> {
   @override
   ThemeMode build() {
     _load();
-    return ThemeMode.light;
+    return ThemeMode.system;
   }
 
   Future<void> _load() async {
@@ -19,7 +19,7 @@ class ThemeModeController extends Notifier<ThemeMode> {
       final mode = ThemeMode.values.where((m) => m.name == saved).firstOrNull;
       if (mode != null) state = mode;
     } catch (_) {
-      // Without the stored choice the app stays light.
+      // Without the stored choice the app follows the phone.
     }
   }
 
