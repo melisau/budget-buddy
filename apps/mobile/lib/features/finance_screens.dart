@@ -357,12 +357,12 @@ class RecurringScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ApiPage(
-    title: 'Tekrarlayanlar',
+    title: 'Otomatik Talimatlar',
     path: _path,
-    addLabel: 'Tekrarlayan ekle',
+    addLabel: 'Talimat ekle',
     onAdd: (context, ref, d) => showFormSheet(
       context,
-      title: 'Tekrarlayan ekle',
+      title: 'Talimat ekle',
       fields: [
         FieldSpec('kind', 'Tür', kind: FieldKind.choice, options: (_) => const {'regular': 'Düzenli', 'subscription': 'Abonelik'}, initial: 'regular'),
         FieldSpec('type', 'Gelir / gider', kind: FieldKind.choice, options: (_) => const {'expense': 'Gider', 'income': 'Gelir'}, initial: 'expense', resets: 'category'),

@@ -45,7 +45,7 @@ export function RecurringScreen() {
       const response = await fetch("/api/recurring", { cache: "no-store" });
       if (!response.ok) throw new Error();
       setData(await response.json() as Data); setLoadError(false);
-    } catch { setLoadError(true); toast.error(tr ? "Tekrarlayanlar yüklenemedi." : "Unable to load recurring items."); }
+    } catch { setLoadError(true); toast.error(tr ? "Talimatlar yüklenemedi." : "Unable to load recurring items."); }
     finally { setLoading(false); }
   }, [tr]);
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
@@ -119,23 +119,33 @@ export function RecurringScreen() {
   }
 
   return <section className="recurring-page">
-    <div className="page-head"><div><h2>{tr ? "Tekrarlayanlar" : "Recurring"}</h2><p>{tr ? "Kira, maaş, fatura ve abonelikler tarihi gelince kendiliğinden işlem olur." : "Rent, salary, bills and subscriptions become transactions on their own when they are due."}</p></div>
-      <div className="flex gap-2"><Button variant="outline" disabled={loading || loadError || !data?.available} onClick={() => openNew("subscription")}><Plus />{tr ? "Abonelik" : "Subscription"}</Button><Button disabled={loading || loadError || !data?.available} onClick={() => openNew("regular")}><Plus />{tr ? "Tekrarlayan işlem" : "Recurring item"}</Button></div></div>
+    <div className="instructions-help panel">
+      <div>
+        <h2>{tr ? "Düzenli ödeme ve gelirlerini bir kez gir, gerisini biz hatırlayalım" : "Enter regular payments and income once; we keep track"}</h2>
+        <ol>
+          <li><b>{tr ? "Talimat ekle" : "Add an instruction"}</b>{tr ? " · Kira, maaş, fatura gibi her ay, hafta ya da yıl tekrarlanan bir gelir veya gideri gir." : " · Enter income or an expense that repeats every week, month or year: rent, salary, bills."}</li>
+          <li><b>{tr ? "Tarihi gelince" : "When it is due"}</b>{tr ? " · İşlem kendiliğinden kaydedilir. Hatırlatma seçersen kaydedilmez; bildirimden “Ödedim” ya da “Bu sefer ödemedim” dersin." : " · It is recorded automatically. With a reminder, you confirm “Paid” or “Not this time” instead."}</li>
+          <li><b>{tr ? "Abonelikler" : "Subscriptions"}</b>{tr ? " · Netflix, Spotify gibi servisleri aşağıdaki simgelere dokunarak hazır ekle." : " · Add services like Netflix or Spotify with one tap below."}</li>
+        </ol>
+      </div>
+      <Button disabled={loading || loadError || !data?.available} onClick={() => openNew("regular")}><Plus />{tr ? "Talimat ekle" : "Add instruction"}</Button>
+    </div>
 
     {loadError && <p role="alert" className="form-error">{tr ? "Yüklenemedi. Sayfayı yenileyip tekrar deneyin." : "Unable to load. Please refresh."}</p>}
     {loading ? <div className="panel">{tr ? "Yükleniyor…" : "Loading…"}</div> : loadError ? null : !data?.available ? <div className="panel empty-accounts"><Repeat /><h3>{tr ? "Bu özellik henüz hazır değil" : "This feature is not ready yet"}</h3><p>{tr ? "Kısa süre içinde kullanıma açılacak." : "It will be available shortly."}</p></div> : <>
-      {items.length === 0 && <div className="panel empty-accounts"><Repeat /><h3>{tr ? "Henüz tekrarlayan işlem yok" : "No recurring items yet"}</h3><p>{tr ? "Kira, maaş ya da Netflix gibi bir abonelik ekle; tarihi gelince işlem olarak kaydedilir." : "Add rent, a salary or a subscription like Netflix; it is recorded as a transaction when it is due."}</p></div>}
+      {items.length === 0 && <div className="panel empty-accounts"><Repeat /><h3>{tr ? "Henüz talimatın yok" : "No instructions yet"}</h3><p>{tr ? "Yukarıdan “Talimat ekle”ye bas ya da aşağıdan bir aboneliğe dokun." : "Press “Add instruction” above or tap a subscription below."}</p></div>}
 
       <h3 className="mt-4 text-base font-semibold">{tr ? "Abonelikler" : "Subscriptions"}{subscriptions.length > 0 && <small className="ml-2 font-normal text-[var(--c-t-66708b)]">{tr ? "Aylık toplam" : "Monthly total"}: {money(subscriptionTotal)} · {tr ? "Yıllık" : "Yearly"}: {money(subscriptionTotal * 12)}</small>}</h3>
+      <p className="m-0 mt-1 text-sm text-[var(--c-t-66708b)]">{tr ? "Popüler abonelikler: dokun, adı hazır gelsin; tutarı ve tarihi sen gir." : "Popular subscriptions: tap to prefill the name; you enter the amount and date."}</p>
       <div className="my-2 flex flex-wrap gap-2" aria-label={tr ? "Hızlı ekle" : "Quick add"}>{subscriptionPresets.map((name) => <Button key={name} variant="outline" size="sm" className="gap-2" onClick={() => openNew("subscription", name)}><BrandBadge name={name} size={18} />{name}</Button>)}</div>
       {subscriptions.length > 0 && <ul className="grid gap-2">{subscriptions.map(renderItem)}</ul>}
 
       <h3 className="mt-6 text-base font-semibold">{tr ? "Düzenli gelir ve giderler" : "Regular income and expenses"}</h3>
-      {regular.length === 0 ? <p className="text-sm text-[var(--c-t-66708b)]">{tr ? "Kira, maaş, fatura gibi düzenli işlemlerini buraya ekle." : "Add rent, salary, bills and similar items here."}</p> : <ul className="grid gap-2">{regular.map(renderItem)}</ul>}
+      {regular.length === 0 ? <p className="text-sm text-[var(--c-t-66708b)]">{tr ? "Kira, maaş, fatura gibi talimatların burada görünür." : "Rent, salary, bills and similar instructions appear here."}</p> : <ul className="grid gap-2">{regular.map(renderItem)}</ul>}
     </>}
 
     <Dialog open={form !== null} onOpenChange={(open) => { if (!open) setForm(null); }}>
-      <DialogContent><DialogHeader><DialogTitle>{form?.id ? (tr ? "Düzenle" : "Edit") : form?.kind === "subscription" ? (tr ? "Yeni abonelik" : "New subscription") : (tr ? "Yeni tekrarlayan işlem" : "New recurring item")}</DialogTitle><DialogDescription>{tr ? "Geçmiş tarihler için işlem oluşturulmaz; ilk kayıt bugünden sonraki ilk tarihte yapılır." : "No transactions are created for past dates; the first one is recorded on the first date from today on."}</DialogDescription></DialogHeader>
+      <DialogContent><DialogHeader><DialogTitle>{form?.id ? (tr ? "Düzenle" : "Edit") : form?.kind === "subscription" ? (tr ? "Yeni abonelik" : "New subscription") : (tr ? "Yeni talimat" : "New instruction")}</DialogTitle><DialogDescription>{tr ? "Geçmiş tarihler için işlem oluşturulmaz; ilk kayıt bugünden sonraki ilk tarihte yapılır." : "No transactions are created for past dates; the first one is recorded on the first date from today on."}</DialogDescription></DialogHeader>
         {form && <form className="grid gap-4 sm:grid-cols-2" onSubmit={(event) => void submit(event)}>
           {form.kind === "regular" && <fieldset className="transaction-type-picker sm:col-span-2"><legend>{tr ? "Tür" : "Type"}</legend>{(["expense", "income"] as const).map((value) => <button type="button" key={value} aria-pressed={form.type === value} className={`${value} ${form.type === value ? "active" : ""}`} onClick={() => setForm({ ...form, type: value, category: form.type === value ? form.category : "" })}><i>{value === "expense" ? <Minus /> : <Plus />}</i><span><strong>{value === "expense" ? (tr ? "Gider" : "Expense") : (tr ? "Gelir" : "Income")}</strong><small>{value === "expense" ? (tr ? "Kira, fatura…" : "Rent, bill…") : (tr ? "Maaş, kira geliri…" : "Salary, rent income…")}</small></span></button>)}</fieldset>}
           <label className="grid gap-1 text-sm font-semibold sm:col-span-2"><span className="field-label">{tr ? "Ad" : "Name"}<RequiredMark /></span><Input value={form.title} minLength={2} maxLength={120} required onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder={form.kind === "subscription" ? "Netflix" : (tr ? "Örn. Ev kirası" : "E.g. Apartment rent")} /></label>

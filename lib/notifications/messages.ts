@@ -59,7 +59,7 @@ export function renderNotification(kind: NotificationKind, data: NotificationDat
           ? (tr ? `${data.title} geliri ${when}` : `${data.title} income is due ${when}`)
           : (tr ? `${data.title} ödemesi ${when}` : `${data.title} payment is due ${when}`),
         body: tr
-          ? `${money(data.amount, data.currency, language)} · ${dateText(data.dueDate, language)}. Ödendiğinde Tekrarlayanlar'dan işaretle.`
+          ? `${money(data.amount, data.currency, language)} · ${dateText(data.dueDate, language)}. Açılan hatırlatmadan “Ödedim” ya da “Bu sefer ödemedim” seç.`
           : `${money(data.amount, data.currency, language)} · ${dateText(data.dueDate, language)}. Mark it on the Recurring page once it is done.`,
       };
     }
