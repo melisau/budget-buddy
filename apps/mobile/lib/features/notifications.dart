@@ -63,8 +63,8 @@ import 'data.dart';
             ? "${data['title']} geliri $when"
             : "${data['title']} ödemesi $when",
         body:
-            '${amount(data['amount'])} · ${data['dueDate'] ?? ''}. Ödendiğinde web sitesindeki hatırlatmadan işaretle.',
-        route: '/more/recurring',
+            "${amount(data['amount'])} · ${data['dueDate'] ?? ''}. Genel Bakış'taki hatırlatmadan “Ödedim” ya da “Bu sefer ödemedim” seç.",
+        route: '/overview',
       );
     case 'family_invite':
       return (
