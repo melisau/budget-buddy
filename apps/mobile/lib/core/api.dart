@@ -76,6 +76,65 @@ class Api {
   Future<Map<String, dynamic>> put(String path, Map<String, dynamic> body) =>
       _send('PUT', path, body);
 
+  /// Sends one file as multipart/form-data under the field name `file`.
+  Future<Map<String, dynamic>> upload(
+    String path,
+    List<int> bytes, {
+    required String filename,
+    required String contentType,
+  }) async {
+    final auth = Supabase.instance.client.auth;
+    var session = auth.currentSession;
+    if (session == null) throw ApiException('Oturum açmanız gerekiyor.', 401);
+    try {
+      if (session.isExpired) {
+        session = (await auth.refreshSession()).session ?? session;
+      }
+      final boundary = 'bb${DateTime.now().microsecondsSinceEpoch}';
+      final head = utf8.encode(
+        '--$boundary\r\nContent-Disposition: form-data; name="file"; filename="$filename"\r\nContent-Type: $contentType\r\n\r\n',
+      );
+      final tail = utf8.encode('\r\n--$boundary--\r\n');
+      final request = await _client.openUrl(
+        'POST',
+        Uri.parse('${AppConfig.apiUrl}/api/$path'),
+      );
+      request.headers.set(
+        HttpHeaders.authorizationHeader,
+        'Bearer ${session.accessToken}',
+      );
+      request.headers.set(HttpHeaders.acceptHeader, 'application/json');
+      request.headers.set(
+        HttpHeaders.contentTypeHeader,
+        'multipart/form-data; boundary=$boundary',
+      );
+      request.contentLength = head.length + bytes.length + tail.length;
+      request
+        ..add(head)
+        ..add(bytes)
+        ..add(tail);
+      final response = await request.close().timeout(
+        const Duration(seconds: 60),
+      );
+      final text = await response.transform(utf8.decoder).join();
+      if (response.statusCode >= 400) {
+        throw ApiException(
+          response.statusCode == 400
+              ? 'JPG, PNG veya WebP biçiminde, en fazla 2 MB bir görsel seç.'
+              : _messageFor(response.statusCode),
+          response.statusCode,
+        );
+      }
+      return text.isEmpty
+          ? <String, dynamic>{}
+          : jsonDecode(text) as Map<String, dynamic>;
+    } on SocketException {
+      throw ApiException('İnternet bağlantısı yok. Lütfen tekrar deneyin.');
+    } on TimeoutException {
+      throw ApiException('Sunucu yanıt vermedi. Lütfen tekrar deneyin.');
+    }
+  }
+
   Future<Map<String, dynamic>> delete(
     String path, [
     Map<String, dynamic>? body,
