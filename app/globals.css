@@ -362,3 +362,6 @@ body[data-scroll-locked] { margin-right: 0 !important; padding-right: 0 !importa
 .view-settings-dialog .view-settings-fields { padding: 0; }
 .view-settings-dialog [data-slot=dialog-footer] button { min-height: 44px; }
 .field-label { display: inline; }
+
+.brand-badge { display: inline-grid; place-items: center; flex-shrink: 0; border-radius: 999px; color: #fff; font-weight: 800; line-height: 1; }
+.recurring-reminder-dialog .reminder-amount { font-size: 1.6rem; font-weight: 800; }

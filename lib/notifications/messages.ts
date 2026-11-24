@@ -5,7 +5,7 @@ import { categoryDisplayName } from "@/lib/finance/category-names";
 import type { NotificationData, NotificationKind } from "@/lib/notifications/rules";
 
 export type Language = "tr" | "en";
-export type RenderedNotification = { title: string; body: string; href: "/budgets" | "/goals" | "/family" };
+export type RenderedNotification = { title: string; body: string; href: "/budgets" | "/goals" | "/family" | "/recurring" };
 
 function money(value: unknown, currency: unknown, language: Language) {
   const code = typeof currency === "string" && /^[A-Z]{3}$/.test(currency) ? currency : "TRY";
@@ -47,6 +47,20 @@ export function renderNotification(kind: NotificationKind, data: NotificationDat
         body: tr
           ? `Hedefe ${money(data.remaining, data.currency, language)} kaldı (son tarih ${dateText(data.deadline, language)}).`
           : `${money(data.remaining, data.currency, language)} left to reach it (deadline ${dateText(data.deadline, language)}).`,
+      };
+    }
+    case "recurring_due": {
+      const days = Number(data.daysLeft);
+      const when = days <= 0 ? (tr ? "bugün" : "today") : days === 1 ? (tr ? "yarın" : "tomorrow") : tr ? `${days} gün sonra` : `in ${days} days`;
+      const income = data.type === "income";
+      return {
+        href: "/recurring",
+        title: income
+          ? (tr ? `${data.title} geliri ${when}` : `${data.title} income is due ${when}`)
+          : (tr ? `${data.title} ödemesi ${when}` : `${data.title} payment is due ${when}`),
+        body: tr
+          ? `${money(data.amount, data.currency, language)} · ${dateText(data.dueDate, language)}. Ödendiğinde Tekrarlayanlar'dan işaretle.`
+          : `${money(data.amount, data.currency, language)} · ${dateText(data.dueDate, language)}. Mark it on the Recurring page once it is done.`,
       };
     }
     case "family_invite":
