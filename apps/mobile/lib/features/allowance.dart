@@ -22,11 +22,11 @@ class AllowanceScreen extends ConsumerWidget {
     Map<String, dynamic>? plan,
   ) => showFormSheet(
     context,
-    title: plan == null ? 'Harçlık planı oluştur' : 'Harçlık planını düzenle',
+    title: plan == null ? 'Gelir planı oluştur' : 'Gelir planını düzenle',
     fields: [
       FieldSpec(
         'monthlyAmount',
-        'Aylık harçlık',
+        'Aylık gelir',
         kind: FieldKind.amount,
         initial: plan?['monthly_amount'],
       ),
@@ -55,14 +55,14 @@ class AllowanceScreen extends ConsumerWidget {
         ref.watch(pageProvider('account')).value?['currency']?.toString() ??
         'TRY';
     return ApiPage(
-      title: 'Harçlık Planı',
+      title: 'Gelir Planı',
       path: _path,
       builder: (context, ref, d) {
         final plan = (d['plan'] as Map?)?.cast<String, dynamic>();
         if (plan == null) {
           return [
             const EmptyNote(
-              'Henüz harçlık planın yok. Aylık harçlığını ve ne kadarını biriktirmek istediğini belirle.',
+              'Henüz gelir planın yok. Aylık gelirini ve ne kadarını biriktirmek istediğini belirle.',
             ),
             const Gap(),
             FilledButton.icon(
@@ -82,7 +82,7 @@ class AllowanceScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Aylık harçlık', style: TextStyle(color: context.muted)),
+                  Text('Aylık gelir', style: TextStyle(color: context.muted)),
                   Text(
                     money(monthly, currency),
                     style: TextStyle(
