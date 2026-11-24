@@ -90,3 +90,43 @@ export function daysUntil(date: string, today: string): number {
 
 /** Popular subscriptions offered as one-tap presets. */
 export const subscriptionPresets = ["Spotify", "Netflix", "YouTube Premium", "Disney+", "Amazon Prime", "Apple iCloud", "Claude", "ChatGPT", "Google One", "Exxen"] as const;
+
+/** Reminder choices: days before the payment date. `null` means no reminder (created automatically). */
+export const reminderOptions = [0, 1, 3, 7] as const;
+export type ReminderDays = (typeof reminderOptions)[number];
+
+export function parseReminderDays(value: unknown): ReminderDays | null {
+  const days = typeof value === "string" && value !== "" ? Number(value) : value;
+  return reminderOptions.find((option) => option === days) ?? null;
+}
+
+/** True once the reminder window for `nextDate` has opened (and stays true until the payment is settled). */
+export function reminderIsDue(nextDate: string, reminderDays: number | null, today: string): boolean {
+  return reminderDays !== null && daysUntil(nextDate, today) <= reminderDays;
+}
+
+/** After the payment on `date` is settled: the following date, and whether the schedule is over. */
+export function afterSettling(schedule: Omit<RecurringSchedule, "nextDate">, date: string): { nextDate: string; finished: boolean } {
+  const nextDate = nextOccurrenceAfter(schedule.startDate, schedule.frequency, date);
+  return { nextDate, finished: schedule.endDate !== null && nextDate > schedule.endDate };
+}
+
+/** Brand color and short mark for the popular subscription presets. */
+export const presetBrands: Record<(typeof subscriptionPresets)[number], { color: string; mark: string }> = {
+  Spotify: { color: "#1DB954", mark: "S" },
+  Netflix: { color: "#E50914", mark: "N" },
+  "YouTube Premium": { color: "#FF0033", mark: "▶" },
+  "Disney+": { color: "#113CCF", mark: "D+" },
+  "Amazon Prime": { color: "#00A8E1", mark: "a" },
+  "Apple iCloud": { color: "#3693F3", mark: "☁" },
+  Claude: { color: "#D97757", mark: "C" },
+  ChatGPT: { color: "#10A37F", mark: "G" },
+  "Google One": { color: "#4285F4", mark: "1" },
+  Exxen: { color: "#F5B700", mark: "E" },
+};
+
+/** The brand for a recurring item's title, when it matches a preset (case-insensitive). */
+export function brandFor(title: string) {
+  const key = subscriptionPresets.find((preset) => preset.toLowerCase() === title.trim().toLowerCase());
+  return key ? { name: key, ...presetBrands[key] } : null;
+}

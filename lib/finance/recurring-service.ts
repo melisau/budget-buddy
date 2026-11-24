@@ -3,7 +3,7 @@ import type { AppUser } from "@/lib/auth/authorization";
 import { createDailyGate } from "@/lib/finance/daily-gate";
 import { ensureDefaultAccount } from "@/lib/finance/default-account";
 import { ensureDefaultCategories } from "@/lib/finance/default-categories";
-import { dueOccurrences, monthlyEquivalent, nextOccurrenceAfter, type Frequency } from "@/lib/finance/recurring";
+import { afterSettling, dueOccurrences, monthlyEquivalent, nextOccurrenceAfter, reminderIsDue, type Frequency, type ReminderDays } from "@/lib/finance/recurring";
 import { todayInIstanbul } from "@/lib/notifications/rules";
 import { isMissingSchemaError } from "@/lib/supabase/schema-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -18,12 +18,24 @@ export type RecurringInput = {
   frequency: Frequency;
   startDate: string;
   endDate?: string;
+  /** Days before the date to remind; null creates the transaction automatically. */
+  reminderDays?: ReminderDays | null;
 };
 
 type Joined = { id: string; name: string } | { id: string; name: string }[] | null;
 const first = (value: Joined) => (Array.isArray(value) ? value[0] ?? null : value);
 
-const columns = "id, kind, type, title, amount, frequency, start_date, next_date, end_date, active, category:categories(id, name), account:accounts(id, name)";
+const baseColumns = "id, kind, type, title, amount, frequency, start_date, next_date, end_date, active, category:categories(id, name), account:accounts(id, name)";
+const columns = "id, kind, type, title, amount, frequency, start_date, next_date, end_date, active, reminder_days, category:categories(id, name), account:accounts(id, name)";
+
+/**
+ * Runs a query that reads reminder_days, and again without it while migration
+ * 0030 is not applied yet, so the app keeps working in between.
+ */
+async function withReminderFallback<T extends { error: unknown }>(run: (withReminder: boolean) => PromiseLike<T>): Promise<T> {
+  const result = await run(true);
+  return isMissingSchemaError(result.error) ? run(false) : result;
+}
 
 function toClient(row: Record<string, unknown>) {
   const category = first(row.category as Joined);
@@ -42,6 +54,7 @@ function toClient(row: Record<string, unknown>) {
     nextDate: String(row.next_date),
     endDate: typeof row.end_date === "string" ? row.end_date : null,
     active: row.active === true,
+    reminderDays: typeof row.reminder_days === "number" ? row.reminder_days : null,
     categoryId: category?.id ?? "",
     categoryName: category?.name ?? "",
     accountId: account?.id ?? "",
@@ -80,9 +93,13 @@ function yesterday(today: string) {
 export async function materializeDueRecurring(user: AppUser): Promise<number> {
   const supabase = getSupabaseServerClient();
   const today = todayInIstanbul();
-  const due = await supabase.from("recurring_items")
-    .select("id, kind, type, title, amount, category_id, account_id, frequency, start_date, next_date, end_date")
-    .eq("user_id", user.id).eq("active", true).lte("next_date", today);
+  // Items with a reminder wait for the user to mark the payment as paid or skipped.
+  const due = await withReminderFallback((withReminder) => {
+    const query = supabase.from("recurring_items")
+      .select("id, kind, type, title, amount, category_id, account_id, frequency, start_date, next_date, end_date")
+      .eq("user_id", user.id).eq("active", true).lte("next_date", today);
+    return withReminder ? query.is("reminder_days", null) : query;
+  });
   if (due.error) {
     if (isMissingSchemaError(due.error)) return 0;
     throw due.error;
@@ -143,7 +160,7 @@ export async function listRecurring(user: AppUser) {
     console.error("[recurring] could not create due transactions", error instanceof Error ? error.message : error);
   }
   const [items, categories, accounts, profile] = await Promise.all([
-    supabase.from("recurring_items").select(columns).eq("user_id", user.id).order("next_date"),
+    withReminderFallback((withReminder) => supabase.from("recurring_items").select(withReminder ? columns : baseColumns).eq("user_id", user.id).order("next_date")),
     supabase.from("categories").select("id, name, type").eq("user_id", user.id).order("name"),
     supabase.from("accounts").select("id, name").eq("user_id", user.id).is("archived_at", null).order("name"),
     supabase.from("users").select("currency").eq("id", user.id).single(),
@@ -152,7 +169,7 @@ export async function listRecurring(user: AppUser) {
   for (const result of [items, categories, accounts, profile]) if (result.error) throw result.error;
   return {
     available: true as const,
-    items: (items.data ?? []).map((row) => toClient(row as Record<string, unknown>)),
+    items: (items.data ?? []).map((row) => toClient(row as unknown as Record<string, unknown>)),
     categories: categories.data ?? [],
     accounts: accounts.data ?? [],
     currency: (profile.data?.currency as string | undefined) ?? "TRY",
@@ -166,6 +183,7 @@ export async function createRecurring(user: AppUser, input: RecurringInput) {
     user_id: user.id, kind: input.kind, type: input.type, title: input.title, amount: input.amount,
     category_id: input.categoryId, account_id: input.accountId ?? null, frequency: input.frequency,
     start_date: input.startDate, next_date: firstNextDate(input, today), end_date: input.endDate ?? null,
+    reminder_days: input.reminderDays ?? null,
   }).select(columns).single();
   if (error) throw error;
   dailyCheck.forget(user.id);
@@ -180,6 +198,7 @@ export async function updateRecurring(user: AppUser, id: string, input: Recurrin
     kind: input.kind, type: input.type, title: input.title, amount: input.amount,
     category_id: input.categoryId, account_id: input.accountId ?? null, frequency: input.frequency,
     start_date: input.startDate, next_date: firstNextDate(input, today), end_date: input.endDate ?? null,
+    reminder_days: input.reminderDays ?? null,
     updated_at: new Date().toISOString(),
   }).eq("id", id).eq("user_id", user.id).select(columns).maybeSingle();
   if (error) throw error;
@@ -207,4 +226,62 @@ export async function deleteRecurring(user: AppUser, id: string) {
   const { error, count } = await getSupabaseServerClient().from("recurring_items").delete({ count: "exact" }).eq("id", id).eq("user_id", user.id);
   if (error) throw error;
   return (count ?? 0) > 0;
+}
+
+export type DueReminder = ReturnType<typeof toClient> & { currency: string };
+
+/** Payments whose reminder window is open and that the user has not marked yet, oldest first. */
+export async function listDueReminders(user: AppUser): Promise<DueReminder[]> {
+  const supabase = getSupabaseServerClient();
+  const today = todayInIstanbul();
+  const [items, profile] = await Promise.all([
+    supabase.from("recurring_items").select(columns).eq("user_id", user.id).eq("active", true)
+      .not("reminder_days", "is", null).lte("next_date", addDaysTo(today, 7)).order("next_date"),
+    supabase.from("users").select("currency").eq("id", user.id).single(),
+  ]);
+  if (isMissingSchemaError(items.error)) return [];
+  if (items.error) throw items.error;
+  if (profile.error) throw profile.error;
+  const currency = (profile.data?.currency as string | undefined) ?? "TRY";
+  return (items.data ?? [])
+    .map((row) => toClient(row as Record<string, unknown>))
+    .filter((item) => reminderIsDue(item.nextDate, item.reminderDays, today))
+    .map((item) => ({ ...item, currency }));
+}
+
+/**
+ * Marks the payment due on `date` as paid (records the transaction) or skipped,
+ * and moves the item to its next date. `date` must be the item's current next
+ * date, so a repeated or stale click cannot settle a payment twice.
+ * Returns false when the item or that payment is not found.
+ */
+export async function settleRecurring(user: AppUser, id: string, date: string, paid: boolean): Promise<boolean> {
+  const supabase = getSupabaseServerClient();
+  const found = await supabase.from("recurring_items")
+    .select("id, type, title, amount, category_id, account_id, frequency, start_date, next_date, end_date, active")
+    .eq("id", id).eq("user_id", user.id).maybeSingle();
+  if (found.error) throw found.error;
+  const item = found.data;
+  if (!item || !item.active || item.next_date !== date) return false;
+  if (paid) {
+    const accountId = item.account_id ?? await ensureDefaultAccount(user.id);
+    const { error } = await supabase.from("transactions").upsert({
+      user_id: user.id, owner_user_id: user.id, created_by_user_id: user.id,
+      account_id: accountId, category_id: item.category_id, type: item.type,
+      amount: item.amount, title: item.title, transaction_date: date, recurring_item_id: item.id,
+    }, { onConflict: "recurring_item_id,transaction_date", ignoreDuplicates: true });
+    if (error) throw error;
+  }
+  const next = afterSettling({ startDate: item.start_date, frequency: item.frequency as Frequency, endDate: item.end_date }, date);
+  const { error, count } = await supabase.from("recurring_items")
+    .update({ next_date: next.nextDate, active: !next.finished, updated_at: new Date().toISOString() }, { count: "exact" })
+    .eq("id", id).eq("user_id", user.id).eq("next_date", date);
+  if (error) throw error;
+  return (count ?? 0) > 0;
+}
+
+function addDaysTo(date: string, days: number) {
+  const value = new Date(`${date}T00:00:00Z`);
+  value.setUTCDate(value.getUTCDate() + days);
+  return value.toISOString().slice(0, 10);
 }

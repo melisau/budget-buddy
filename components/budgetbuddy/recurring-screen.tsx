@@ -8,17 +8,18 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { LanguageContext } from "@/components/providers/language-provider";
 import { categoryDisplayName } from "@/lib/finance/category-names";
-import { daysUntil, subscriptionPresets, type Frequency } from "@/lib/finance/recurring";
+import { daysUntil, reminderOptions, subscriptionPresets, type Frequency } from "@/lib/finance/recurring";
+import { BrandBadge } from "@/components/budgetbuddy/brand-badge";
 import { RequiredMark } from "@/components/ui/required-mark";
 
 type Item = {
   id: string; kind: "regular" | "subscription"; type: "income" | "expense"; title: string; amount: number; frequency: Frequency;
-  monthlyAmount: number; startDate: string; nextDate: string; endDate: string | null; active: boolean;
+  monthlyAmount: number; startDate: string; nextDate: string; endDate: string | null; active: boolean; reminderDays: number | null;
   categoryId: string; categoryName: string; accountId: string; accountName: string;
 };
 type Option = { id: string; name: string; type?: "income" | "expense" };
 type Data = { available: boolean; items: Item[]; categories: Option[]; accounts: Option[]; currency: string };
-type Form = { id: string | null; kind: Item["kind"]; type: Item["type"]; title: string; amount: string; category: string; account: string; frequency: Frequency; startDate: string; endDate: string };
+type Form = { id: string | null; kind: Item["kind"]; type: Item["type"]; title: string; amount: string; category: string; account: string; frequency: Frequency; startDate: string; endDate: string; reminderDays: string };
 
 const selectClass = "h-9 rounded-md border border-[var(--c-s-dfe3ed)] bg-[var(--c-s-ffffff)] px-3";
 const frequencyLabels: Record<Frequency, { tr: string; en: string }> = {
@@ -64,11 +65,11 @@ export function RecurringScreen() {
     const categories = (data?.categories ?? []).filter((category) => category.type === "expense");
     const preferred = kind === "subscription" ? categories.find((category) => category.name === "Subscriptions") : undefined;
     setFormError("");
-    setForm({ id: null, kind, type: "expense", title, amount: "", category: preferred?.id ?? "", account: "", frequency: "monthly", startDate: todayLocal(), endDate: "" });
+    setForm({ id: null, kind, type: "expense", title, amount: "", category: preferred?.id ?? "", account: "", frequency: "monthly", startDate: todayLocal(), endDate: "", reminderDays: "" });
   }
   function openEdit(item: Item) {
     setFormError("");
-    setForm({ id: item.id, kind: item.kind, type: item.type, title: item.title, amount: String(item.amount), category: item.categoryId, account: item.accountId, frequency: item.frequency, startDate: item.startDate, endDate: item.endDate ?? "" });
+    setForm({ id: item.id, kind: item.kind, type: item.type, title: item.title, amount: String(item.amount), category: item.categoryId, account: item.accountId, frequency: item.frequency, startDate: item.startDate, endDate: item.endDate ?? "", reminderDays: item.reminderDays === null ? "" : String(item.reminderDays) });
   }
 
   async function send(url: string, method: "POST" | "PATCH" | "DELETE", body: Record<string, unknown> | undefined, success: string) {
@@ -85,7 +86,7 @@ export function RecurringScreen() {
     event.preventDefault();
     if (!form) return;
     if (!form.category) { setFormError(tr ? "Bir kategori seç." : "Choose a category."); return; }
-    const body = { kind: form.kind, type: form.type, title: form.title, amount: form.amount, category: form.category, account: form.account, frequency: form.frequency, startDate: form.startDate, endDate: form.endDate };
+    const body = { kind: form.kind, type: form.type, title: form.title, amount: form.amount, category: form.category, account: form.account, frequency: form.frequency, startDate: form.startDate, endDate: form.endDate, reminderDays: form.reminderDays };
     const done = form.id
       ? await send(`/api/recurring/${form.id}`, "PATCH", body, tr ? "Güncellendi." : "Updated.")
       : await send("/api/recurring", "POST", body, tr ? "Eklendi." : "Added.");
@@ -99,12 +100,13 @@ export function RecurringScreen() {
     const soon = item.active && item.kind === "subscription" && days >= 0 && days <= 7;
     return <li key={item.id} className="panel flex flex-wrap items-center gap-3" style={{ opacity: item.active ? 1 : 0.6 }}>
       <div className="min-w-0 flex-1">
-        <b className="block truncate">{item.title}</b>
+        <b className="flex items-center gap-2 truncate"><BrandBadge name={item.title} />{item.title}</b>
         <small className="text-[var(--c-t-66708b)]">
           {tr ? frequencyLabels[item.frequency].tr : frequencyLabels[item.frequency].en}
           {item.categoryName && ` · ${categoryDisplayName(item.categoryName, language)}`}
           {item.active ? ` · ${tr ? "Sonraki" : "Next"}: ${dateText(item.nextDate)}` : ` · ${tr ? "Duraklatıldı" : "Paused"}`}
         </small>
+        {item.reminderDays !== null && <small className="block text-[var(--c-t-66708b)]">🔔 {reminderLabel(item.reminderDays, tr)}</small>}
         {soon && <small className="block font-semibold text-[var(--c-t-b45309)]">{days === 0 ? (tr ? "Bugün yenileniyor" : "Renews today") : tr ? `${days} gün sonra yenileniyor` : `Renews in ${days} days`}</small>}
       </div>
       <b className={item.type === "income" ? "text-[var(--c-t-15803d)]" : ""}>{item.type === "income" ? "+" : "−"}{money(item.amount)}</b>
@@ -125,7 +127,7 @@ export function RecurringScreen() {
       {items.length === 0 && <div className="panel empty-accounts"><Repeat /><h3>{tr ? "Henüz tekrarlayan işlem yok" : "No recurring items yet"}</h3><p>{tr ? "Kira, maaş ya da Netflix gibi bir abonelik ekle; tarihi gelince işlem olarak kaydedilir." : "Add rent, a salary or a subscription like Netflix; it is recorded as a transaction when it is due."}</p></div>}
 
       <h3 className="mt-4 text-base font-semibold">{tr ? "Abonelikler" : "Subscriptions"}{subscriptions.length > 0 && <small className="ml-2 font-normal text-[var(--c-t-66708b)]">{tr ? "Aylık toplam" : "Monthly total"}: {money(subscriptionTotal)} · {tr ? "Yıllık" : "Yearly"}: {money(subscriptionTotal * 12)}</small>}</h3>
-      <div className="my-2 flex flex-wrap gap-2" aria-label={tr ? "Hızlı ekle" : "Quick add"}>{subscriptionPresets.map((name) => <Button key={name} variant="outline" size="sm" onClick={() => openNew("subscription", name)}>{name}</Button>)}</div>
+      <div className="my-2 flex flex-wrap gap-2" aria-label={tr ? "Hızlı ekle" : "Quick add"}>{subscriptionPresets.map((name) => <Button key={name} variant="outline" size="sm" className="gap-2" onClick={() => openNew("subscription", name)}><BrandBadge name={name} size={18} />{name}</Button>)}</div>
       {subscriptions.length > 0 && <ul className="grid gap-2">{subscriptions.map(renderItem)}</ul>}
 
       <h3 className="mt-6 text-base font-semibold">{tr ? "Düzenli gelir ve giderler" : "Regular income and expenses"}</h3>
@@ -141,6 +143,7 @@ export function RecurringScreen() {
           <label className="grid gap-1 text-sm font-semibold"><span className="field-label">{tr ? "Ne sıklıkla?" : "How often?"}<RequiredMark /></span><select className={selectClass} value={form.frequency} onChange={(event) => setForm({ ...form, frequency: event.target.value as Frequency })}>{(Object.keys(frequencyLabels) as Frequency[]).map((value) => <option key={value} value={value}>{tr ? frequencyLabels[value].tr : frequencyLabels[value].en}</option>)}</select></label>
           <label className="grid gap-1 text-sm font-semibold"><span className="field-label">{tr ? "İlk / sonraki ödeme tarihi" : "First / next payment date"}<RequiredMark /></span><Input type="date" required value={form.startDate} onChange={(event) => setForm({ ...form, startDate: event.target.value })} /></label>
           <label className="grid gap-1 text-sm font-semibold">{tr ? "Bitiş tarihi (isteğe bağlı)" : "End date (optional)"}<Input type="date" value={form.endDate} min={form.startDate} onChange={(event) => setForm({ ...form, endDate: event.target.value })} /></label>
+          <label className="grid gap-1 text-sm font-semibold sm:col-span-2">{tr ? "Hatırlatma" : "Reminder"}<select className={selectClass} value={form.reminderDays} onChange={(event) => setForm({ ...form, reminderDays: event.target.value })}><option value="">{tr ? "Hatırlatma yok (otomatik kaydedilir)" : "No reminder (recorded automatically)"}</option>{reminderOptions.map((days) => <option key={days} value={days}>{reminderLabel(days, tr)}</option>)}</select>{form.reminderDays !== "" && <small className="font-normal text-[var(--c-t-66708b)]">{tr ? "Ödeme günü gelince otomatik kaydedilmez; bildirimden “Ödedim” veya “Bu sefer ödemedim” seçersin." : "It is not recorded automatically; you mark it as paid or skipped from the reminder."}</small>}</label>
           <label className="grid gap-1 text-sm font-semibold"><span className="field-label">{tr ? "Kategori" : "Category"}<RequiredMark /></span><select className={selectClass} value={form.category} required onChange={(event) => setForm({ ...form, category: event.target.value })}><option value="">{tr ? "Seç…" : "Choose…"}</option>{formCategories.map((category) => <option key={category.id} value={category.id}>{categoryDisplayName(category.name, language)}</option>)}</select></label>
           <label className="grid gap-1 text-sm font-semibold">{tr ? "Hesap (isteğe bağlı)" : "Account (optional)"}<select className={selectClass} value={form.account} onChange={(event) => setForm({ ...form, account: event.target.value })}><option value="">{tr ? "Hesap yok" : "No account"}</option>{(data?.accounts ?? []).map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}</select></label>
           {formError && <p role="alert" className="form-error sm:col-span-2">{formError}</p>}
@@ -149,4 +152,10 @@ export function RecurringScreen() {
       </DialogContent>
     </Dialog>
   </section>;
+}
+
+function reminderLabel(days: number, tr: boolean) {
+  if (days === 0) return tr ? "Ödeme günü hatırlat" : "Remind on the day";
+  if (days === 7) return tr ? "1 hafta önce hatırlat" : "Remind 1 week before";
+  return tr ? `${days} gün önce hatırlat` : `Remind ${days} day${days === 1 ? "" : "s"} before`;
 }
