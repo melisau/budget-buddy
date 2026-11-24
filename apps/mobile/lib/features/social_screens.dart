@@ -95,10 +95,27 @@ class FamilyScreen extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
                   child: g['role'] == 'owner'
-                      ? TextButton.icon(
-                          onPressed: () => _invite(context, ref, '${g['id']}'),
-                          icon: const Icon(Icons.person_add_alt_1_outlined),
-                          label: const Text('Üye davet et'),
+                      ? Wrap(
+                          spacing: 4,
+                          children: [
+                            TextButton.icon(
+                              onPressed: () => _invite(context, ref, '${g['id']}'),
+                              icon: const Icon(Icons.person_add_alt_1_outlined),
+                              label: const Text('Üye davet et'),
+                            ),
+                            if (transferCandidates(g).isNotEmpty)
+                              TextButton.icon(
+                                onPressed: () => _transfer(context, ref, g),
+                                icon: const Icon(Icons.swap_horiz),
+                                label: const Text('Yöneticiliği devret'),
+                              ),
+                            TextButton.icon(
+                              onPressed: () => _deleteGroup(context, ref, g),
+                              style: TextButton.styleFrom(foregroundColor: expense),
+                              icon: const Icon(Icons.delete_outline),
+                              label: const Text('Grubu sil'),
+                            ),
+                          ],
                         )
                       : TextButton.icon(
                           onPressed: () => _leave(context, ref, g),
@@ -211,6 +228,50 @@ class FamilyScreen extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  /// Accepted members other than the owner, who can take over the group.
+  static List<Map<String, dynamic>> transferCandidates(Map<String, dynamic> g) =>
+      rows(g['members'])
+          .where((m) => m['role'] != 'owner' && m['invitationStatus'] == 'accepted' && m['userId'] != null)
+          .toList();
+
+  static void _transfer(BuildContext context, WidgetRef ref, Map<String, dynamic> g) {
+    final candidates = transferCandidates(g);
+    showFormSheet(
+      context,
+      title: 'Yöneticiliği devret',
+      fields: [
+        FieldSpec(
+          'userId',
+          'Yeni yönetici',
+          kind: FieldKind.choice,
+          options: (_) => {for (final m in candidates) '${m['userId']}': '${m['name'] ?? m['email'] ?? 'Üye'}'},
+        ),
+      ],
+      onSubmit: (v) async {
+        final name = candidates.firstWhere((m) => '${m['userId']}' == v['userId'])['name'];
+        final confirmed = await _confirm(
+          context,
+          title: 'Yöneticilik devredilsin mi?',
+          message: '${name ?? 'Seçilen üye'} grubun yöneticisi olacak; sen üye olarak kalırsın. Bunu yalnızca yeni yönetici geri alabilir.',
+          action: 'Devret',
+        );
+        if (!confirmed) return;
+        await ref.read(apiProvider).patch('family/${g['id']}', {'transferOwnershipTo': v['userId']});
+        ref.invalidate(pageProvider(_path));
+      },
+    );
+  }
+
+  static Future<void> _deleteGroup(BuildContext context, WidgetRef ref, Map<String, dynamic> g) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => _DeleteGroupDialog(name: '${g['name']}'),
+    );
+    if (confirmed == true && context.mounted) {
+      await runAction(context, ref, _path, (api) => api.delete('family/${g['id']}'));
+    }
   }
 
   static Future<void> _leave(
@@ -630,4 +691,63 @@ class WishlistsScreen extends ConsumerWidget {
       ];
     },
   );
+}
+
+/// Deleting a family group cannot be undone, so the group's name must be typed.
+class _DeleteGroupDialog extends StatefulWidget {
+  const _DeleteGroupDialog({required this.name});
+  final String name;
+
+  @override
+  State<_DeleteGroupDialog> createState() => _DeleteGroupDialogState();
+}
+
+class _DeleteGroupDialogState extends State<_DeleteGroupDialog> {
+  final _input = TextEditingController();
+
+  @override
+  void dispose() {
+    _input.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ready = _input.text.trim() == widget.name.trim();
+    return AlertDialog(
+      title: const Text('Aile grubu silinsin mi?'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '“${widget.name}” grubu, ortak işlemleri, alışveriş listesi ve gruba ait dilek listeleri herkes için kalıcı olarak silinir. Bu işlem geri alınamaz.',
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _input,
+            autocorrect: false,
+            decoration: InputDecoration(
+              labelText: 'Onaylamak için grup adını yaz',
+              hintText: widget.name,
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Vazgeç'),
+        ),
+        TextButton(
+          onPressed: ready ? () => Navigator.pop(context, true) : null,
+          child: Text(
+            'Kalıcı olarak sil',
+            style: TextStyle(color: ready ? expense : context.muted),
+          ),
+        ),
+      ],
+    );
+  }
 }

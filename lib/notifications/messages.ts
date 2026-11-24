@@ -27,12 +27,26 @@ export function renderNotification(kind: NotificationKind, data: NotificationDat
   const whenText = (days: number) => days <= 0 ? L("bugün", "today", "heute") : days === 1 ? L("yarın", "tomorrow", "morgen") : L(`${days} gün sonra`, `in ${days} days`, `in ${days} Tagen`);
   switch (kind) {
     case "budget_warning":
+      if (data.scope === "total") return {
+        href: "/budgets",
+        title: tr ? `Genel aylık bütçenin %${data.usage}'ini kullandın` : `You used ${data.usage}% of your overall monthly budget`,
+        body: tr
+          ? `${money(data.spent, data.currency, language)} / ${money(data.limit, data.currency, language)} harcadın. Ay bitmeden limite yaklaşıyorsun.`
+          : `You spent ${money(data.spent, data.currency, language)} of ${money(data.limit, data.currency, language)}. You are close to this month's limit.`,
+      };
       return {
         href: "/budgets",
         title: L(`${category} bütçesinin %${data.usage}'ini kullandın`, `You used ${data.usage}% of your ${category} budget`, `Du hast ${data.usage} % deines Budgets für ${category} genutzt`),
         body: L(`${m(data.spent)} / ${m(data.limit)} harcadın. Limite yaklaşıyorsun.`, `You spent ${m(data.spent)} of ${m(data.limit)}. You are close to the limit.`, `Du hast ${m(data.spent)} von ${m(data.limit)} ausgegeben. Du näherst dich dem Limit.`),
       };
     case "budget_exceeded":
+      if (data.scope === "total") return {
+        href: "/budgets",
+        title: tr ? "Genel aylık bütçeni aştın" : "You went over your overall monthly budget",
+        body: tr
+          ? `Bu ay ${money(data.spent, data.currency, language)} harcadın; genel limitin ${money(data.limit, data.currency, language)}.`
+          : `You spent ${money(data.spent, data.currency, language)} this month; the overall limit is ${money(data.limit, data.currency, language)}.`,
+      };
       return {
         href: "/budgets",
         title: L(`${category} bütçesini aştın`, `You went over your ${category} budget`, `Du hast dein Budget für ${category} überschritten`),

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { AccessError, requireAppUser } from "@/lib/auth/authorization";
-import { sameOriginFormOrigin } from "@/lib/auth/request-origin";
+import { isTrustedApiWrite } from "@/lib/auth/request-origin";
 import { avatarMaxBytes, isAvatarIcon } from "@/lib/profile/avatar";
 import { readOwnAvatar, saveOwnAvatar } from "@/lib/profile/avatar-server";
 import { checkRateLimit } from "@/lib/security/rate-limit";
@@ -15,7 +15,7 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
-  if (!sameOriginFormOrigin(request)) return NextResponse.json({ error: "Same-origin request required." }, { status: 403 });
+  if (!isTrustedApiWrite(request)) return NextResponse.json({ error: "Same-origin request required." }, { status: 403 });
   try {
     const user = await requireAppUser();
     const body = await request.json() as { icon?: unknown };
@@ -26,7 +26,7 @@ export async function PATCH(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (!sameOriginFormOrigin(request)) return NextResponse.json({ error: "Same-origin request required." }, { status: 403 });
+  if (!isTrustedApiWrite(request)) return NextResponse.json({ error: "Same-origin request required." }, { status: 403 });
   try {
     const user = await requireAppUser();
     const limit = await checkRateLimit(`avatar-upload:${user.id}`, 10, 5 * 60 * 1000);
