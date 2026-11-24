@@ -3,7 +3,7 @@ import { captureException } from "@/lib/monitoring/sentry";
 import { digestEmail } from "@/lib/notifications/email-templates";
 import { isEmailConfigured, sendEmail } from "@/lib/notifications/email";
 import {
-  addDays, budgetNotification, emailedKinds, goalNotification, GOAL_DUE_DAYS, inviteNotification, todayInIstanbul,
+  addDays, budgetNotification, emailedKinds, goalNotification, GOAL_DUE_DAYS, inviteNotification, recurringNotification, todayInIstanbul,
   type NotificationCandidate, type NotificationData, type NotificationKind,
 } from "@/lib/notifications/rules";
 import { SITE_URL } from "@/lib/site";
@@ -30,7 +30,7 @@ export async function syncNotificationsForUser(person: Person, currencyHint?: st
     currency = profile.data.currency as string;
   }
 
-  const [budgets, goals, invites] = await Promise.all([
+  const [budgets, goals, invites, reminders] = await Promise.all([
     supabase.from("budgets").select("id, category_id, amount_limit, start_date, end_date, category:categories(name)")
       .eq("user_id", person.id).is("family_group_id", null).eq("start_date", monthStart),
     supabase.from("goals").select("id, name, target_amount, current_amount, deadline")
@@ -38,8 +38,12 @@ export async function syncNotificationsForUser(person: Person, currencyHint?: st
     person.email
       ? supabase.from("family_members").select("id, family_group_id").eq("invitation_status", "pending").ilike("invited_email", escapeLikePattern(person.email.trim().toLowerCase()))
       : Promise.resolve({ data: [], error: null }),
+    supabase.from("recurring_items").select("id, title, amount, type, next_date, reminder_days")
+      .eq("user_id", person.id).eq("active", true).not("reminder_days", "is", null).lte("next_date", addDays(today, 7)),
   ]);
   for (const result of [budgets, goals, invites]) if (result.error) throw result.error;
+  // Before migration 0030 there is no reminder_days column: no reminders yet.
+  if (reminders.error && !isMissingSchemaError(reminders.error)) throw reminders.error;
 
   const candidates: NotificationCandidate[] = [];
 
@@ -59,6 +63,11 @@ export async function syncNotificationsForUser(person: Person, currencyHint?: st
 
   for (const goal of goals.data ?? []) {
     const candidate = goalNotification({ id: goal.id, name: goal.name, targetAmount: Number(goal.target_amount), currentAmount: Number(goal.current_amount), deadline: goal.deadline }, today, currency);
+    if (candidate) candidates.push(candidate);
+  }
+
+  for (const item of reminders.error ? [] : reminders.data ?? []) {
+    const candidate = recurringNotification({ id: item.id, title: item.title, amount: Number(item.amount), type: item.type === "income" ? "income" : "expense", nextDate: item.next_date, reminderDays: item.reminder_days }, today, currency);
     if (candidate) candidates.push(candidate);
   }
 

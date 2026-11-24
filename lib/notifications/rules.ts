@@ -1,15 +1,16 @@
 // Pure rules that decide which notifications a user should have. No database,
 // no clock: callers pass the data and today's date, so this is easy to test.
+import { reminderIsDue } from "@/lib/finance/recurring";
 
 export const BUDGET_WARNING_PERCENT = 80;
 export const GOAL_DUE_DAYS = 7;
 
-export type NotificationKind = "budget_warning" | "budget_exceeded" | "goal_due" | "family_invite";
+export type NotificationKind = "budget_warning" | "budget_exceeded" | "goal_due" | "family_invite" | "recurring_due";
 export type NotificationData = Record<string, string | number>;
 export type NotificationCandidate = { kind: NotificationKind; dedupeKey: string; data: NotificationData };
 
 /** Kinds that are also e-mailed. Invitations have their own e-mail, sent when they are created. */
-export const emailedKinds: readonly NotificationKind[] = ["budget_warning", "budget_exceeded", "goal_due"];
+export const emailedKinds: readonly NotificationKind[] = ["budget_warning", "budget_exceeded", "goal_due", "recurring_due"];
 
 /** Today's date (YYYY-MM-DD) in Türkiye, where the app's users live. */
 export function todayInIstanbul(now = new Date()): string {
@@ -58,4 +59,16 @@ export function goalNotification(goal: GoalInput, today: string, currency: strin
 
 export function inviteNotification(invitationId: string, groupName: string): NotificationCandidate {
   return { kind: "family_invite", dedupeKey: `invite:${invitationId}`, data: { groupName } };
+}
+
+export type RecurringReminderInput = { id: string; title: string; amount: number; type: "income" | "expense"; nextDate: string; reminderDays: number | null };
+
+/** A recurring payment whose reminder window has opened. One per item and date. */
+export function recurringNotification(item: RecurringReminderInput, today: string, currency: string): NotificationCandidate | null {
+  if (!reminderIsDue(item.nextDate, item.reminderDays, today)) return null;
+  return {
+    kind: "recurring_due",
+    dedupeKey: `recurring:${item.id}:${item.nextDate}`,
+    data: { title: item.title, amount: item.amount, type: item.type, dueDate: item.nextDate, daysLeft: daysBetween(today, item.nextDate), currency },
+  };
 }
