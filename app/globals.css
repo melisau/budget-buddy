@@ -346,3 +346,7 @@
   .wishlist-page-head p { max-width:210px; }
   .wishlist-card { padding:18px; }
 }
+
+/* Keep the scrollbar's space reserved so opening a menu or dialog does not shift the page sideways. */
+html { scrollbar-gutter: stable; }
+body[data-scroll-locked] { margin-right: 0 !important; padding-right: 0 !important; }
