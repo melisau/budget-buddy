@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme.dart';
 import '../core/widgets.dart';
+import 'common.dart';
 import 'data.dart';
+import 'reminders.dart';
 
 class OverviewScreen extends ConsumerWidget {
   const OverviewScreen({super.key});
@@ -16,7 +18,10 @@ class OverviewScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Genel Bakış')),
       body: RefreshIndicator(
-        onRefresh: () => ref.refresh(dashboardProvider.future),
+        onRefresh: () {
+          ref.invalidate(pageProvider(remindersPath));
+          return ref.refresh(dashboardProvider.future);
+        },
         child: data.when(
           skipLoadingOnRefresh: true,
           // The previous visit's numbers appear at once; a thin bar shows the
@@ -54,6 +59,7 @@ class _Content extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 110),
       children: [
+        const DueReminders(),
         Container(
           padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
