@@ -3,6 +3,7 @@ import { fetchAllRows } from "@/lib/supabase/query";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { ensureDefaultAccount } from "@/lib/finance/default-account";
 import { ensureDefaultCategories } from "@/lib/finance/default-categories";
+import { encodeCursor, type PageQuery } from "@/lib/finance/transaction-page";
 
 export type TransactionPayload = {
   type: "income" | "expense";
@@ -65,6 +66,39 @@ export async function listTransactionData(user: AppUser) {
 
   return {
     transactions: uniqueTransactions,
+    accounts: accountsResult.data ?? [],
+    categories: categoriesResult.data ?? [],
+  };
+}
+
+type PageRow = TransactionRow & { created_at: string };
+
+/** One page of visible transactions, newest first, with the form options. */
+export async function listTransactionPage(user: AppUser, page: PageQuery) {
+  await ensureDefaultCategories(user.id);
+  const supabase = getSupabaseServerClient();
+  const [rowsResult, accountsResult, categoriesResult] = await Promise.all([
+    supabase.rpc("list_transactions_page", {
+      p_user_id: user.id,
+      p_limit: page.limit + 1,
+      p_before_date: page.cursor?.date ?? null,
+      p_before_created: page.cursor?.createdAt ?? null,
+      p_before_id: page.cursor?.id ?? null,
+      p_query: page.query,
+    }),
+    supabase.from("accounts").select("id, name").eq("user_id", user.id).is("archived_at", null).order("name"),
+    supabase.from("categories").select("id, name, type").eq("user_id", user.id).order("name"),
+  ]);
+  const failed = rowsResult.error ?? accountsResult.error ?? categoriesResult.error;
+  if (failed) throw new Error(`Unable to load transactions: ${failed.message}`);
+
+  const rows = (rowsResult.data ?? []) as PageRow[];
+  const hasMore = rows.length > page.limit;
+  const transactions = rows.slice(0, page.limit);
+  const last = transactions.at(-1);
+  return {
+    transactions,
+    nextCursor: hasMore && last ? encodeCursor({ date: last.transaction_date, createdAt: last.created_at, id: last.id }) : null,
     accounts: accountsResult.data ?? [],
     categories: categoriesResult.data ?? [],
   };

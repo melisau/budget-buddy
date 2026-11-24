@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { AccessError, requireAppUser } from "@/lib/auth/authorization";
-import { createTransaction, listTransactionData } from "@/lib/finance/transaction-data";
+import { createTransaction, listTransactionData, listTransactionPage } from "@/lib/finance/transaction-data";
+import { readPageQuery } from "@/lib/finance/transaction-page";
 import { materializeDueRecurringSafely } from "@/lib/finance/recurring-service";
 import { transactionRequestSchema } from "@/validations/transaction";
 import { checkRateLimit } from "@/lib/security/rate-limit";
@@ -42,10 +43,22 @@ function errorResponse(error: unknown) {
   return NextResponse.json({ error: "Unable to process the transaction request." }, { status: 500 });
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const user = await requireAppUser();
-    await materializeDueRecurringSafely(user);
+    // Without `limit` the full list is returned, as older app versions expect.
+    const page = readPageQuery(new URL(request.url).searchParams);
+    if (page === "invalid") return NextResponse.json({ error: "Invalid page request." }, { status: 400 });
+    if (!page?.cursor) await materializeDueRecurringSafely(user);
+    if (page) {
+      const result = await listTransactionPage(user, page);
+      return NextResponse.json({
+        transactions: result.transactions.map((transaction) => toClientTransaction(transaction as Record<string, unknown>)),
+        nextCursor: result.nextCursor,
+        accounts: result.accounts,
+        categories: result.categories,
+      });
+    }
     const data = await listTransactionData(user);
     return NextResponse.json({
       transactions: data.transactions.map((transaction) => toClientTransaction(transaction as Record<string, unknown>)),
