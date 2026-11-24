@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/theme.dart';
+import '../core/theme_mode.dart';
 import 'common.dart';
 import 'data.dart';
 
@@ -54,8 +55,30 @@ class SettingsScreen extends ConsumerWidget {
           Card(
             child: ListTile(
               leading: const CircleAvatar(child: Icon(Icons.person)),
-              title: const Text('Hesabım', style: TextStyle(fontWeight: FontWeight.w700, color: ink)),
+              title: Text('Hesabım', style: TextStyle(fontWeight: FontWeight.w700, color: context.ink)),
               subtitle: Text(auth.currentUser?.email ?? ''),
+            ),
+          ),
+          const Gap(),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Görünüm', style: TextStyle(fontWeight: FontWeight.w700, color: context.ink)),
+                  const SizedBox(height: 10),
+                  SegmentedButton<ThemeMode>(
+                    segments: const [
+                      ButtonSegment(value: ThemeMode.system, label: Text('Sistem'), icon: Icon(Icons.brightness_auto_outlined)),
+                      ButtonSegment(value: ThemeMode.light, label: Text('Açık'), icon: Icon(Icons.light_mode_outlined)),
+                      ButtonSegment(value: ThemeMode.dark, label: Text('Koyu'), icon: Icon(Icons.dark_mode_outlined)),
+                    ],
+                    selected: {ref.watch(themeModeProvider)},
+                    onSelectionChanged: (v) => ref.read(themeModeProvider.notifier).set(v.first),
+                  ),
+                ],
+              ),
             ),
           ),
           const Gap(),
@@ -165,7 +188,7 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
           onPressed: ready ? () => Navigator.pop(context, true) : null,
           child: Text(
             'Kalıcı olarak sil',
-            style: TextStyle(color: ready ? expense : muted),
+            style: TextStyle(color: ready ? expense : context.muted),
           ),
         ),
       ],
