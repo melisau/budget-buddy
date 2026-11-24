@@ -3,7 +3,7 @@ import { captureException } from "@/lib/monitoring/sentry";
 import { digestEmail } from "@/lib/notifications/email-templates";
 import { isEmailConfigured, sendEmail } from "@/lib/notifications/email";
 import {
-  addDays, budgetNotification, emailedKinds, goalNotification, GOAL_DUE_DAYS, inviteNotification, recurringNotification, todayInIstanbul,
+  addDays, budgetNotification, emailedKinds, totalBudgetNotification, goalNotification, GOAL_DUE_DAYS, inviteNotification, recurringNotification, todayInIstanbul,
   type NotificationCandidate, type NotificationData, type NotificationKind,
 } from "@/lib/notifications/rules";
 import { SITE_URL } from "@/lib/site";
@@ -30,7 +30,7 @@ export async function syncNotificationsForUser(person: Person, currencyHint?: st
     currency = profile.data.currency as string;
   }
 
-  const [budgets, goals, invites, reminders] = await Promise.all([
+  const [budgets, goals, invites, reminders, totalBudget] = await Promise.all([
     supabase.from("budgets").select("id, category_id, amount_limit, start_date, end_date, category:categories(name)")
       .eq("user_id", person.id).is("family_group_id", null).eq("start_date", monthStart),
     supabase.from("goals").select("id, name, target_amount, current_amount, deadline")
@@ -40,18 +40,28 @@ export async function syncNotificationsForUser(person: Person, currencyHint?: st
       : Promise.resolve({ data: [], error: null }),
     supabase.from("recurring_items").select("id, title, amount, type, next_date, reminder_days")
       .eq("user_id", person.id).eq("active", true).not("reminder_days", "is", null).lte("next_date", addDays(today, 7)),
+    supabase.from("monthly_total_budgets").select("id, amount_limit").eq("user_id", person.id).eq("start_date", monthStart).maybeSingle(),
   ]);
+  // Before migration 0032 there is no overall budget table: nothing to check.
+  if (totalBudget.error && !isMissingSchemaError(totalBudget.error)) throw totalBudget.error;
+  const total = totalBudget.error ? null : totalBudget.data;
   for (const result of [budgets, goals, invites]) if (result.error) throw result.error;
   // Before migration 0030 there is no reminder_days column: no reminders yet.
   if (reminders.error && !isMissingSchemaError(reminders.error)) throw reminders.error;
 
   const candidates: NotificationCandidate[] = [];
 
-  if (budgets.data?.length) {
-    const { data: expenses, error } = await fetchAllRows<{ category_id: string; amount: number | string; transaction_date: string }>(() => supabase.from("transactions").select("id, category_id, amount, transaction_date")
+  if (budgets.data?.length || total) {
+    const { data: expenses, error } = await fetchAllRows<{ category_id: string; amount: number | string; transaction_date: string; transfer_group_id: string | null }>(() => supabase.from("transactions").select("id, category_id, amount, transaction_date, transfer_group_id")
       .eq("user_id", person.id).is("family_group_id", null).eq("type", "expense").gte("transaction_date", monthStart));
     if (error) throw error;
-    for (const budget of budgets.data) {
+    if (total) {
+      // Transfers between the user's own accounts are not spending.
+      const spent = (expenses ?? []).reduce((sum, expense) => expense.transfer_group_id ? sum : sum + Number(expense.amount), 0);
+      const candidate = totalBudgetNotification({ id: total.id, limit: Number(total.amount_limit), spent, month: monthStart.slice(0, 7) }, currency);
+      if (candidate) candidates.push(candidate);
+    }
+    for (const budget of budgets.data ?? []) {
       const spent = (expenses ?? []).reduce((total, expense) =>
         expense.category_id === budget.category_id && expense.transaction_date >= budget.start_date && (!budget.end_date || expense.transaction_date <= budget.end_date)
           ? total + Number(expense.amount) : total, 0);
