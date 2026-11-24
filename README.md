@@ -34,7 +34,7 @@ The Flutter app in `apps/mobile` is the only mobile release channel. It calls th
 - Family invitations
 - Some settings
 
-Google Play test tracks now receive Flutter builds only. The Capacitor project was removed from the repository (recover it from git history if needed). The Trusted Web Activity project in `android/` receives no new releases.
+Google Play test tracks now receive Flutter builds only. The earlier Capacitor and Trusted Web Activity projects were removed from the repository (recover them from git history if needed).
 
 To run the app against the local stack from an Android emulator:
 
