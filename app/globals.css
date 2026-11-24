@@ -343,7 +343,7 @@
   .wishlists-page { gap:20px; }
   .wishlist-page-head { align-items:flex-start; flex-wrap:wrap; }
   .wishlist-page-head h2 { font-size:22px; }
-  .wishlist-page-head p { max-width:210px; }
+  .wishlist-page-head p { max-width:none; }
   .wishlist-card { padding:18px; }
 }
 
@@ -388,6 +388,26 @@ body[data-scroll-locked] { margin-right: 0 !important; padding-right: 0 !importa
 .category-chips button:hover { border-color: var(--c-s-4258d5); }
 .category-chips button.active { border-color: var(--c-s-4258d5); background: var(--c-s-eef1ff); color: var(--c-t-4258d5); }
 
+/* Wishlists: calmer card layout. */
+.wishlist-page-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.wishlist-page-head p { margin: 0; max-width: 620px; color: var(--muted-foreground); font-size: .9rem; }
+.wishlist-card { gap: 14px; }
+.wishlist-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.wishlist-card-head h3 { margin: 4px 0 0; font-size: 1.05rem; font-weight: 700; }
+.wishlist-card-head p { margin: 2px 0 0; color: var(--muted-foreground); font-size: .82rem; }
+.wishlist-meta { color: var(--c-t-4258d5); font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.wishlist-card-actions { display: flex; gap: 2px; margin: -6px -6px 0 0; }
+.wishlist-card-actions button { color: var(--muted-foreground); }
+.wishlist-surprise-chip { display: inline-flex; align-items: center; gap: 6px; width: fit-content; padding: 5px 10px; border: 1px solid var(--border); border-radius: 999px; color: var(--muted-foreground); font-size: .75rem; font-weight: 600; cursor: pointer; }
+.wishlist-surprise-chip input { position: absolute; opacity: 0; pointer-events: none; }
+.wishlist-surprise-chip svg { width: 14px; height: 14px; }
+.wishlist-surprise-chip.on { border-color: var(--c-s-cbd3ff); background: var(--c-s-eef1ff); color: var(--c-t-4258d5); }
+.wishlist-surprise-chip:focus-within { outline: 2px solid var(--ring); outline-offset: 2px; }
+.wishlist-share { display: flex; align-items: center; gap: 6px; padding: 6px 6px 6px 10px; border-radius: 10px; background: var(--secondary); }
+.wishlist-share > svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--muted-foreground); }
+.wishlist-share input { height: 30px; flex: 1; min-width: 0; border: 0; background: transparent; font-size: .75rem; box-shadow: none; }
+.wishlist-item > button:not([data-slot="button"]) { color: var(--muted-foreground); }
+
 /* Otomatik talimatlar: how-it-works box with the one add button. */
 .instructions-help { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
 .instructions-help h2 { margin: 0 0 10px; font-size: 1.05rem; }
@@ -410,3 +430,15 @@ body[data-scroll-locked] { margin-right: 0 !important; padding-right: 0 !importa
 .total-budget-numbers b { margin-left: auto; font-size: .86rem; color: var(--c-t-18745c); }
 .total-budget-numbers b.approaching, .total-budget-numbers b.critical { color: var(--c-t-b45309); }
 .total-budget-numbers b.exceeded { color: var(--c-t-d45050); }
+
+/* Family page: shared upcoming payments. */
+.family-upcoming h3 { display: flex; align-items: center; gap: 8px; }
+.family-upcoming h3 svg { width: 18px; height: 18px; color: var(--primary); }
+.family-upcoming ul { margin: 0; padding: 0; list-style: none; }
+.family-upcoming li { display: grid; grid-template-columns: 72px 1fr auto; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.family-upcoming li:last-child { border-bottom: 0; }
+.family-upcoming-date { color: var(--muted-foreground); font-size: .8rem; font-weight: 600; }
+.family-upcoming-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.family-upcoming-title b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.family-upcoming-title small { color: var(--muted-foreground); }
+.family-upcoming strong.income { color: var(--c-t-15803d); }
