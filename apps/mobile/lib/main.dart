@@ -16,6 +16,7 @@ import 'core/theme.dart';
 import 'core/theme_mode.dart';
 import 'features/app_navigation.dart';
 import 'features/assistant.dart';
+import 'features/category_rules.dart';
 import 'features/finance_screens.dart';
 import 'features/more.dart';
 import 'features/notifications.dart';
@@ -154,6 +155,10 @@ GoRouter _buildRouter() => GoRouter(
                 GoRoute(
                   path: 'settings',
                   builder: (_, _) => const SettingsScreen(),
+                ),
+                GoRoute(
+                  path: 'category-rules',
+                  builder: (_, _) => const CategoryRulesScreen(),
                 ),
                 GoRoute(
                   path: 'notifications',
