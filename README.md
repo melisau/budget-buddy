@@ -34,7 +34,7 @@ The Flutter app in `apps/mobile` is the only mobile release channel. It calls th
 - Family invitations
 - Some settings
 
-The Google Play closed test (Alpha 1, version 1.0.0) still runs the earlier Capacitor build. The Capacitor project in `mobile/` and the Trusted Web Activity project in `android/` receive no new releases.
+Google Play test tracks now receive Flutter builds only. The Capacitor project was removed from the repository (recover it from git history if needed). The Trusted Web Activity project in `android/` receives no new releases.
 
 To run the app against the local stack from an Android emulator:
 
@@ -143,8 +143,7 @@ pnpm build
 - [Architecture](docs/architecture.md)
 - [Deployment and release process](docs/deployment.md)
 - [VDS hosting](docs/vds.md)
-- [Google Play release guide](docs/play-store.md) (describes the earlier Capacitor build)
-- [Capacitor notes](docs/mobile.md) (legacy, no new releases)
+- [Google Play release guide](docs/play-store.md) (describes the earlier, now removed Capacitor build)
 - [Legacy account migration runbook](docs/supabase-auth-migration.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)

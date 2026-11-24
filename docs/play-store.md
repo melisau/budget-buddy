@@ -1,5 +1,7 @@
 # Google Play'e yayın rehberi
 
+> **Not:** Bu rehber eski Capacitor paketini anlatır. Capacitor projesi (`mobile/`) repodan kaldırıldı; yeni sürümler Flutter uygulamasından (`apps/mobile/`) ve `.github/workflows/android.yml` ile üretilir. Play Console adımları hâlâ geçerli olabilir; komutlar için git geçmişine bakın.
+
 BudgetBuddy, Play Store'da bir **Capacitor** uygulaması olarak yayınlanır:
 `mobile/android/` klasöründeki Android uygulaması, https://budgetbuddy.melisauyar.com
 adresini tam ekran açar ve Google ile girişi telefonun kendi hesap seçicisiyle yapar
