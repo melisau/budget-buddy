@@ -38,6 +38,8 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
   const [pickedByRule, setPickedByRule] = useState(false);
   const [hasStoredReceipt, setHasStoredReceipt] = useState(Boolean(transaction?.hasReceipt));
   const [isRemovingReceipt, setIsRemovingReceipt] = useState(false);
+  // Kept until a create succeeds, so a retry after a lost response is not stored twice.
+  const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   const form = useForm<TransactionInput>({
     resolver: zodResolver(transactionSchema),
     defaultValues: {
@@ -101,7 +103,7 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
     try {
       const response = await fetch(transaction ? `/api/transactions/${transaction.id}` : "/api/transactions", {
         method: transaction ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(transaction ? {} : { "Idempotency-Key": requestId }) },
         body: JSON.stringify({ ...values, familyGroupId }),
       });
       const payload = await response.json().catch(() => ({})) as { error?: string; transaction?: StoredTransaction };
@@ -111,6 +113,7 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
         ? (tr ? "İşlem güncellendi." : "Transaction updated.")
         : (tr ? "İşlem başarıyla eklendi." : "Transaction added successfully."));
       if (!transaction) {
+        setRequestId(crypto.randomUUID());
         form.reset({ ...values, amount: undefined, title: "", note: "" });
         setCategory("");
       }

@@ -350,15 +350,20 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
             includeItems: _saveItems,
           ),
         ),
+        retrySafe: true,
       );
       return;
     }
     await _write(
       () => _editing
           ? api.patch('transactions/${widget.existing!['id']}', body)
-          : api.post('transactions', body),
+          : api.post('transactions', body, requestId: _requestId),
+      retrySafe: true,
     );
   }
+
+  /// One ID per form, so pressing Kaydet again after a lost response is safe.
+  final String _requestId = newScanId();
 
   Future<void> _delete() async {
     final hasReceipt = widget.existing!['hasReceipt'] == true;
@@ -393,14 +398,26 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
     await _write(() => api.delete('transactions/${widget.existing!['id']}'));
   }
 
-  Future<void> _write(Future<Object?> Function() action) async {
+  /// With [retrySafe] the server ignores a repeated request, so after a lost
+  /// response the form stays open and the user can simply save again.
+  Future<void> _write(
+    Future<Object?> Function() action, {
+    bool retrySafe = false,
+  }) async {
     try {
       await action();
       HapticFeedback.mediumImpact();
       if (mounted) Navigator.pop(context);
       _refreshLists();
     } on ApiException catch (e) {
-      if (e.outcomeUnknown) {
+      if (e.outcomeUnknown && retrySafe) {
+        if (mounted) {
+          setState(() {
+            _error = 'Yanıt alınamadı. Kaydet\'e tekrar basabilirsin, işlem iki kez eklenmez.';
+            _busy = false;
+          });
+        }
+      } else if (e.outcomeUnknown) {
         if (mounted) {
           final messenger = ScaffoldMessenger.of(context);
           Navigator.pop(context);

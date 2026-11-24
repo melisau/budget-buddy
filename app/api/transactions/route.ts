@@ -5,6 +5,7 @@ import { readPageQuery } from "@/lib/finance/transaction-page";
 import { materializeDueRecurringSafely } from "@/lib/finance/recurring-service";
 import { transactionRequestSchema } from "@/validations/transaction";
 import { checkRateLimit } from "@/lib/security/rate-limit";
+import { readIdempotencyKey } from "@/lib/finance/idempotency";
 
 type JoinedRecord = { id: string; name: string } | { id: string; name: string }[] | null;
 
@@ -75,8 +76,10 @@ export async function POST(request: Request) {
     const user = await requireAppUser();
     const limit = await checkRateLimit(`transactions:${user.id}`, 30, 60_000);
     if (!limit.allowed) return NextResponse.json({ error: "Too many transaction requests. Please try again shortly." }, { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } });
+    const requestId = readIdempotencyKey(request.headers);
+    if (requestId === "invalid") return NextResponse.json({ error: "Idempotency-Key must be a UUID." }, { status: 400 });
     const payload = transactionRequestSchema.parse(await request.json());
-    const transaction = await createTransaction(user, {
+    const { transaction, replayed } = await createTransaction(user, {
       type: payload.type,
       amount: payload.amount,
       title: payload.title,
@@ -85,9 +88,9 @@ export async function POST(request: Request) {
       date: payload.date,
       note: payload.note,
       familyGroupId: payload.familyGroupId,
-    });
+    }, requestId ?? undefined);
 
-    return NextResponse.json({ transaction: toClientTransaction(transaction as Record<string, unknown>) }, { status: 201 });
+    return NextResponse.json({ transaction: toClientTransaction(transaction as Record<string, unknown>) }, { status: replayed ? 200 : 201 });
   } catch (error) {
     if (error instanceof Error && error.name === "ZodError") {
       return NextResponse.json({ error: "Please check the transaction fields." }, { status: 400 });
