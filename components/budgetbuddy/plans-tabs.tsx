@@ -19,7 +19,6 @@ export function PlansTabs({ active }: { active: "budgets" | "goals" }) {
   ];
   const current = tabs.find((tab) => tab.id === active)!;
   return <div className="plans-tabs">
-    <h2>{tr ? "Bütçe ve Hedefler" : "Budgets and goals"}</h2>
     <nav role="tablist" aria-label={tr ? "Bütçe ve hedefler" : "Budgets and goals"}>
       {tabs.map(({ id, href, icon: Icon, label }) => <Link key={id} href={href} role="tab" aria-selected={id === active} className={id === active ? "active" : ""}><Icon aria-hidden="true" />{label}</Link>)}
     </nav>

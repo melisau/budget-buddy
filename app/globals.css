@@ -415,6 +415,22 @@ body[data-scroll-locked] { margin-right: 0 !important; padding-right: 0 !importa
 .instructions-help b { color: var(--c-t-17213c); }
 .brand-icon { flex-shrink: 0; }
 
+/* Overall monthly budget card on the Budgets tab. */
+.total-budget { display: grid; gap: 12px; margin-bottom: 18px; }
+.total-budget-head { display: flex; align-items: flex-start; gap: 12px; }
+.total-budget-head h3 { margin: 0; font-size: 1.05rem; font-weight: 700; }
+.total-budget-head p { margin: 2px 0 0; color: var(--muted-foreground); font-size: .84rem; }
+.total-budget-icon { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: 12px; background: var(--c-s-eef1ff); color: var(--c-t-4258d5); }
+.total-budget-icon svg { width: 20px; height: 20px; }
+.total-budget-empty { display: grid; gap: 10px; }
+.total-budget-empty p, .total-budget-income { margin: 0; color: var(--muted-foreground); font-size: .86rem; }
+.total-budget-numbers { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }
+.total-budget-numbers strong { font-size: 1.6rem; font-weight: 800; }
+.total-budget-numbers span { color: var(--muted-foreground); }
+.total-budget-numbers b { margin-left: auto; font-size: .86rem; color: var(--c-t-18745c); }
+.total-budget-numbers b.approaching, .total-budget-numbers b.critical { color: var(--c-t-b45309); }
+.total-budget-numbers b.exceeded { color: var(--c-t-d45050); }
+
 /* Family page: shared upcoming payments. */
 .family-upcoming h3 { display: flex; align-items: center; gap: 8px; }
 .family-upcoming h3 svg { width: 18px; height: 18px; color: var(--primary); }
