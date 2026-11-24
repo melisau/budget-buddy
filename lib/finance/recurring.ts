@@ -113,9 +113,9 @@ export function afterSettling(schedule: Omit<RecurringSchedule, "nextDate">, dat
 
 /** Brand color and short mark for the popular subscription presets. */
 export const presetBrands: Record<(typeof subscriptionPresets)[number], { color: string; mark: string }> = {
-  Spotify: { color: "#1DB954", mark: "S" },
+  Spotify: { color: "#1ED760", mark: "S" },
   Netflix: { color: "#E50914", mark: "N" },
-  "YouTube Premium": { color: "#FF0033", mark: "▶" },
+  "YouTube Premium": { color: "#FF0000", mark: "▶" },
   "Disney+": { color: "#113CCF", mark: "D+" },
   "Amazon Prime": { color: "#00A8E1", mark: "a" },
   "Apple iCloud": { color: "#3693F3", mark: "☁" },
