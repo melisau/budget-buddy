@@ -5,13 +5,13 @@ import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { isLightOnlyPath } from "@/lib/theme/light-only";
 
 
-/** Light by default; dark or the system setting can be chosen in Settings and is kept in this browser. */
+/** Follows the device by default; light or dark can be chosen in Settings and is kept in this browser. */
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? "/";
   return (
     <NextThemesProvider
       attribute="class"
-      defaultTheme="light"
+      defaultTheme="system"
       enableSystem
       forcedTheme={isLightOnlyPath(pathname) ? "light" : undefined}
       disableTransitionOnChange
