@@ -14,18 +14,25 @@ import 'data.dart';
 ) {
   final currency = '${data['currency'] ?? 'TRY'}';
   String amount(Object? v) => money(num.tryParse('$v') ?? 0, currency);
-  final category = categoryLabel('${data['categoryName'] ?? ''}');
+  final total = data['scope'] == 'total';
+  final category = total
+      ? 'Genel aylık'
+      : categoryLabel('${data['categoryName'] ?? ''}');
   switch (kind) {
     case 'budget_warning':
       return (
-        title: "$category bütçesinin %${data['usage']}'ini kullandın",
+        title: total
+            ? "Genel aylık bütçenin %${data['usage']}'ini kullandın"
+            : "$category bütçesinin %${data['usage']}'ini kullandın",
         body:
             '${amount(data['spent'])} / ${amount(data['limit'])} harcadın. Limite yaklaşıyorsun.',
         route: '/more/budgets',
       );
     case 'budget_exceeded':
       return (
-        title: '$category bütçesini aştın',
+        title: total
+            ? 'Genel aylık bütçeni aştın'
+            : '$category bütçesini aştın',
         body:
             '${amount(data['spent'])} harcadın; limit ${amount(data['limit'])}.',
         route: '/more/budgets',

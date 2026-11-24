@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/theme.dart';
 import '../core/theme_mode.dart';
+import 'avatar.dart';
 import 'common.dart';
 import 'data.dart';
 
@@ -63,6 +64,10 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = Supabase.instance.client.auth;
+    final fullName = auth.currentUser?.userMetadata?['full_name'];
+    final displayName = fullName is String && fullName.trim().isNotEmpty
+        ? fullName.trim()
+        : auth.currentUser?.email?.split('@').first ?? 'Hesabım';
     final account = ref.watch(pageProvider('account'));
     final notifications = ref.watch(pageProvider('notifications'));
     return Scaffold(
@@ -72,9 +77,11 @@ class SettingsScreen extends ConsumerWidget {
         children: [
           Card(
             child: ListTile(
-              leading: const CircleAvatar(child: Icon(Icons.person)),
+              leading: ProfileAvatar(name: displayName),
+              trailing: const Icon(Icons.photo_camera_outlined),
+              onTap: () => showAvatarPicker(context, ref, displayName),
               title: Text(
-                'Hesabım',
+                displayName,
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   color: context.ink,

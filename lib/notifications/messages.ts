@@ -23,6 +23,13 @@ export function renderNotification(kind: NotificationKind, data: NotificationDat
   const category = categoryDisplayName(String(data.categoryName ?? ""), language);
   switch (kind) {
     case "budget_warning":
+      if (data.scope === "total") return {
+        href: "/budgets",
+        title: tr ? `Genel aylık bütçenin %${data.usage}'ini kullandın` : `You used ${data.usage}% of your overall monthly budget`,
+        body: tr
+          ? `${money(data.spent, data.currency, language)} / ${money(data.limit, data.currency, language)} harcadın. Ay bitmeden limite yaklaşıyorsun.`
+          : `You spent ${money(data.spent, data.currency, language)} of ${money(data.limit, data.currency, language)}. You are close to this month's limit.`,
+      };
       return {
         href: "/budgets",
         title: tr ? `${category} bütçesinin %${data.usage}'ini kullandın` : `You used ${data.usage}% of your ${category} budget`,
@@ -31,6 +38,13 @@ export function renderNotification(kind: NotificationKind, data: NotificationDat
           : `You spent ${money(data.spent, data.currency, language)} of ${money(data.limit, data.currency, language)}. You are close to the limit.`,
       };
     case "budget_exceeded":
+      if (data.scope === "total") return {
+        href: "/budgets",
+        title: tr ? "Genel aylık bütçeni aştın" : "You went over your overall monthly budget",
+        body: tr
+          ? `Bu ay ${money(data.spent, data.currency, language)} harcadın; genel limitin ${money(data.limit, data.currency, language)}.`
+          : `You spent ${money(data.spent, data.currency, language)} this month; the overall limit is ${money(data.limit, data.currency, language)}.`,
+      };
       return {
         href: "/budgets",
         title: tr ? `${category} bütçesini aştın` : `You went over your ${category} budget`,
