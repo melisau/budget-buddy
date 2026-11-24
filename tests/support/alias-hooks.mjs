@@ -10,6 +10,7 @@ const overrides = {
   "@/lib/supabase/server": new URL("fake-supabase.ts", fakes).href,
   "@/lib/auth/supabase-server": new URL("fake-auth.ts", fakes).href,
   "@/lib/auth/app-user": new URL("fake-app-user.ts", fakes).href,
+  "@/lib/auth/session-user": new URL("fake-session-user.ts", fakes).href,
 };
 
 export async function resolve(specifier, context, nextResolve) {
