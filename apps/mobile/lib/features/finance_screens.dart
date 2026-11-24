@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme.dart';
 import '../core/widgets.dart';
@@ -34,9 +35,26 @@ class AccountsScreen extends StatelessWidget {
       title: 'Hesap ekle',
       fields: [
         const FieldSpec('name', 'Hesap adı'),
-        FieldSpec('type', 'Tür', kind: FieldKind.choice, options: (_) => _accountTypes, initial: 'checking'),
-        FieldSpec('currency', 'Para birimi', kind: FieldKind.choice, options: (_) => _currencies, initial: 'TRY'),
-        const FieldSpec('initialBalance', 'Başlangıç bakiyesi', kind: FieldKind.amount, initial: 0),
+        FieldSpec(
+          'type',
+          'Tür',
+          kind: FieldKind.choice,
+          options: (_) => _accountTypes,
+          initial: 'checking',
+        ),
+        FieldSpec(
+          'currency',
+          'Para birimi',
+          kind: FieldKind.choice,
+          options: (_) => _currencies,
+          initial: 'TRY',
+        ),
+        const FieldSpec(
+          'initialBalance',
+          'Başlangıç bakiyesi',
+          kind: FieldKind.amount,
+          initial: 0,
+        ),
       ],
       onSubmit: (v) async {
         await ref.read(apiProvider).post(_path, v);
@@ -44,27 +62,176 @@ class AccountsScreen extends StatelessWidget {
         ref.invalidate(dashboardProvider);
       },
     ),
+    refreshAlso: const [_archivedPath],
     builder: (context, ref, d) {
       final items = rows(d['accounts']);
-      if (items.isEmpty) return const [EmptyNote('Henüz hesap yok.')];
+      final all = ref.watch(pageProvider(_archivedPath)).value;
+      final archived = rows(
+        all?['accounts'],
+      ).where((a) => a['archivedAt'] != null).toList();
       return [
+        if (items.length >= 2)
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              icon: const Icon(Icons.swap_horiz),
+              label: const Text('Hesaplar arası transfer'),
+              onPressed: () => _transfer(context, ref, items),
+            ),
+          ),
+        if (items.isEmpty) const EmptyNote('Henüz hesap yok.'),
         for (final a in items) ...[
           Card(
             child: ListTile(
-              leading: const CircleAvatar(child: Icon(Icons.account_balance_outlined)),
-              title: Text('${a['name']}', style: TextStyle(fontWeight: FontWeight.w700, color: context.ink)),
-              subtitle: Text('${_accountTypes[a['type']] ?? a['type']} · ${a['currency']}'),
-              trailing: Text(
-                money(a['balance'] as num, '${a['currency']}'),
-                style: TextStyle(fontWeight: FontWeight.w800, color: context.ink),
+              leading: const CircleAvatar(
+                child: Icon(Icons.account_balance_outlined),
+              ),
+              title: Text(
+                '${a['name']}',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: context.ink,
+                ),
+              ),
+              subtitle: Text(
+                '${_accountTypes[a['type']] ?? a['type']} · ${money(a['balance'] as num, '${a['currency']}')}',
+              ),
+              trailing: PopupMenuButton<String>(
+                tooltip: 'Hesap işlemleri',
+                onSelected: (v) => v == 'rename'
+                    ? _rename(context, ref, a)
+                    : _setArchived(context, ref, a, true),
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'rename', child: Text('Adını değiştir')),
+                  PopupMenuItem(value: 'archive', child: Text('Arşivle')),
+                ],
               ),
             ),
           ),
           const Gap(),
         ],
+        if (archived.isNotEmpty)
+          ExpansionTile(
+            title: Text(
+              'Arşivlenen hesaplar (${archived.length})',
+              style: TextStyle(color: context.ink),
+            ),
+            children: [
+              for (final a in archived)
+                ListTile(
+                  leading: Icon(
+                    Icons.inventory_2_outlined,
+                    color: context.muted,
+                  ),
+                  title: Text('${a['name']}'),
+                  trailing: TextButton(
+                    onPressed: () => _setArchived(context, ref, a, false),
+                    child: const Text('Geri al'),
+                  ),
+                ),
+            ],
+          ),
       ];
     },
   );
+
+  static const _archivedPath = 'accounts?archived=true';
+
+  static Future<void> _setArchived(
+    BuildContext context,
+    WidgetRef ref,
+    Map<String, dynamic> a,
+    bool archived,
+  ) async {
+    if (archived) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (c) => AlertDialog(
+          title: Text('“${a['name']}” arşivlensin mi?'),
+          content: const Text(
+            'İşlemleri silinmez. Hesap listelerde ve formlarda görünmez; istediğin zaman geri alabilirsin.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(c, false),
+              child: const Text('Vazgeç'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(c, true),
+              child: const Text('Arşivle'),
+            ),
+          ],
+        ),
+      );
+      if (ok != true || !context.mounted) return;
+    }
+    await runAction(
+      context,
+      ref,
+      _path,
+      (api) => api.patch('accounts/${a['id']}', {'archived': archived}),
+    );
+    ref.invalidate(pageProvider(_archivedPath));
+  }
+
+  static Future<void> _rename(
+    BuildContext context,
+    WidgetRef ref,
+    Map<String, dynamic> a,
+  ) => showFormSheet(
+    context,
+    title: 'Hesabın adını değiştir',
+    fields: [FieldSpec('name', 'Hesap adı', initial: '${a['name']}')],
+    onSubmit: (v) async {
+      await ref.read(apiProvider).patch('accounts/${a['id']}', {
+        'name': '${v['name']}'.trim(),
+      });
+      ref.invalidate(pageProvider(_path));
+      ref.invalidate(dashboardProvider);
+    },
+  );
+
+  static Future<void> _transfer(
+    BuildContext context,
+    WidgetRef ref,
+    List<Map<String, dynamic>> accounts,
+  ) {
+    final names = {
+      for (final a in accounts) '${a['id']}': '${a['name']} (${a['currency']})',
+    };
+    return showFormSheet(
+      context,
+      title: 'Hesaplar arası transfer',
+      fields: [
+        FieldSpec(
+          'fromAccountId',
+          'Gönderen hesap',
+          kind: FieldKind.choice,
+          options: (_) => names,
+          resets: 'toAccountId',
+        ),
+        FieldSpec(
+          'toAccountId',
+          'Alan hesap',
+          kind: FieldKind.choice,
+          options: (v) => {...names}..remove(v['fromAccountId']),
+        ),
+        const FieldSpec('amount', 'Tutar', kind: FieldKind.amount),
+        FieldSpec(
+          'date',
+          'Tarih',
+          kind: FieldKind.date,
+          initial: isoDate(DateTime.now()),
+        ),
+      ],
+      onSubmit: (v) async {
+        await ref.read(apiProvider).post('accounts/transfer', v);
+        ref.invalidate(pageProvider(_path));
+        ref.invalidate(dashboardProvider);
+        ref.invalidate(transactionsProvider);
+      },
+    );
+  }
 }
 
 class BudgetsScreen extends StatelessWidget {
