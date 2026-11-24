@@ -14,7 +14,7 @@ type Rule = { id: string; keyword: string; type: TransactionKind; categoryId: st
 type Category = { id: string; name: string; type: TransactionKind };
 type Data = { available: boolean; rules: Rule[]; categories: Category[] };
 
-const selectClass = "h-9 rounded-md border border-[#dfe3ed] bg-white px-3";
+const selectClass = "h-9 rounded-md border border-[var(--c-s-dfe3ed)] bg-[var(--c-s-ffffff)] px-3";
 
 export function CategoryRulesDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { language } = useContext(LanguageContext);
@@ -70,9 +70,9 @@ export function CategoryRulesDialog({ open, onOpenChange }: { open: boolean; onO
             <label className="grid gap-1 text-sm font-semibold">{tr ? "Kategori" : "Category"}<select className={selectClass} value={categoryId} required onChange={(event) => setCategoryId(event.target.value)}><option value="">{tr ? "Seç…" : "Choose…"}</option>{categories.map((category) => <option key={category.id} value={category.id}>{categoryDisplayName(category.name, language)}</option>)}</select></label>
             <Button type="submit" disabled={busy || keyword.trim().length < 2 || !categoryId} className="sm:col-span-2"><Wand2 data-icon="inline-start" />{tr ? "Kural ekle" : "Add rule"}</Button>
           </form>
-          {data.rules.length === 0 ? <p className="text-sm text-[#66708b]">{tr ? "Henüz kural yok." : "No rules yet."}</p>
-            : <ul className="grid max-h-60 gap-2 overflow-y-auto">{data.rules.map((rule) => <li key={rule.id} className="flex items-center gap-2 rounded-lg border border-[#e6e9f2] px-3 py-2">
-              <span className="min-w-0 flex-1 truncate text-sm"><b>{rule.keyword}</b> → {categoryDisplayName(rule.categoryName, language)}<small className="ml-2 text-[#66708b]">{rule.type === "income" ? (tr ? "Gelir" : "Income") : (tr ? "Gider" : "Expense")}</small></span>
+          {data.rules.length === 0 ? <p className="text-sm text-[var(--c-t-66708b)]">{tr ? "Henüz kural yok." : "No rules yet."}</p>
+            : <ul className="grid max-h-60 gap-2 overflow-y-auto">{data.rules.map((rule) => <li key={rule.id} className="flex items-center gap-2 rounded-lg border border-[var(--c-s-e6e9f2)] px-3 py-2">
+              <span className="min-w-0 flex-1 truncate text-sm"><b>{rule.keyword}</b> → {categoryDisplayName(rule.categoryName, language)}<small className="ml-2 text-[var(--c-t-66708b)]">{rule.type === "income" ? (tr ? "Gelir" : "Income") : (tr ? "Gider" : "Expense")}</small></span>
               <Button variant="ghost" size="icon" disabled={busy} aria-label={tr ? "Kuralı sil" : "Delete rule"} onClick={() => void request(`/api/category-rules/${rule.id}`, "DELETE")}><Trash2 /></Button>
             </li>)}</ul>}
         </>}

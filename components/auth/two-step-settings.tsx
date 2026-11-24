@@ -161,7 +161,7 @@ export function TwoStepSettings() {
           {status === "off" && enrollment && <form onSubmit={(event) => void confirm(event)} className="flex flex-col gap-4" noValidate>
             <p>{tr ? "1. Bu QR kodunu kimlik doğrulama uygulamanla tara." : "1. Scan this QR code with your authenticator app."}</p>
             {/* eslint-disable-next-line @next/next/no-img-element -- inline SVG data URI from Supabase Auth */}
-            <img src={enrollment.qrCode} alt={tr ? "İki adımlı doğrulama kurulum QR kodu" : "Two-step verification setup QR code"} width={176} height={176} className="mx-auto rounded-lg bg-white p-2" />
+            <img src={enrollment.qrCode} alt={tr ? "İki adımlı doğrulama kurulum QR kodu" : "Two-step verification setup QR code"} width={176} height={176} className="mx-auto rounded-lg bg-[var(--c-s-ffffff)] p-2" />
             <p className="text-muted-foreground">{tr ? "Tarayamıyorsan bu anahtarı elle gir:" : "Can't scan it? Enter this key by hand:"} <code className="break-all font-mono text-foreground">{enrollment.secret}</code></p>
             <label className="flex flex-col gap-2 font-medium">{tr ? "2. Uygulamadaki 6 haneli kodu yaz." : "2. Type the 6-digit code from the app."}
               <Input value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="000000" required aria-invalid={Boolean(error)} className="text-center text-lg tracking-[0.4em]" />

@@ -1,4 +1,4 @@
-/** Android package published on Google Play. Keep in sync with android/app/build.gradle. */
+/** Android package published on Google Play. Keep in sync with apps/mobile/android/app/build.gradle.kts. */
 export const ANDROID_PACKAGE_NAME = "com.melisauyar.budgetbuddy";
 
 const FINGERPRINT = /^([0-9A-F]{2}:){31}[0-9A-F]{2}$/;
@@ -16,8 +16,8 @@ export function parseFingerprints(value: string | undefined): string[] {
 }
 
 /**
- * Digital Asset Links statement that lets the Android app open the site in a
- * Trusted Web Activity (full screen, no browser bar).
+ * Digital Asset Links statement that ties the site to the Android app signed
+ * with these certificates.
  */
 export function assetLinks(fingerprints: string[], packageName = ANDROID_PACKAGE_NAME) {
   if (fingerprints.length === 0) return [];
