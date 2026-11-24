@@ -13,6 +13,7 @@ import 'core/dashboard_cache.dart';
 import 'core/error_reporter.dart';
 import 'core/session_storage.dart';
 import 'core/theme.dart';
+import 'core/theme_mode.dart';
 import 'features/app_navigation.dart';
 import 'features/assistant.dart';
 import 'features/finance_screens.dart';
@@ -141,16 +142,18 @@ GoRouter _buildRouter() => GoRouter(
   ],
 );
 
-class BudgetBuddyApp extends StatelessWidget {
+class BudgetBuddyApp extends ConsumerWidget {
   const BudgetBuddyApp({super.key, required this.router});
 
   final GoRouter router;
 
   @override
-  Widget build(BuildContext context) => MaterialApp.router(
+  Widget build(BuildContext context, WidgetRef ref) => MaterialApp.router(
     title: 'BudgetBuddy',
     debugShowCheckedModeBanner: false,
     theme: buildTheme(),
+    darkTheme: buildTheme(Brightness.dark),
+    themeMode: ref.watch(themeModeProvider),
     routerConfig: router,
     locale: const Locale('tr', 'TR'),
     supportedLocales: const [Locale('tr', 'TR')],

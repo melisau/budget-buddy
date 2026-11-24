@@ -19,7 +19,7 @@ type Option = { id: string; name: string; type?: "income" | "expense" };
 type Data = { available: boolean; items: Item[]; categories: Option[]; accounts: Option[]; currency: string };
 type Form = { id: string | null; kind: Item["kind"]; type: Item["type"]; title: string; amount: string; category: string; account: string; frequency: Frequency; startDate: string; endDate: string };
 
-const selectClass = "h-9 rounded-md border border-[#dfe3ed] bg-white px-3";
+const selectClass = "h-9 rounded-md border border-[var(--c-s-dfe3ed)] bg-[var(--c-s-ffffff)] px-3";
 const frequencyLabels: Record<Frequency, { tr: string; en: string }> = {
   weekly: { tr: "Haftalık", en: "Weekly" }, monthly: { tr: "Aylık", en: "Monthly" }, yearly: { tr: "Yıllık", en: "Yearly" },
 };
@@ -99,14 +99,14 @@ export function RecurringScreen() {
     return <li key={item.id} className="panel flex flex-wrap items-center gap-3" style={{ opacity: item.active ? 1 : 0.6 }}>
       <div className="min-w-0 flex-1">
         <b className="block truncate">{item.title}</b>
-        <small className="text-[#66708b]">
+        <small className="text-[var(--c-t-66708b)]">
           {tr ? frequencyLabels[item.frequency].tr : frequencyLabels[item.frequency].en}
           {item.categoryName && ` · ${categoryDisplayName(item.categoryName, language)}`}
           {item.active ? ` · ${tr ? "Sonraki" : "Next"}: ${dateText(item.nextDate)}` : ` · ${tr ? "Duraklatıldı" : "Paused"}`}
         </small>
-        {soon && <small className="block font-semibold text-[#b45309]">{days === 0 ? (tr ? "Bugün yenileniyor" : "Renews today") : tr ? `${days} gün sonra yenileniyor` : `Renews in ${days} days`}</small>}
+        {soon && <small className="block font-semibold text-[var(--c-t-b45309)]">{days === 0 ? (tr ? "Bugün yenileniyor" : "Renews today") : tr ? `${days} gün sonra yenileniyor` : `Renews in ${days} days`}</small>}
       </div>
-      <b className={item.type === "income" ? "text-[#15803d]" : ""}>{item.type === "income" ? "+" : "−"}{money(item.amount)}</b>
+      <b className={item.type === "income" ? "text-[var(--c-t-15803d)]" : ""}>{item.type === "income" ? "+" : "−"}{money(item.amount)}</b>
       <div className="flex gap-1">
         <Button variant="ghost" size="icon" disabled={busy} aria-label={item.active ? (tr ? "Duraklat" : "Pause") : (tr ? "Devam ettir" : "Resume")} onClick={() => void send(`/api/recurring/${item.id}`, "PATCH", { active: !item.active }, item.active ? (tr ? "Duraklatıldı." : "Paused.") : (tr ? "Devam ediyor." : "Resumed."))}>{item.active ? <Pause /> : <Play />}</Button>
         <Button variant="ghost" size="icon" disabled={busy} aria-label={tr ? "Düzenle" : "Edit"} onClick={() => openEdit(item)}><Pencil /></Button>
@@ -123,12 +123,12 @@ export function RecurringScreen() {
     {loading ? <div className="panel">{tr ? "Yükleniyor…" : "Loading…"}</div> : loadError ? null : !data?.available ? <div className="panel empty-accounts"><Repeat /><h3>{tr ? "Bu özellik henüz hazır değil" : "This feature is not ready yet"}</h3><p>{tr ? "Kısa süre içinde kullanıma açılacak." : "It will be available shortly."}</p></div> : <>
       {items.length === 0 && <div className="panel empty-accounts"><Repeat /><h3>{tr ? "Henüz tekrarlayan işlem yok" : "No recurring items yet"}</h3><p>{tr ? "Kira, maaş ya da Netflix gibi bir abonelik ekle; tarihi gelince işlem olarak kaydedilir." : "Add rent, a salary or a subscription like Netflix; it is recorded as a transaction when it is due."}</p></div>}
 
-      <h3 className="mt-4 text-base font-semibold">{tr ? "Abonelikler" : "Subscriptions"}{subscriptions.length > 0 && <small className="ml-2 font-normal text-[#66708b]">{tr ? "Aylık toplam" : "Monthly total"}: {money(subscriptionTotal)} · {tr ? "Yıllık" : "Yearly"}: {money(subscriptionTotal * 12)}</small>}</h3>
+      <h3 className="mt-4 text-base font-semibold">{tr ? "Abonelikler" : "Subscriptions"}{subscriptions.length > 0 && <small className="ml-2 font-normal text-[var(--c-t-66708b)]">{tr ? "Aylık toplam" : "Monthly total"}: {money(subscriptionTotal)} · {tr ? "Yıllık" : "Yearly"}: {money(subscriptionTotal * 12)}</small>}</h3>
       <div className="my-2 flex flex-wrap gap-2" aria-label={tr ? "Hızlı ekle" : "Quick add"}>{subscriptionPresets.map((name) => <Button key={name} variant="outline" size="sm" onClick={() => openNew("subscription", name)}>{name}</Button>)}</div>
       {subscriptions.length > 0 && <ul className="grid gap-2">{subscriptions.map(renderItem)}</ul>}
 
       <h3 className="mt-6 text-base font-semibold">{tr ? "Düzenli gelir ve giderler" : "Regular income and expenses"}</h3>
-      {regular.length === 0 ? <p className="text-sm text-[#66708b]">{tr ? "Kira, maaş, fatura gibi düzenli işlemlerini buraya ekle." : "Add rent, salary, bills and similar items here."}</p> : <ul className="grid gap-2">{regular.map(renderItem)}</ul>}
+      {regular.length === 0 ? <p className="text-sm text-[var(--c-t-66708b)]">{tr ? "Kira, maaş, fatura gibi düzenli işlemlerini buraya ekle." : "Add rent, salary, bills and similar items here."}</p> : <ul className="grid gap-2">{regular.map(renderItem)}</ul>}
     </>}
 
     <Dialog open={form !== null} onOpenChange={(open) => { if (!open) setForm(null); }}>

@@ -79,7 +79,7 @@ class FamilyScreen extends StatelessWidget {
               children: [
                 ListTile(
                   leading: const CircleAvatar(child: Icon(Icons.groups_outlined)),
-                  title: Text('${g['name']}', style: const TextStyle(fontWeight: FontWeight.w800, color: ink)),
+                  title: Text('${g['name']}', style: TextStyle(fontWeight: FontWeight.w800, color: context.ink)),
                   subtitle: Text('${rows(g['members']).length} üye'),
                 ),
                 for (final m in rows(g['members']))
@@ -288,12 +288,12 @@ class _Invitations extends ConsumerWidget {
                     children: [
                       Text(
                         '${invite['groupName']}',
-                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: ink),
+                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: context.ink),
                       ),
                       const SizedBox(height: 3),
                       Text(
                         'Aile grubu daveti · ${_inviteRoles[invite['role']] ?? invite['role']}',
-                        style: const TextStyle(color: muted),
+                        style: TextStyle(color: context.muted),
                       ),
                       const SizedBox(height: 12),
                       Row(
@@ -340,7 +340,7 @@ class _Shopping extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ListTile(
-            title: const Text('Ortak alışveriş listesi', style: TextStyle(fontWeight: FontWeight.w800, color: ink)),
+            title: Text('Ortak alışveriş listesi', style: TextStyle(fontWeight: FontWeight.w800, color: context.ink)),
             trailing: canEdit
                 ? IconButton(
                     tooltip: 'Ürün ekle',
@@ -371,7 +371,7 @@ class _Shopping extends ConsumerWidget {
             data: (d) {
               final items = rows(d['items']);
               if (items.isEmpty) {
-                return const [Padding(padding: EdgeInsets.fromLTRB(16, 0, 16, 18), child: Text('Liste boş.', style: TextStyle(color: muted)))];
+                return [Padding(padding: EdgeInsets.fromLTRB(16, 0, 16, 18), child: Text('Liste boş.', style: TextStyle(color: context.muted)))];
               }
               return [
                 for (final i in items)
@@ -463,7 +463,7 @@ class WishlistsScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Bağlantıyı alan herkes dilekleri görür. Kimin ne aldığını göremez.', style: TextStyle(color: muted)),
+            Text('Bağlantıyı alan herkes dilekleri görür. Kimin ne aldığını göremez.', style: TextStyle(color: context.muted)),
             const SizedBox(height: 12),
             SelectableText(url),
           ],
@@ -562,7 +562,7 @@ class WishlistsScreen extends ConsumerWidget {
           ? Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (i['reserved'] == true) const Text('Alınıyor', style: TextStyle(color: muted)),
+                if (i['reserved'] == true) Text('Alınıyor', style: TextStyle(color: context.muted)),
                 IconButton(
                   tooltip: 'Dileği sil',
                   icon: const Icon(Icons.delete_outline),
@@ -604,7 +604,7 @@ class WishlistsScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 ListTile(
-                  title: Text('${l['title']}', style: const TextStyle(fontWeight: FontWeight.w800, color: ink)),
+                  title: Text('${l['title']}', style: TextStyle(fontWeight: FontWeight.w800, color: context.ink)),
                   subtitle: Text(_subtitle(l, groups)),
                   trailing: l['mine'] == true
                       ? PopupMenuButton<String>(

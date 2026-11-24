@@ -70,13 +70,13 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
       children: [
         Expanded(
           child: _messages.isEmpty
-              ? const Center(
+              ? Center(
                   child: Padding(
                     padding: EdgeInsets.all(32),
                     child: Text(
                       'Harcamalarını sor, sade bir açıklama al.\nYatırım tavsiyesi vermez.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: muted, fontSize: 16),
+                      style: TextStyle(color: context.muted, fontSize: 16),
                     ),
                   ),
                 )
@@ -102,11 +102,11 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                         margin: const EdgeInsets.only(bottom: 10),
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
-                          color: m.mine ? brand : Colors.white,
-                          border: m.mine ? null : Border.all(color: line),
+                          color: m.mine ? brand : context.surface,
+                          border: m.mine ? null : Border.all(color: context.line),
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        child: SelectableText(m.text, style: TextStyle(color: m.mine ? Colors.white : ink, height: 1.35)),
+                        child: SelectableText(m.text, style: TextStyle(color: m.mine ? Colors.white : context.ink, height: 1.35)),
                       ),
                     );
                   },

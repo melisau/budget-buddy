@@ -20,7 +20,6 @@ class AppNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => NavigationBar(
-    backgroundColor: Colors.white,
     labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
     selectedIndex: currentIndex < _addSlot ? currentIndex : currentIndex + 1,
     onDestinationSelected: (slot) {

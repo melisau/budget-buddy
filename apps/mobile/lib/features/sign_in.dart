@@ -77,19 +77,19 @@ class _SignInScreenState extends State<SignInScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text.rich(
+                  Text.rich(
                     TextSpan(
                       children: [
-                        TextSpan(text: 'Budget', style: TextStyle(color: ink)),
+                        TextSpan(text: 'Budget', style: TextStyle(color: context.ink)),
                         TextSpan(text: 'Buddy', style: TextStyle(color: brand)),
                       ],
                     ),
                     style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Finansal yolculuğuna devam et.',
-                    style: TextStyle(fontSize: 16, color: muted),
+                    style: TextStyle(fontSize: 16, color: context.muted),
                   ),
                   const SizedBox(height: 30),
                   TextFormField(
