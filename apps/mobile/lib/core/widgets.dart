@@ -13,12 +13,12 @@ class ErrorRetry extends StatelessWidget {
     padding: const EdgeInsets.all(32),
     children: [
       const SizedBox(height: 100),
-      const Icon(Icons.cloud_off_rounded, size: 48, color: muted),
+      Icon(Icons.cloud_off_rounded, size: 48, color: context.muted),
       const SizedBox(height: 14),
       Text(
         message,
         textAlign: TextAlign.center,
-        style: const TextStyle(color: ink, fontSize: 16),
+        style: TextStyle(color: context.ink, fontSize: 16),
       ),
       const SizedBox(height: 18),
       FilledButton(onPressed: onRetry, child: const Text('Tekrar dene')),
@@ -35,10 +35,10 @@ class LoadingList extends StatelessWidget {
     physics: const NeverScrollableScrollPhysics(),
     itemCount: 6,
     separatorBuilder: (_, _) => const SizedBox(height: 12),
-    itemBuilder: (_, _) => Container(
+    itemBuilder: (context, _) => Container(
       height: 78,
       decoration: BoxDecoration(
-        color: const Color(0xFFE9ECF4),
+        color: context.soft,
         borderRadius: BorderRadius.circular(16),
       ),
     ),
@@ -81,7 +81,7 @@ class TransactionTile extends StatelessWidget {
         title,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontWeight: FontWeight.w700, color: ink),
+        style: TextStyle(fontWeight: FontWeight.w700, color: context.ink),
       ),
       subtitle: Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis),
       trailing: Text(

@@ -29,7 +29,7 @@ class MoreScreen extends StatelessWidget {
         return Card(
           child: ListTile(
             leading: Icon(icon, color: brand),
-            title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700, color: ink)),
+            title: Text(label, style: TextStyle(fontWeight: FontWeight.w700, color: context.ink)),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.go('/more/$route'),
           ),
