@@ -27,4 +27,14 @@ void main() {
   test('unknown kinds fall back safely', () {
     expect(describeNotification('other', {}).route, '/overview');
   });
+
+  test('the overall budget is named as such', () {
+    final n = describeNotification('budget_exceeded', {
+      'scope': 'total',
+      'spent': 21000,
+      'limit': 20000,
+      'currency': 'TRY',
+    });
+    expect(n.title, 'Genel aylık bütçeni aştın');
+  });
 }

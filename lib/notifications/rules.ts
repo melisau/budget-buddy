@@ -72,3 +72,12 @@ export function recurringNotification(item: RecurringReminderInput, today: strin
     data: { title: item.title, amount: item.amount, type: item.type, dueDate: item.nextDate, daysLeft: daysBetween(today, item.nextDate), currency },
   };
 }
+
+export type TotalBudgetInput = { id: string; limit: number; spent: number; month: string };
+
+/** The overall monthly budget: same 80% and 100% steps as a category budget, its own dedupe key. */
+export function totalBudgetNotification(budget: TotalBudgetInput, currency: string): NotificationCandidate | null {
+  const candidate = budgetNotification({ id: budget.id, categoryName: "", limit: budget.limit, spent: budget.spent, month: budget.month }, currency);
+  if (!candidate) return null;
+  return { ...candidate, dedupeKey: candidate.dedupeKey.replace(/^budget:/, "total-budget:"), data: { ...candidate.data, scope: "total" } };
+}
