@@ -11,15 +11,10 @@
     "start": "next start -p 5173",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern mobile",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-transform-types --no-warnings=ExperimentalWarning --import ./tests/support/register.mjs --test tests/*.test.ts",
-    "mobile:sync": "cap sync",
-    "mobile:android": "cap open android",
-    "mobile:ios": "cap open ios"
+    "test": "node --experimental-transform-types --no-warnings=ExperimentalWarning --import ./tests/support/register.mjs --test tests/*.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
-    "@capacitor/core": "^8.6.0",
-    "@capgo/capacitor-social-login": "^8.7.7",
     "@hookform/resolvers": "^5.7.1",
     "@shadcn/react": "^0.3.0",
     "@supabase/ssr": "^0.12.7",
@@ -48,9 +43,6 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@capacitor/android": "^8.6.0",
-    "@capacitor/cli": "^8.6.0",
-    "@capacitor/ios": "^8.6.0",
     "@electric-sql/pglite": "^0.5.8",
     "@tailwindcss/postcss": "4.2.1",
     "@types/node": "22.19.19",
