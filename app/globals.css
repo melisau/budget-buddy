@@ -355,3 +355,10 @@ body[data-scroll-locked] { margin-right: 0 !important; padding-right: 0 !importa
 .family-invite-banner svg { width: 18px; height: 18px; color: var(--c-t-4258d5); flex-shrink: 0; }
 .family-invite-banner span { flex: 1; min-width: 180px; }
 .family-invite-banner a { font-weight: 700; color: var(--c-t-4258d5); }
+
+.required-mark { color: var(--c-t-d45050); font-weight: 700; }
+
+/* Dashboard view settings use the same centered dialog as the other forms. */
+.view-settings-dialog .view-settings-fields { padding: 0; }
+.view-settings-dialog [data-slot=dialog-footer] button { min-height: 44px; }
+.field-label { display: inline; }
