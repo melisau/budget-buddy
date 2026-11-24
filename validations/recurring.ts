@@ -17,6 +17,8 @@ export const recurringRequestSchema = z.object({
   endDate: z.union([z.literal(""), date]).optional().transform(emptyToUndefined),
   // "" or missing: no reminder, the transaction is created automatically.
   reminderDays: z.union([z.literal(""), z.null(), z.coerce.number().int()]).optional(),
+  // "" = private; a group id = shown to that family group as an upcoming payment.
+  sharedFamilyGroupId: z.union([z.literal(""), z.null(), z.string().uuid()]).optional(),
 }).refine((value) => value.kind === "regular" || value.type === "expense", { message: "A subscription is an expense.", path: ["type"] })
   .refine((value) => !value.endDate || value.endDate >= value.startDate, { message: "The end date must be after the start date.", path: ["endDate"] });
 
@@ -29,6 +31,7 @@ export function toRecurringInput(body: unknown): RecurringInput {
     kind: payload.kind, type: payload.type, title: payload.title, amount: payload.amount,
     categoryId: payload.category, accountId: payload.account, frequency: payload.frequency as Frequency,
     startDate: payload.startDate, endDate: payload.endDate, reminderDays: parseReminderDays(payload.reminderDays),
+    sharedFamilyGroupId: payload.sharedFamilyGroupId === undefined ? undefined : payload.sharedFamilyGroupId || null,
   };
 }
 

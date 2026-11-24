@@ -32,6 +32,7 @@ import { Progress } from "@/components/ui/progress";
 
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RequiredMark } from "@/components/ui/required-mark";
+import { FamilyUpcoming } from "@/components/budgetbuddy/family-upcoming";
 
 type FamilyMember = { avatar?: ProfileAvatarData | null; id: string; userId: string | null; name: string; email: string | null; role: "owner" | "member" | "viewer"; invitationStatus: "pending" | "accepted" | "declined" };
 
@@ -150,6 +151,7 @@ export function FamilyScreen() {
 
     <div className="family-grid">
 
+      <FamilyUpcoming groupId={group.id} currency={group.currency} members={group.members} />
       <article className="panel family-members"><PanelHead title={tr ? "Aile bireyleri" : "Family members"} sub={tr ? "Rol ve erişim durumları" : "Roles and access"} />{group.members.filter((member) => member.invitationStatus !== "declined").map((member) => <MemberRow key={member.id} group={group} member={member} tr={tr} onComplete={reload} />)}</article>
 
       <article className="panel family-spending"><PanelHead title={tr ? "Aile işlemleri" : "Family transactions"} sub={tr ? "İşlem sahibine göre giderler" : "Expenses by transaction owner"} />{accepted.map((member) => { const spent = member.userId ? familyTransactions.filter((item) => item.type === "expense" && item.ownerUserId === member.userId).reduce((sum, item) => sum + item.amount, 0) : 0; const percent = Math.round(spent / spendTotal * 100); return <div className="member-spend" key={member.id}><div><b>{member.name}</b><span>{money(spent)}</span></div><Progress value={percent} /><small>{percent}%</small></div>; })}</article>

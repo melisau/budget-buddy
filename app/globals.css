@@ -394,3 +394,15 @@ body[data-scroll-locked] { margin-right: 0 !important; padding-right: 0 !importa
 .instructions-help ol { display: grid; gap: 6px; margin: 0; padding-left: 20px; color: var(--c-t-4f596f); font-size: .88rem; }
 .instructions-help b { color: var(--c-t-17213c); }
 .brand-icon { flex-shrink: 0; }
+
+/* Family page: shared upcoming payments. */
+.family-upcoming h3 { display: flex; align-items: center; gap: 8px; }
+.family-upcoming h3 svg { width: 18px; height: 18px; color: var(--primary); }
+.family-upcoming ul { margin: 0; padding: 0; list-style: none; }
+.family-upcoming li { display: grid; grid-template-columns: 72px 1fr auto; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.family-upcoming li:last-child { border-bottom: 0; }
+.family-upcoming-date { color: var(--muted-foreground); font-size: .8rem; font-weight: 600; }
+.family-upcoming-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.family-upcoming-title b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.family-upcoming-title small { color: var(--muted-foreground); }
+.family-upcoming strong.income { color: var(--c-t-15803d); }
