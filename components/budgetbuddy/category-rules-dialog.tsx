@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { LanguageContext } from "@/components/providers/language-provider";
 import { categoryDisplayName } from "@/lib/finance/category-names";
 import type { TransactionKind } from "@/lib/finance/category-rules";
+import { RequiredMark } from "@/components/ui/required-mark";
 
 type Rule = { id: string; keyword: string; type: TransactionKind; categoryId: string; categoryName: string };
 type Category = { id: string; name: string; type: TransactionKind };
@@ -65,9 +66,9 @@ export function CategoryRulesDialog({ open, onOpenChange }: { open: boolean; onO
         : !data.available ? <p>{tr ? "Bu özellik henüz hazır değil." : "This feature is not ready yet."}</p>
         : <>
           <form className="grid gap-3 sm:grid-cols-2" onSubmit={(event) => void add(event)}>
-            <label className="grid gap-1 text-sm font-semibold sm:col-span-2">{tr ? "Açıklamada geçen sözcük" : "Word in the description"}<Input value={keyword} minLength={2} maxLength={80} required placeholder={tr ? "Örn. Migros" : "E.g. Migros"} onChange={(event) => setKeyword(event.target.value)} /></label>
-            <label className="grid gap-1 text-sm font-semibold">{tr ? "Tür" : "Type"}<select className={selectClass} value={type} onChange={(event) => { setType(event.target.value as TransactionKind); setCategoryId(""); }}><option value="expense">{tr ? "Gider" : "Expense"}</option><option value="income">{tr ? "Gelir" : "Income"}</option></select></label>
-            <label className="grid gap-1 text-sm font-semibold">{tr ? "Kategori" : "Category"}<select className={selectClass} value={categoryId} required onChange={(event) => setCategoryId(event.target.value)}><option value="">{tr ? "Seç…" : "Choose…"}</option>{categories.map((category) => <option key={category.id} value={category.id}>{categoryDisplayName(category.name, language)}</option>)}</select></label>
+            <label className="grid gap-1 text-sm font-semibold sm:col-span-2"><span className="field-label">{tr ? "Açıklamada geçen sözcük" : "Word in the description"}<RequiredMark /></span><Input value={keyword} minLength={2} maxLength={80} required placeholder={tr ? "Örn. Migros" : "E.g. Migros"} onChange={(event) => setKeyword(event.target.value)} /></label>
+            <label className="grid gap-1 text-sm font-semibold"><span className="field-label">{tr ? "Tür" : "Type"}<RequiredMark /></span><select className={selectClass} value={type} onChange={(event) => { setType(event.target.value as TransactionKind); setCategoryId(""); }}><option value="expense">{tr ? "Gider" : "Expense"}</option><option value="income">{tr ? "Gelir" : "Income"}</option></select></label>
+            <label className="grid gap-1 text-sm font-semibold"><span className="field-label">{tr ? "Kategori" : "Category"}<RequiredMark /></span><select className={selectClass} value={categoryId} required onChange={(event) => setCategoryId(event.target.value)}><option value="">{tr ? "Seç…" : "Choose…"}</option>{categories.map((category) => <option key={category.id} value={category.id}>{categoryDisplayName(category.name, language)}</option>)}</select></label>
             <Button type="submit" disabled={busy || keyword.trim().length < 2 || !categoryId} className="sm:col-span-2"><Wand2 data-icon="inline-start" />{tr ? "Kural ekle" : "Add rule"}</Button>
           </form>
           {data.rules.length === 0 ? <p className="text-sm text-[var(--c-t-66708b)]">{tr ? "Henüz kural yok." : "No rules yet."}</p>

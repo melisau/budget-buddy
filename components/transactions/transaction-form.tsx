@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { RequiredMark } from "@/components/ui/required-mark";
 import { Minus, Plus, ReceiptText, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { transactionSchema, type TransactionInput } from "@/validations/transaction";
@@ -177,12 +178,12 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
       </p>
 
       <label>
-        {tr ? "Tutar" : "Amount"}
+        <span className="field-label">{tr ? "Tutar" : "Amount"}<RequiredMark /></span>
         <Input inputMode="decimal" placeholder="₺0.00" {...form.register("amount")} aria-invalid={!!form.formState.errors.amount} />
         {form.formState.errors.amount && <small className="field-error">{form.formState.errors.amount.message}</small>}
       </label>
       <label>
-        {tr ? "Açıklama" : "Description"}
+        <span className="field-label">{tr ? "Açıklama" : "Description"}<RequiredMark /></span>
         <Input placeholder={tr ? "Haftalık market alışverişi" : "Weekly groceries"} {...titleField} onChange={(event) => { void titleField.onChange(event); applyRule(event.target.value, type); }} aria-invalid={!!form.formState.errors.title} />
         {form.formState.errors.title && <small className="field-error">{form.formState.errors.title.message}</small>}
       </label>
@@ -191,7 +192,7 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
       </div>}
       <div className="form-grid tx-pair">
         <label>
-          {tr ? "Kategori" : "Category"}
+          <span className="field-label">{tr ? "Kategori" : "Category"}<RequiredMark /></span>
           <Select onValueChange={(value) => { setCategory(value); setPickedByRule(false); form.setValue("category", value, { shouldValidate: true }); }} value={category}>
             <SelectTrigger aria-invalid={!!form.formState.errors.category}><SelectValue placeholder={tr ? "Kategori seç" : "Select category"} /></SelectTrigger>
             <SelectContent>{availableCategories.map((item) => <SelectItem value={item.id} key={item.id}>{t(item.name)}</SelectItem>)}</SelectContent>
@@ -209,7 +210,7 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
         </label>
       </div>
       <label>
-        {tr ? "Tarih" : "Date"}
+        <span className="field-label">{tr ? "Tarih" : "Date"}<RequiredMark /></span>
         <Input type="date" {...form.register("date")} aria-invalid={!!form.formState.errors.date} />
         {form.formState.errors.date && <small className="field-error">{form.formState.errors.date.message}</small>}
       </label>
