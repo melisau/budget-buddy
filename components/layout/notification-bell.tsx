@@ -57,20 +57,20 @@ export function NotificationBell() {
     <span className="mr-[10px] flex shrink-0 max-[820px]:mr-0">
     <Popover open={open} onOpenChange={(next) => void changeOpen(next)}>
       <PopoverTrigger asChild>
-        <button type="button" className="relative grid size-10 shrink-0 place-items-center rounded-xl border border-[#dfe3ed] bg-white text-[#34415f] hover:text-[#4258d5]" aria-label={state.unread > 0 ? `${label} (${state.unread})` : label}>
+        <button type="button" className="relative grid size-10 shrink-0 place-items-center rounded-xl border border-[var(--c-s-dfe3ed)] bg-[var(--c-s-ffffff)] text-[var(--c-t-34415f)] hover:text-[var(--c-t-4258d5)]" aria-label={state.unread > 0 ? `${label} (${state.unread})` : label}>
           <Bell className="size-5" aria-hidden="true" />
-          {state.unread > 0 && <span className="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-[#e0483f] px-1 text-[11px] font-bold leading-5 text-white" aria-hidden="true">{state.unread > 9 ? "9+" : state.unread}</span>}
+          {state.unread > 0 && <span className="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-[var(--c-s-e0483f)] px-1 text-[11px] font-bold leading-5 text-white" aria-hidden="true">{state.unread > 9 ? "9+" : state.unread}</span>}
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" collisionPadding={16} className="w-[min(22rem,calc(100vw-2rem))] p-0">
         <p className="border-b px-4 py-3 text-sm font-semibold">{label}</p>
         <div className="max-h-96 overflow-y-auto" aria-live="polite">
           {state.status === "loading" && <p className="px-4 py-6 text-center text-sm text-muted-foreground">{tr ? "Yükleniyor…" : "Loading…"}</p>}
-          {state.status === "error" && <div className="px-4 py-6 text-center text-sm"><p>{tr ? "Bildirimler yüklenemedi." : "Unable to load notifications."}</p><button type="button" className="mt-2 font-semibold text-[#4258d5] underline" onClick={() => { setState({ status: "loading", items: [], unread: 0 }); void load(); }}>{tr ? "Tekrar dene" : "Try again"}</button></div>}
+          {state.status === "error" && <div className="px-4 py-6 text-center text-sm"><p>{tr ? "Bildirimler yüklenemedi." : "Unable to load notifications."}</p><button type="button" className="mt-2 font-semibold text-[var(--c-t-4258d5)] underline" onClick={() => { setState({ status: "loading", items: [], unread: 0 }); void load(); }}>{tr ? "Tekrar dene" : "Try again"}</button></div>}
           {state.status === "ready" && state.items.length === 0 && <p className="px-4 py-6 text-center text-sm text-muted-foreground">{tr ? "Henüz bildirimin yok. Bütçe, hedef ve aile davetleri burada görünür." : "No notifications yet. Budget, goal and family invitation updates appear here."}</p>}
           {state.status === "ready" && <ul>{state.items.map((item) => {
             const text = renderNotification(item.kind, item.data, language);
-            return <li key={item.id} className="border-b last:border-b-0"><Link href={text.href} onClick={() => setOpen(false)} className={`block px-4 py-3 text-sm hover:bg-muted ${item.readAt ? "" : "bg-[#f1f4ff]"}`}><span className="block font-semibold">{text.title}</span><span className="mt-0.5 block text-muted-foreground">{text.body}</span></Link></li>;
+            return <li key={item.id} className="border-b last:border-b-0"><Link href={text.href} onClick={() => setOpen(false)} className={`block px-4 py-3 text-sm hover:bg-muted ${item.readAt ? "" : "bg-[var(--c-s-f1f4ff)]"}`}><span className="block font-semibold">{text.title}</span><span className="mt-0.5 block text-muted-foreground">{text.body}</span></Link></li>;
           })}</ul>}
         </div>
       </PopoverContent>

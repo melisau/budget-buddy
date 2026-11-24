@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
+import "./theme-colors.css";
 import "./globals.css";
 import "./mobile.css";
+import {ThemeProvider} from "@/components/providers/theme-provider";
 import {AuthProvider} from "@/components/providers/auth-provider";
 import {LanguageProvider} from "@/components/providers/language-provider";
 import {AuthLanguageSync} from "@/components/providers/auth-language-sync";
@@ -41,7 +43,10 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: BRAND_COLOR,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: BRAND_COLOR },
+    { media: "(prefers-color-scheme: dark)", color: "#0f1420" },
+  ],
 };
 
 export default async function RootLayout({
@@ -51,11 +56,14 @@ export default async function RootLayout({
 }>) {
   const lang = pageLanguage((await headers()).get(PAGE_LANGUAGE_HEADER));
   return (
-    <html lang={lang}>
+    // The theme class is set on <html> before hydration, which React would otherwise report.
+    <html lang={lang} suppressHydrationWarning>
       <body className="antialiased">
-        <AuthProvider>
-          <LanguageProvider><AuthLanguageSync/><ServiceWorkerRegistration/><SkipLink/><ErrorReportingProvider>{children}</ErrorReportingProvider><Toaster richColors/></LanguageProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <LanguageProvider><AuthLanguageSync/><ServiceWorkerRegistration/><SkipLink/><ErrorReportingProvider>{children}</ErrorReportingProvider><Toaster richColors/></LanguageProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -10,7 +10,8 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 import { useCallback, useContext, useEffect, useState } from "react";
 
-import { ChevronRight, Coins, Download, Globe2, LockKeyhole, LogOut, Pencil, Trash2, type LucideIcon } from "lucide-react";
+import { ChevronRight, Coins, Download, Globe2, LockKeyhole, LogOut, Pencil, SunMoon, Trash2, type LucideIcon } from "lucide-react";
+import { useTheme } from "next-themes";
 
 import Link from "next/link";
 
@@ -35,6 +36,7 @@ export function SettingsScreen() {
   const t = useT();
 
   const { language, setLanguage } = useContext(LanguageContext);
+  const { theme, setTheme } = useTheme();
 
   const tr = language === "tr";
 
@@ -106,6 +108,8 @@ export function SettingsScreen() {
           <Select value={currency} disabled={savingCurrency || preferencesLoading || preferencesError} onValueChange={(value) => void saveCurrency(value)}><SelectTrigger className="settings-option-row" aria-label={t("Currency")}><SettingsIcon icon={Coins} /><span className="settings-option-text"><b>{t("Currency")}</b></span><SelectValue /></SelectTrigger><SelectContent><SelectGroup>{["TRY", "EUR", "USD", "GBP"].map((item) => <SelectItem value={item} key={item}>{item}</SelectItem>)}</SelectGroup></SelectContent></Select>
 
           <Select value={language} onValueChange={setLanguage}><SelectTrigger className="settings-option-row" aria-label={tr ? "Dil" : "Language"}><SettingsIcon icon={Globe2} /><span className="settings-option-text"><b>{tr ? "Dil" : "Language"}</b></span><SelectValue /></SelectTrigger><SelectContent><SelectGroup><SelectItem value="tr">Türkçe</SelectItem><SelectItem value="en">English</SelectItem></SelectGroup></SelectContent></Select>
+
+          <Select value={theme ?? "system"} onValueChange={setTheme}><SelectTrigger className="settings-option-row" aria-label={tr ? "Görünüm" : "Appearance"}><SettingsIcon icon={SunMoon} /><span className="settings-option-text"><b>{tr ? "Görünüm" : "Appearance"}</b></span><SelectValue /></SelectTrigger><SelectContent><SelectGroup><SelectItem value="system">{tr ? "Sistem" : "System"}</SelectItem><SelectItem value="light">{tr ? "Açık" : "Light"}</SelectItem><SelectItem value="dark">{tr ? "Koyu" : "Dark"}</SelectItem></SelectGroup></SelectContent></Select>
 
         </div>{preferencesError && <div className="settings-preferences-error" role="alert"><p>{tr ? "Tercihler yüklenemedi." : "Unable to load preferences."}</p><Button variant="outline" size="sm" onClick={() => { setPreferencesLoading(true); void loadPreferences(); }}>{t("Try again")}</Button></div>}</section>
 
