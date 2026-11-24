@@ -1,4 +1,5 @@
 "use client";
+import {localeOf} from "@/lib/i18n/localized";
 import { useAuthUser } from "@/components/providers/auth-provider";
 import {useContext,useState,type ReactNode} from "react";
 import {ChartNoAxesCombined,ChevronRight,Gift,Home,Landmark,LayoutDashboard,MoreHorizontal,Plus,ReceiptText,Repeat,Settings,Sparkles,Users} from "lucide-react";
@@ -54,7 +55,7 @@ export function AppHeader({view,quickAdd}:{view:AppView;quickAdd:ReactNode}){
  const t=useT();
  const {language}=useContext(LanguageContext);
  const label=APP_NAVIGATION.find(([id])=>id===navId(view))?.[1]??"Dashboard";
- const locale=language==="tr"?"tr-TR":"en-US";
+ const locale=localeOf(language);
  const today=new Intl.DateTimeFormat(locale,{weekday:"long",day:"numeric",month:"long",timeZone:"Europe/Istanbul"}).format(new Date());
  return <header>
   <div className="header-page-title"><h1>{t(label)}</h1><p>{view==="dashboard"?today:t("Manage your money with confidence.")}</p></div>

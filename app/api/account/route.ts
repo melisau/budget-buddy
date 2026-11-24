@@ -9,7 +9,7 @@ import { fetchAllRows } from "@/lib/supabase/query";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 const supportedCurrencies = new Set(["TRY", "EUR", "USD", "GBP"]);
-const supportedLanguages = new Set(["en", "tr"]);
+const supportedLanguages = new Set(["en", "tr", "de"]);
 
 export async function GET() {
   try {

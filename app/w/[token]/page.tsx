@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Gift } from "lucide-react";
 import { isShareToken, publicWishlistItem, type Occasion } from "@/lib/finance/wishlist";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { localized } from "@/lib/i18n/localized";
 
 // Read-only view of a wishlist shared by link. No sign-in; the token is the
 // only credential, so reservations and owner identity are never sent here.
@@ -39,10 +40,10 @@ export default async function SharedWishlistPage({ params }: { params: Promise<{
       <h1 className="mt-1 text-xl font-bold">{list.title}</h1>
       {list.event_date && <p className="mt-1 text-sm text-[var(--c-t-737c91)]">{list.event_date}</p>}
       <ul className="wishlist-items mt-3">
-        {wishes.length === 0 ? <li className="wishlist-empty flex items-center gap-2"><Gift className="size-4" />{tr ? "Bu listede henüz dilek yok." : "No wishes on this list yet."}</li>
-          : wishes.map((item) => <li key={item.id} className="wishlist-item"><span className="min-w-0 flex-1"><b className="block text-sm break-words">{item.name}</b>{item.note && <small className="block break-words text-[var(--c-t-737c91)]">{item.note}</small>}{item.productUrl && <a href={item.productUrl} target="_blank" rel="noopener noreferrer nofollow" className="text-xs font-semibold text-[var(--c-t-4258d5)] underline">{tr ? "Ürüne bak" : "View product"}</a>}</span></li>)}
+        {wishes.length === 0 ? <li className="wishlist-empty flex items-center gap-2"><Gift className="size-4" />{tr ? "Bu listede henüz dilek yok." : localized("No wishes on this list yet.")}</li>
+          : wishes.map((item) => <li key={item.id} className="wishlist-item"><span className="min-w-0 flex-1"><b className="block text-sm break-words">{item.name}</b>{item.note && <small className="block break-words text-[var(--c-t-737c91)]">{item.note}</small>}{item.productUrl && <a href={item.productUrl} target="_blank" rel="noopener noreferrer nofollow" className="text-xs font-semibold text-[var(--c-t-4258d5)] underline">{tr ? "Ürüne bak" : localized("View product")}</a>}</span></li>)}
       </ul>
     </article>
-    <p className="text-center text-xs text-[var(--c-t-737c91)]">{tr ? "Bu liste sadece görüntülenebilir." : "This list is view-only."} · <Link href="/" className="underline">Budget Buddy</Link></p>
+    <p className="text-center text-xs text-[var(--c-t-737c91)]">{tr ? "Bu liste sadece görüntülenebilir." : localized("This list is view-only.")} · <Link href="/" className="underline">Budget Buddy</Link></p>
   </main>;
 }

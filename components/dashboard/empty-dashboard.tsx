@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 
 interface EmptyDashboardProps {
   onAddTransaction: () => void;
-  language: "en" | "tr";
+  language: "en" | "tr" | "de";
 }
 
 export function EmptyDashboard({ onAddTransaction, language }: EmptyDashboardProps) {

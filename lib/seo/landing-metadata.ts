@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import type { Language } from "@/components/providers/language-provider";
+import type { Language } from "@/lib/seo/i18n";
 import { LANDING_ALTERNATES, landingPath } from "@/lib/seo/i18n";
 import { LANDING_FAQ } from "@/lib/seo/landing-faq";
 import { SITE_NAME, SITE_URL } from "@/lib/site";

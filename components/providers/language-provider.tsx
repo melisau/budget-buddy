@@ -1,7 +1,8 @@
 "use client";
 import {createContext,useContext,useEffect,useSyncExternalStore,type ReactNode} from "react";
 import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from "@/components/ui/select";
-export type Language="en"|"tr";
+import {isLanguage,localized,setCurrentLanguage,type Language} from "@/lib/i18n/localized";
+export type {Language};
 export const LanguageContext=createContext<{language:Language;setLanguage:(language:Language)=>void}>({language:"en",setLanguage:()=>{}});
 const translations:Record<string,string>={
  "Active":"Aktif",
@@ -90,15 +91,15 @@ const translations:Record<string,string>={
 };
 const transactionTranslations:Record<string,string>={"Transaction type":"İşlem türü","All types":"Tüm türler","All categories":"Tüm kategoriler","From date":"Başlangıç tarihi","To date":"Bitiş tarihi","Actions":"İşlemler","Edit":"Düzenle","Edit transaction":"İşlemi düzenle","Update the transaction details.":"İşlem bilgilerini güncelleyin.","Delete transaction":"İşlemi sil","Delete this transaction?":"Bu işlem silinsin mi?","No transactions yet":"Henüz işlem yok","Add your first income or expense to start tracking your money.":"Para takibine başlamak için ilk gelir veya giderinizi ekleyin.","Loading transactions…":"İşlemler yükleniyor…","Try again":"Tekrar dene","Save changes":"Değişiklikleri kaydet","Transaction updated.":"İşlem güncellendi.","Transaction deleted.":"İşlem silindi.","Unable to save the transaction.":"İşlem kaydedilemedi.","Unable to delete the transaction.":"İşlem silinemedi.","CSV import will be completed in the next phase.":"CSV aktarımı bir sonraki aşamada tamamlanacak."};
 const accountTranslations:Record<string,string>={"Dashboard filters":"Genel bakış filtreleri","Scope":"Kapsam","Personal":"Kişisel","Period":"Dönem","checking":"Vadesiz hesap","savings":"Birikim hesabı","cash":"Nakit","credit_card":"Kredi kartı","digital_wallet":"Dijital cüzdan","Transfer out":"Giden transfer","Transfer in":"Gelen transfer","Monthly limit":"Aylık limit","Select an expense category":"Bir gider kategorisi seçin","Plan a monthly limit for each spending category.":"Her harcama kategorisi için aylık limit belirleyin.","Set a monthly spending limit and track it automatically.":"Aylık harcama limiti belirleyin ve otomatik takip edin."};
-export const useT=()=>{const {language}=useContext(LanguageContext);return (text:string)=>language==="tr"?(translations[text]||transactionTranslations[text]||accountTranslations[text]||text):text};
-export function LanguageSelect(){const {language,setLanguage}=useContext(LanguageContext);return <Select value={language} onValueChange={value=>setLanguage(value as Language)}><SelectTrigger className="language-select" aria-label={language==="tr"?"Dil seç":"Select language"}><SelectValue/></SelectTrigger><SelectContent position="popper" align="end" sideOffset={6}><SelectItem value="en">EN</SelectItem><SelectItem value="tr">TR</SelectItem></SelectContent></Select>}
+export const useT=()=>{const {language}=useContext(LanguageContext);return (text:string)=>language==="tr"?(translations[text]||transactionTranslations[text]||accountTranslations[text]||text):localized(text,language)};
+export function LanguageSelect(){const {language,setLanguage}=useContext(LanguageContext);return <Select value={language} onValueChange={value=>setLanguage(value as Language)}><SelectTrigger className="language-select" aria-label={language==="tr"?"Dil seç":"Select language"}><SelectValue/></SelectTrigger><SelectContent position="popper" align="end" sideOffset={6}><SelectItem value="en">EN</SelectItem><SelectItem value="tr">TR</SelectItem><SelectItem value="de">DE</SelectItem></SelectContent></Select>}
 
 const languageEvent="budgetbuddy-language-change";
 let fallbackLanguage:Language="en";
 export function readLanguage():Language{
  try {
   const saved=window.localStorage.getItem("budgetbuddy-language");
-  return saved==="tr"||saved==="en"?saved:fallbackLanguage;
+  return isLanguage(saved)?saved:fallbackLanguage;
  } catch { return fallbackLanguage; }
 }
 function subscribe(onChange:()=>void){
@@ -110,7 +111,7 @@ function subscribe(onChange:()=>void){
  };
 }
 export function hasSavedLanguage():boolean{
- try {const saved=window.localStorage.getItem("budgetbuddy-language");return saved==="tr"||saved==="en";} catch { return false; }
+ try {const saved=window.localStorage.getItem("budgetbuddy-language");return isLanguage(saved);} catch { return false; }
 }
 export function setLanguage(next:Language){
  fallbackLanguage=next;
@@ -119,6 +120,7 @@ export function setLanguage(next:Language){
 }
 export function LanguageProvider({children}:{children:ReactNode}){
  const language=useSyncExternalStore(subscribe,readLanguage,()=>"en" as Language);
+ setCurrentLanguage(language);
  useEffect(()=>{if(!document.documentElement.dataset.langLocked) document.documentElement.lang=language;},[language]);
  return <LanguageContext.Provider value={{language,setLanguage}}>{children}</LanguageContext.Provider>;
 }

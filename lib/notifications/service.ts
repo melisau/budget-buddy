@@ -6,6 +6,7 @@ import {
   addDays, budgetNotification, emailedKinds, goalNotification, GOAL_DUE_DAYS, inviteNotification, recurringNotification, todayInIstanbul,
   type NotificationCandidate, type NotificationData, type NotificationKind,
 } from "@/lib/notifications/rules";
+import { isLanguage } from "@/lib/i18n/localized";
 import { SITE_URL } from "@/lib/site";
 import { isMissingSchemaError } from "@/lib/supabase/schema-errors";
 import { escapeLikePattern, fetchAllRows } from "@/lib/supabase/query";
@@ -156,7 +157,7 @@ export async function runNotificationJob(now = new Date()): Promise<JobSummary> 
           .select("id, kind, data").eq("user_id", person.id).is("emailed_at", null).in("kind", [...emailedKinds]).gte("created_at", emailSince).order("created_at");
         if (pendingError) throw pendingError;
         if (!pending?.length) continue;
-        const language = person.language === "en" ? "en" : "tr";
+        const language = isLanguage(person.language) ? person.language : "tr";
         await sendEmail(person.email, digestEmail(pending.map((row) => ({ kind: row.kind as NotificationKind, data: (row.data ?? {}) as NotificationData })), language, SITE_URL));
         const { error: markError } = await supabase.from("notifications").update({ emailed_at: now.toISOString() }).in("id", pending.map((row) => row.id));
         if (markError) throw markError;

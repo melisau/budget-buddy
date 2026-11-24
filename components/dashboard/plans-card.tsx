@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { formatCurrency } from "@/lib/finance/currency";
 import { useFinanceDataVersion } from "@/lib/finance/data-events";
 import type { Currency } from "@/types/finance";
+import { localized } from "@/lib/i18n/localized";
 
 type Budget = { id: string; categoryName: string; limit: number; spent: number; usage: number; status: "safe" | "approaching" | "critical" | "exceeded" };
 type Goal = { id: string; name: string; target_amount: number; current_amount: number; deadline: string | null };
@@ -59,19 +60,19 @@ export function PlansCard({ month }: { month: string }) {
 
   return <article className="panel dashboard-plans">
     <div className="panel-head">
-      <div><h3>{tab === "budgets" ? (tr ? "Bütçeler" : "Budgets") : (tr ? "Hedefler" : "Goals")}</h3><p>{tab === "budgets" ? (tr ? "Bu ayki harcama sınırların" : "Your spending limits this month") : (tr ? "Biriktirdiklerin" : "What you are saving for")}</p></div>
-      <div className="plans-switch" role="tablist" aria-label={tr ? "Gösterilecek" : "Show"}>
-        {(["budgets", "goals"] as const).map((id) => <button type="button" role="tab" key={id} aria-selected={tab === id} className={tab === id ? "active" : ""} onClick={() => choose(id)}>{id === "budgets" ? (tr ? "Bütçeler" : "Budgets") : (tr ? "Hedefler" : "Goals")}</button>)}
+      <div><h3>{tab === "budgets" ? (tr ? "Bütçeler" : localized("Budgets")) : (tr ? "Hedefler" : localized("Goals"))}</h3><p>{tab === "budgets" ? (tr ? "Bu ayki harcama sınırların" : localized("Your spending limits this month")) : (tr ? "Biriktirdiklerin" : localized("What you are saving for"))}</p></div>
+      <div className="plans-switch" role="tablist" aria-label={tr ? "Gösterilecek" : localized("Show")}>
+        {(["budgets", "goals"] as const).map((id) => <button type="button" role="tab" key={id} aria-selected={tab === id} className={tab === id ? "active" : ""} onClick={() => choose(id)}>{id === "budgets" ? (tr ? "Bütçeler" : localized("Budgets")) : (tr ? "Hedefler" : localized("Goals"))}</button>)}
       </div>
     </div>
-    {failed ? <p className="empty-state">{tr ? "Yüklenemedi." : "Unable to load."}</p>
-      : !loaded ? <p className="empty-state" role="status">{tr ? "Yükleniyor…" : "Loading…"}</p>
+    {failed ? <p className="empty-state">{tr ? "Yüklenemedi." : localized("Unable to load.")}</p>
+      : !loaded ? <p className="empty-state" role="status">{tr ? "Yükleniyor…" : localized("Loading…")}</p>
       : tab === "budgets" ? (budgets!.items.length
         ? budgets!.items.slice(0, 4).map((budget) => <div className="plans-row" key={budget.id}><div><b>{t(budget.categoryName)}</b><span>{money(budget.spent, budgets!.currency)} / {money(budget.limit, budgets!.currency)}</span></div><Progress value={Math.min(100, budget.usage)} className={budget.status} /></div>)
-        : <p className="empty-state">{tr ? "Bu ay için bütçe yok." : "No budgets this month."} <Link href="/budgets">{tr ? "Bütçe oluştur" : "Create a budget"}</Link></p>)
+        : <p className="empty-state">{tr ? "Bu ay için bütçe yok." : localized("No budgets this month.")} <Link href="/budgets">{tr ? "Bütçe oluştur" : localized("Create a budget")}</Link></p>)
       : (goals!.items.length
         ? goals!.items.slice(0, 4).map((goal) => { const percent = goal.target_amount > 0 ? Math.min(100, Math.round((Number(goal.current_amount) / Number(goal.target_amount)) * 100)) : 0; return <div className="plans-row" key={goal.id}><div><b>{goal.name}</b><span>{money(Number(goal.current_amount), goals!.currency)} / {money(Number(goal.target_amount), goals!.currency)} · %{percent}</span></div><Progress value={percent} /></div>; })
-        : <p className="empty-state">{tr ? "Henüz hedef yok." : "No goals yet."} <Link href="/goals">{tr ? "Hedef oluştur" : "Create a goal"}</Link></p>)}
-    {loaded && <Link className="plans-more" href={tab === "budgets" ? "/budgets" : "/goals"}>{tr ? "Tümünü gör" : "View all"}</Link>}
+        : <p className="empty-state">{tr ? "Henüz hedef yok." : localized("No goals yet.")} <Link href="/goals">{tr ? "Hedef oluştur" : localized("Create a goal")}</Link></p>)}
+    {loaded && <Link className="plans-more" href={tab === "budgets" ? "/budgets" : "/goals"}>{tr ? "Tümünü gör" : localized("View all")}</Link>}
   </article>;
 }
