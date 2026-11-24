@@ -7,6 +7,7 @@ class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
 
   static const _items = [
+    ('notifications', 'Bildirimler', Icons.notifications_outlined),
     ('family', 'Aile Grubu', Icons.groups_outlined),
     ('wishlists', 'Dilek Listeleri', Icons.card_giftcard_outlined),
     ('recurring', 'Tekrarlayanlar', Icons.repeat),
@@ -29,7 +30,10 @@ class MoreScreen extends StatelessWidget {
         return Card(
           child: ListTile(
             leading: Icon(icon, color: brand),
-            title: Text(label, style: TextStyle(fontWeight: FontWeight.w700, color: context.ink)),
+            title: Text(
+              label,
+              style: TextStyle(fontWeight: FontWeight.w700, color: context.ink),
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.go('/more/$route'),
           ),
