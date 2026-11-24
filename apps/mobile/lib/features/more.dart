@@ -11,6 +11,7 @@ class MoreScreen extends StatelessWidget {
     ('wishlists', 'Dilek Listeleri', Icons.card_giftcard_outlined),
     ('recurring', 'Tekrarlayanlar', Icons.repeat),
     ('budgets', 'Bütçeler', Icons.savings_outlined),
+    ('category-rules', 'Kategori Kuralları', Icons.rule),
     ('accounts', 'Hesaplar', Icons.account_balance_outlined),
     ('goals', 'Hedefler', Icons.track_changes),
     ('analytics', 'Analiz', Icons.insights),
@@ -29,7 +30,10 @@ class MoreScreen extends StatelessWidget {
         return Card(
           child: ListTile(
             leading: Icon(icon, color: brand),
-            title: Text(label, style: TextStyle(fontWeight: FontWeight.w700, color: context.ink)),
+            title: Text(
+              label,
+              style: TextStyle(fontWeight: FontWeight.w700, color: context.ink),
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.go('/more/$route'),
           ),
