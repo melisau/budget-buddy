@@ -6,7 +6,7 @@ import { LANDING_LANGUAGE_BY_PATH, PAGE_LANGUAGE_HEADER } from "@/lib/seo/i18n";
 
 // Refreshes the Supabase session cookie on every matched request so server
 // code always sees a valid session. Authorization itself is checked next to
-// every protected resource with auth.getUser(); nothing here grants access.
+// every protected resource; nothing here grants access.
 export async function proxy(request: NextRequest) {
   // Public landing pages: no session work, only tell the root layout which
   // language the page is in so the server HTML carries the right <html lang>.
@@ -50,7 +50,9 @@ export async function proxy(request: NextRequest) {
   });
 
   try {
-    await supabase.auth.getUser();
+    // Refreshes an expired session cookie; the signature check is local, so a
+    // valid cookie costs no Auth server round trip. Routes still verify access.
+    await supabase.auth.getClaims();
   } catch (error) {
     console.error("[auth] session refresh failed", error instanceof Error ? error.message : error);
   }

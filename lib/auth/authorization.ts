@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/auth/supabase-server";
 import { syncAppUser } from "@/lib/auth/app-user";
+import { readSessionUser } from "@/lib/auth/session-user";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export class AccessError extends Error {
@@ -21,6 +22,12 @@ export type AppUser = {
 export type FamilyRole = "owner" | "member" | "viewer";
 
 export async function requireAppUser(): Promise<AppUser> {
+  const session = await readSessionUser();
+  if (session.kind === "signed-out") throw new AccessError("Sign in is required.", 401);
+  if (session.kind === "ok") return session.appUser;
+
+  // A first request after sign-up creates the app user; without the database
+  // function the Auth server is asked instead.
   const user = await getCurrentUser();
   if (!user) {
     throw new AccessError("Sign in is required.", 401);

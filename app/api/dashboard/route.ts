@@ -38,6 +38,25 @@ function totalsFromRows(rows: Transaction[], start: string, end: string): Totals
 }
 function errorResponse(error: unknown) { if (error instanceof AccessError) return NextResponse.json({ error: error.message }, { status: error.status }); console.error("[dashboard] request failed", error); return NextResponse.json({ error: "Unable to load dashboard." }, { status: 500 }); }
 
+type Scope = { userId: string; familyId: string | null; accountId: string | null; currency: Currency; start: string; end: string; flowStart: string };
+
+/** Totals from SQL, or null while the dashboard_totals migration is missing. */
+async function loadTotals(scope: Scope): Promise<Totals | null> {
+  const { data, error } = await getSupabaseServerClient().rpc("dashboard_totals", { p_user_id: scope.userId, p_family_group_id: scope.familyId, p_account_id: scope.accountId, p_currency: scope.currency, p_month_start: scope.start, p_month_end: scope.end, p_flow_start: scope.flowStart });
+  if (isMissingFunction(error)) return null;
+  if (error) throw error;
+  return data as Totals;
+}
+
+async function loadRecent(scope: Scope) {
+  let query = getSupabaseServerClient().from("transactions").select("id, title, type, amount, transaction_date, account_id, account:accounts!inner(id, name, currency), category:categories(name)").eq("account.currency", scope.currency).gte("transaction_date", scope.start).lte("transaction_date", scope.end);
+  query = scope.familyId ? query.eq("family_group_id", scope.familyId) : query.eq("user_id", scope.userId).is("family_group_id", null);
+  if (scope.accountId) query = query.eq("account_id", scope.accountId);
+  const { data, error } = await query.order("transaction_date", { ascending: false }).order("created_at", { ascending: false }).order("id").limit(5);
+  if (error) throw error;
+  return (data ?? []) as unknown[];
+}
+
 export async function GET(request: Request) {
   try {
     const timing = createServerTiming();
@@ -50,20 +69,29 @@ export async function GET(request: Request) {
     const requestedCurrency = params.get("currency") as Currency | null;
     const currency: Currency = requestedCurrency && currencies.includes(requestedCurrency) ? requestedCurrency : "TRY";
     const requestedAccountId = params.get("account") ?? "all";
+    const familyId = scope.startsWith("family:") ? scope.slice(7) : null;
+    const { start, end } = monthRange(month);
+    const flowMonths = previousMonths(month);
+    const flowStart = `${flowMonths[0]}-01`;
     const supabase = getSupabaseServerClient();
-    const [accountsResult, membershipsResult, goalsResult] = await timing.measure("base", () => Promise.all([
+
+    const base = Promise.all([
       supabase.from("accounts").select("id, name, currency, initial_balance").eq("user_id", user.id).is("archived_at", null).order("name"),
       supabase.from("family_members").select("family_group_id, group:family_groups(id, name)").eq("user_id", user.id).eq("invitation_status", "accepted"),
       supabase.from("goals").select("id", { count: "exact", head: true }).eq("user_id", user.id).is("family_group_id", null),
-    ]));
+    ]);
+    // The default view (personal, all accounts) needs nothing from the base
+    // queries to compute totals, so all of them run in one round trip.
+    const personalAll = !familyId && requestedAccountId === "all";
+    const early = personalAll
+      ? Promise.all([loadTotals({ userId: user.id, familyId: null, accountId: null, currency, start, end, flowStart }), loadRecent({ userId: user.id, familyId: null, accountId: null, currency, start, end, flowStart })])
+      : null;
+    const [[accountsResult, membershipsResult, goalsResult], earlyResult] = await timing.measure("queries", () => Promise.all([base, early]));
     if (accountsResult.error || membershipsResult.error || goalsResult.error) throw accountsResult.error ?? membershipsResult.error ?? goalsResult.error;
     const ownAccounts = (accountsResult.data ?? []) as Account[];
     const familyGroups = (membershipsResult.data ?? []).map((membership) => relation(membership.group)).filter((group): group is { id: string; name: string } => Boolean(group));
-    const familyId = scope.startsWith("family:") ? scope.slice(7) : null;
     if (familyId && !familyGroups.some((group) => group.id === familyId)) throw new AccessError("Family group not found.", 404);
 
-    const { start, end } = monthRange(month);
-    const flowMonths = previousMonths(month);
     const familyAccounts = familyId ? await supabase.rpc("dashboard_family_accounts", { p_family_group_id: familyId }) : null;
     if (familyAccounts?.error && !isMissingFunction(familyAccounts.error)) throw familyAccounts.error;
     const useRows = isMissingFunction(familyAccounts?.error);
@@ -84,22 +112,9 @@ export async function GET(request: Request) {
     const effectiveCurrency = selectedAccount?.currency ?? currency;
     const openingBalance = familyId ? 0 : ownAccounts.filter((account) => account.currency === effectiveCurrency && (!selectedAccount || account.id === selectedAccount.id)).reduce((sum, account) => sum + Number(account.initial_balance), 0);
 
-    let totals = allTransactions ? null : await timing.measure("totals", loadTotals);
-    async function loadTotals(): Promise<Totals | null> {
-      const { data, error } = await supabase.rpc("dashboard_totals", { p_user_id: user.id, p_family_group_id: familyId, p_account_id: selectedAccount?.id ?? null, p_currency: effectiveCurrency, p_month_start: start, p_month_end: end, p_flow_start: `${flowMonths[0]}-01` });
-      if (isMissingFunction(error)) return null;
-      if (error) throw error;
-      return data as Totals;
-    }
-    let recent: unknown[];
-    if (totals) {
-      let recentQuery = supabase.from("transactions").select("id, title, type, amount, transaction_date, account_id, account:accounts!inner(id, name, currency), category:categories(name)").eq("account.currency", effectiveCurrency).gte("transaction_date", start).lte("transaction_date", end);
-      recentQuery = familyId ? recentQuery.eq("family_group_id", familyId) : recentQuery.eq("user_id", user.id).is("family_group_id", null);
-      if (selectedAccount) recentQuery = recentQuery.eq("account_id", selectedAccount.id);
-      const recentResult = await timing.measure("recent", () => recentQuery.order("transaction_date", { ascending: false }).order("created_at", { ascending: false }).order("id").limit(5));
-      if (recentResult.error) throw recentResult.error;
-      recent = recentResult.data ?? [];
-    } else {
+    const resolved: Scope = { userId: user.id, familyId, accountId: selectedAccount?.id ?? null, currency: effectiveCurrency, start, end, flowStart };
+    let [totals, recent] = earlyResult ?? (allTransactions ? [null, []] : await timing.measure("totals", () => Promise.all([loadTotals(resolved), loadRecent(resolved)])));
+    if (!totals) {
       // The migration may reach production after this code: keep the row-based result until then.
       const rows = (allTransactions ?? await loadAllTransactions()).filter((item) => relation(item.account)?.currency === effectiveCurrency && (!selectedAccount || item.account_id === selectedAccount.id));
       totals = totalsFromRows(rows, start, end);

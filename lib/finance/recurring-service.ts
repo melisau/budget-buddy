@@ -1,5 +1,6 @@
 import "server-only";
 import type { AppUser } from "@/lib/auth/authorization";
+import { createDailyGate } from "@/lib/finance/daily-gate";
 import { ensureDefaultAccount } from "@/lib/finance/default-account";
 import { ensureDefaultCategories } from "@/lib/finance/default-categories";
 import { dueOccurrences, monthlyEquivalent, nextOccurrenceAfter, type Frequency } from "@/lib/finance/recurring";
@@ -110,10 +111,20 @@ export async function materializeDueRecurring(user: AppUser): Promise<number> {
   return created;
 }
 
-/** Same as `materializeDueRecurring`, but a failure never breaks the page that called it. */
+// Due dates only change at midnight or when an item changes, so after one
+// successful run a user's items need no new check until tomorrow.
+const dailyCheck = createDailyGate();
+
+/**
+ * Same as `materializeDueRecurring`, at most once a day per user, and a failure
+ * never breaks the page that called it.
+ */
 export async function materializeDueRecurringSafely(user: AppUser): Promise<void> {
+  const today = todayInIstanbul();
+  if (dailyCheck.isDone(user.id, today)) return;
   try {
     await materializeDueRecurring(user);
+    dailyCheck.markDone(user.id, today);
   } catch (error) {
     console.error("[recurring] could not create due transactions", error instanceof Error ? error.message : error);
   }
@@ -157,6 +168,7 @@ export async function createRecurring(user: AppUser, input: RecurringInput) {
     start_date: input.startDate, next_date: firstNextDate(input, today), end_date: input.endDate ?? null,
   }).select(columns).single();
   if (error) throw error;
+  dailyCheck.forget(user.id);
   await materializeDueRecurringSafely(user);
   return toClient(data as Record<string, unknown>);
 }
@@ -171,6 +183,7 @@ export async function updateRecurring(user: AppUser, id: string, input: Recurrin
     updated_at: new Date().toISOString(),
   }).eq("id", id).eq("user_id", user.id).select(columns).maybeSingle();
   if (error) throw error;
+  dailyCheck.forget(user.id);
   return data ? toClient(data as Record<string, unknown>) : null;
 }
 
@@ -185,6 +198,7 @@ export async function setRecurringActive(user: AppUser, id: string, active: bool
     .update({ active, ...(active ? { next_date: next } : {}), updated_at: new Date().toISOString() })
     .eq("id", id).eq("user_id", user.id);
   if (error) throw error;
+  dailyCheck.forget(user.id);
   return true;
 }
 
