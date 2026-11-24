@@ -12,6 +12,7 @@ class MoreScreen extends StatelessWidget {
     ('wishlists', 'Dilek Listeleri', Icons.card_giftcard_outlined),
     ('recurring', 'Tekrarlayanlar', Icons.repeat),
     ('budgets', 'Bütçeler', Icons.savings_outlined),
+    ('allowance', 'Harçlık Planı', Icons.wallet_outlined),
     ('category-rules', 'Kategori Kuralları', Icons.rule),
     ('accounts', 'Hesaplar', Icons.account_balance_outlined),
     ('goals', 'Hedefler', Icons.track_changes),
