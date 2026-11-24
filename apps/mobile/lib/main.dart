@@ -19,6 +19,7 @@ import 'features/assistant.dart';
 import 'features/category_rules.dart';
 import 'features/finance_screens.dart';
 import 'features/more.dart';
+import 'features/notifications.dart';
 import 'features/overview.dart';
 import 'features/settings.dart';
 import 'features/sign_in.dart';
@@ -158,6 +159,10 @@ GoRouter _buildRouter() => GoRouter(
                 GoRoute(
                   path: 'category-rules',
                   builder: (_, _) => const CategoryRulesScreen(),
+                ),
+                GoRoute(
+                  path: 'notifications',
+                  builder: (_, _) => const NotificationsScreen(),
                 ),
               ],
             ),
