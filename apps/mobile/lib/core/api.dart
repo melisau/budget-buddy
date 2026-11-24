@@ -25,8 +25,12 @@ class Api {
 
   Future<Map<String, dynamic>> get(String path) => _send('GET', path);
 
-  Future<Map<String, dynamic>> post(String path, Map<String, dynamic> body) =>
-      _send('POST', path, body);
+  /// [requestId] makes a retried create safe: the server stores it only once.
+  Future<Map<String, dynamic>> post(
+    String path,
+    Map<String, dynamic> body, {
+    String? requestId,
+  }) => _send('POST', path, body, requestId);
 
   Future<Map<String, dynamic>> patch(String path, Map<String, dynamic> body) =>
       _send('PATCH', path, body);
@@ -43,6 +47,7 @@ class Api {
     String method,
     String path, [
     Map<String, dynamic>? body,
+    String? requestId,
   ]) async {
     final auth = Supabase.instance.client.auth;
     var session = auth.currentSession;
@@ -60,6 +65,7 @@ class Api {
         'Bearer ${session.accessToken}',
       );
       request.headers.set(HttpHeaders.acceptHeader, 'application/json');
+      if (requestId != null) request.headers.set('Idempotency-Key', requestId);
       if (body != null) {
         request.headers.contentType = ContentType.json;
         request.add(utf8.encode(jsonEncode(body)));
@@ -73,7 +79,10 @@ class Api {
         if (response.statusCode == 401) {
           await auth.signOut(scope: SignOutScope.local);
         }
-        throw ApiException(_messageFor(response.statusCode), response.statusCode);
+        throw ApiException(
+          _messageFor(response.statusCode),
+          response.statusCode,
+        );
       }
       return text.isEmpty
           ? <String, dynamic>{}
@@ -105,6 +114,7 @@ class Api {
     401 => 'Oturumunuz sona erdi. Tekrar giriş yapın.',
     403 => 'Bu işlem için yetkiniz yok.',
     404 => 'Kayıt bulunamadı. Listeyi yenileyin.',
+    409 => 'Bu işlem zaten kaydedildi. Listeyi yenileyin.',
     429 => 'Çok fazla istek gönderildi. Biraz sonra deneyin.',
     _ => 'Bir sorun oluştu. Lütfen tekrar deneyin.',
   };

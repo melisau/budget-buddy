@@ -172,7 +172,7 @@ describe("creating transactions", () => {
   });
 
   test("ownership comes from the signed-in user, never from the request", async () => {
-    const created = await createTransaction(bob, payload({ accountId: "acc-bob", categoryId: "cat-bob-exp" })) as Record<string, unknown>;
+    const created = (await createTransaction(bob, payload({ accountId: "acc-bob", categoryId: "cat-bob-exp" }))).transaction as Record<string, unknown>;
     assert.equal(created.user_id, "bob");
     assert.equal(created.owner_user_id, "bob");
     assert.equal(created.created_by_user_id, "bob");
@@ -180,7 +180,7 @@ describe("creating transactions", () => {
   });
 
   test("a member can add a family transaction; a viewer and an outsider cannot", async () => {
-    const created = await createTransaction(bob, payload({ accountId: "acc-bob", categoryId: "cat-bob-exp", familyGroupId: "home" })) as Record<string, unknown>;
+    const created = (await createTransaction(bob, payload({ accountId: "acc-bob", categoryId: "cat-bob-exp", familyGroupId: "home" }))).transaction as Record<string, unknown>;
     assert.equal(created.family_group_id, "home");
     assert.equal(created.owner_user_id, "bob");
 

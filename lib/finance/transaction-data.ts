@@ -1,4 +1,5 @@
-import { requireFamilyWriteAccess, type AppUser } from "@/lib/auth/authorization";
+import { AccessError, requireFamilyWriteAccess, type AppUser } from "@/lib/auth/authorization";
+import { isSameTransaction } from "@/lib/finance/idempotency";
 import { fetchAllRows } from "@/lib/supabase/query";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { ensureDefaultAccount } from "@/lib/finance/default-account";
@@ -70,12 +71,20 @@ export async function listTransactionData(user: AppUser) {
   };
 }
 
-export async function createTransaction(user: AppUser, payload: TransactionPayload) {
+/**
+ * Creates a transaction. With a request ID, a retry of the same request returns
+ * the transaction stored the first time instead of creating a second one.
+ */
+export async function createTransaction(user: AppUser, payload: TransactionPayload, requestId?: string) {
   await assertPersonalReferences(user, payload);
   const supabase = getSupabaseServerClient();
 
   if (payload.familyGroupId) {
     await requireFamilyWriteAccess(user.id, payload.familyGroupId);
+  }
+  if (requestId) {
+    const replay = await findByRequestId(user, requestId, payload);
+    if (replay) return { transaction: replay, replayed: true };
   }
   const accountId = payload.accountId ?? await ensureDefaultAccount(user.id);
 
@@ -93,11 +102,30 @@ export async function createTransaction(user: AppUser, payload: TransactionPaylo
       title: payload.title,
       note: payload.note || null,
       transaction_date: payload.date,
+      client_request_id: requestId ?? null,
     })
     .select(transactionSelect)
     .single();
 
+  // Two copies of one request raced: the other one stored it first.
+  if (error?.code === "23505" && requestId) {
+    const replay = await findByRequestId(user, requestId, payload);
+    if (replay) return { transaction: replay, replayed: true };
+  }
   if (error) throw new Error(`Unable to create the transaction: ${error.message}`);
+  return { transaction: data, replayed: false };
+}
+
+async function findByRequestId(user: AppUser, requestId: string, payload: TransactionPayload) {
+  const { data, error } = await getSupabaseServerClient()
+    .from("transactions")
+    .select(transactionSelect)
+    .eq("user_id", user.id)
+    .eq("client_request_id", requestId)
+    .maybeSingle();
+  if (error) throw new Error(`Unable to check the request ID: ${error.message}`);
+  if (!data) return null;
+  if (!isSameTransaction(data, payload)) throw new AccessError("This request ID was already used for another transaction.", 409);
   return data;
 }
 

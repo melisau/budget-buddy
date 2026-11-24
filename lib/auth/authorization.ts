@@ -5,7 +5,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 export class AccessError extends Error {
   constructor(
     message: string,
-    readonly status: 401 | 403 | 404 = 403,
+    readonly status: 401 | 403 | 404 | 409 = 403,
   ) {
     super(message);
   }

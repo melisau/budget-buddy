@@ -61,7 +61,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     final items = (data['transactions'] as List)
         .cast<Map<String, dynamic>>()
         .where(
-          (t) => '${t['title']} ${t['category']}'.toLowerCase().contains(_query),
+          (t) =>
+              '${t['title']} ${t['category']}'.toLowerCase().contains(_query),
         )
         .toList();
     if (items.isEmpty) {
@@ -101,19 +102,17 @@ Future<void> showEditTransaction(
   Map<String, dynamic> transaction,
 ) => _showSheet(context, transaction);
 
-Future<void> _showSheet(
-  BuildContext context,
-  Map<String, dynamic>? existing,
-) => showModalBottomSheet(
-  context: context,
-  isScrollControlled: true,
-  useRootNavigator: true,
-  useSafeArea: true,
-  shape: const RoundedRectangleBorder(
-    borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-  ),
-  builder: (_) => _AddSheet(existing),
-);
+Future<void> _showSheet(BuildContext context, Map<String, dynamic>? existing) =>
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useRootNavigator: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (_) => _AddSheet(existing),
+    );
 
 /// Plain editable text that [parseAmount] reads back to the same value.
 String amountText(num amount) => amount == amount.truncate()
@@ -155,7 +154,9 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
       final scan = await scanReceipt();
       if (scan == null || !mounted) return;
       if (scan.total == null && scan.date == null && scan.merchant == null) {
-        setState(() => _error = 'Fiş okunamadı. Daha aydınlık bir fotoğraf dene.');
+        setState(
+          () => _error = 'Fiş okunamadı. Daha aydınlık bir fotoğraf dene.',
+        );
         return;
       }
       setState(() {
@@ -236,15 +237,20 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
             includeItems: _saveItems,
           ),
         ),
+        retrySafe: true,
       );
       return;
     }
     await _write(
       () => _editing
           ? api.patch('transactions/${widget.existing!['id']}', body)
-          : api.post('transactions', body),
+          : api.post('transactions', body, requestId: _requestId),
+      retrySafe: true,
     );
   }
+
+  /// One ID per form, so pressing Kaydet again after a lost response is safe.
+  final String _requestId = newScanId();
 
   Future<void> _delete() async {
     final hasReceipt = widget.existing!['hasReceipt'] == true;
@@ -279,14 +285,26 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
     await _write(() => api.delete('transactions/${widget.existing!['id']}'));
   }
 
-  Future<void> _write(Future<Object?> Function() action) async {
+  /// With [retrySafe] the server ignores a repeated request, so after a lost
+  /// response the form stays open and the user can simply save again.
+  Future<void> _write(
+    Future<Object?> Function() action, {
+    bool retrySafe = false,
+  }) async {
     try {
       await action();
       HapticFeedback.mediumImpact();
       if (mounted) Navigator.pop(context);
       _refreshLists();
     } on ApiException catch (e) {
-      if (e.outcomeUnknown) {
+      if (e.outcomeUnknown && retrySafe) {
+        if (mounted) {
+          setState(() {
+            _error = 'Yanıt alınamadı. Kaydet\'e tekrar basabilirsin, işlem iki kez eklenmez.';
+            _busy = false;
+          });
+        }
+      } else if (e.outcomeUnknown) {
         if (mounted) {
           final messenger = ScaffoldMessenger.of(context);
           Navigator.pop(context);
@@ -345,7 +363,8 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
           height: 240,
           child: Center(child: CircularProgressIndicator()),
         ),
-        error: (e, _) => SizedBox(height: 240, child: Center(child: Text('$e'))),
+        error: (e, _) =>
+            SizedBox(height: 240, child: Center(child: Text('$e'))),
         data: _formBody,
       ),
     );
@@ -395,7 +414,8 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
       });
     }
     // A category outside this list must be chosen again before saving.
-    if (_category != null && !categories.any((c) => '${c['id']}' == _category)) {
+    if (_category != null &&
+        !categories.any((c) => '${c['id']}' == _category)) {
       _category = null;
     }
     return SingleChildScrollView(
@@ -440,7 +460,9 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
             TextFormField(
               controller: _amount,
               autofocus: !_editing,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
               ],
