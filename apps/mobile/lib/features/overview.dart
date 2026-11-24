@@ -110,12 +110,12 @@ class _Content extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Nakit akışı',
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
-                    color: ink,
+                    color: context.ink,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -125,12 +125,12 @@ class _Content extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
-        const Text(
+        Text(
           'Son işlemler',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w800,
-            color: ink,
+            color: context.ink,
           ),
         ),
         const SizedBox(height: 8),
@@ -179,7 +179,7 @@ class _Stat extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(color: muted)),
+          Text(label, style: TextStyle(color: context.muted)),
           const SizedBox(height: 4),
           FittedBox(
             child: Text(

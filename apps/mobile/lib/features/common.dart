@@ -89,7 +89,7 @@ class EmptyNote extends StatelessWidget {
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: const TextStyle(color: muted),
+        style: TextStyle(color: context.muted),
       ),
     ),
   );
@@ -128,10 +128,10 @@ class ProgressCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
-                    color: ink,
+                    color: context.ink,
                   ),
                 ),
               ),
@@ -145,10 +145,10 @@ class ProgressCard extends StatelessWidget {
               minHeight: 8,
               borderRadius: BorderRadius.circular(8),
               color: value >= 1 ? expense : brand,
-              backgroundColor: const Color(0xFFE4E7F5),
+              backgroundColor: context.soft,
             ),
           ),
-          Text(detail, style: const TextStyle(color: muted)),
+          Text(detail, style: TextStyle(color: context.muted)),
         ],
       ),
     ),
@@ -382,10 +382,10 @@ class _FormSheetState extends State<_FormSheet> {
           children: [
             Text(
               widget.title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
-                color: ink,
+                color: context.ink,
               ),
             ),
             const SizedBox(height: 14),

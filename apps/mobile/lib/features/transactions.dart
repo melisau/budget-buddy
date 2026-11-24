@@ -489,7 +489,7 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
       scan.tax == null
           ? 'Fişten dolduruldu. Kaydetmeden önce kontrol et.'
           : 'Fişten dolduruldu, KDV ${money(scan.tax!)}. Kaydetmeden önce kontrol et.',
-      style: const TextStyle(color: muted, fontSize: 13),
+      style: TextStyle(color: context.muted, fontSize: 13),
     ),
     if (scan.itemsMatchTotal)
       CheckboxListTile(
@@ -505,9 +505,9 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
         ),
       )
     else if (scan.items.isNotEmpty)
-      const Text(
+      Text(
         'Ürün satırları toplamla uyuşmadığı için kaydedilmeyecek.',
-        style: TextStyle(color: muted, fontSize: 13),
+        style: TextStyle(color: context.muted, fontSize: 13),
       ),
   ];
 
@@ -540,10 +540,10 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
           children: [
             Text(
               _editing ? 'İşlemi düzenle' : 'İşlem ekle',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
-                color: ink,
+                color: context.ink,
               ),
             ),
             const SizedBox(height: 14),

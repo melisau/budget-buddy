@@ -52,11 +52,11 @@ class AccountsScreen extends StatelessWidget {
           Card(
             child: ListTile(
               leading: const CircleAvatar(child: Icon(Icons.account_balance_outlined)),
-              title: Text('${a['name']}', style: const TextStyle(fontWeight: FontWeight.w700, color: ink)),
+              title: Text('${a['name']}', style: TextStyle(fontWeight: FontWeight.w700, color: context.ink)),
               subtitle: Text('${_accountTypes[a['type']] ?? a['type']} · ${a['currency']}'),
               trailing: Text(
                 money(a['balance'] as num, '${a['currency']}'),
-                style: const TextStyle(fontWeight: FontWeight.w800, color: ink),
+                style: TextStyle(fontWeight: FontWeight.w800, color: context.ink),
               ),
             ),
           ),
@@ -103,7 +103,7 @@ class BudgetsScreen extends StatelessWidget {
               actions: [
                 IconButton(
                   tooltip: 'Bütçeyi sil',
-                  icon: const Icon(Icons.delete_outline, color: muted),
+                  icon: Icon(Icons.delete_outline, color: context.muted),
                   onPressed: () async {
                     if (await confirmDelete(context, categoryLabel('${b['categoryName']}')) && context.mounted) {
                       await runAction(context, ref, path, (api) => api.delete('budgets/${b['id']}'));
@@ -168,7 +168,7 @@ class GoalsScreen extends StatelessWidget {
               ),
               IconButton(
                 tooltip: 'Hedefi sil',
-                icon: const Icon(Icons.delete_outline, color: muted),
+                icon: Icon(Icons.delete_outline, color: context.muted),
                 onPressed: () async {
                   if (await confirmDelete(context, '${g['name']}') && context.mounted) {
                     await runAction(context, ref, _path, (api) => api.delete('goals/${g['id']}'));
@@ -221,7 +221,7 @@ class RecurringScreen extends StatelessWidget {
           Card(
             child: SwitchListTile(
               value: r['active'] == true,
-              title: Text('${r['title']}', style: const TextStyle(fontWeight: FontWeight.w700, color: ink)),
+              title: Text('${r['title']}', style: TextStyle(fontWeight: FontWeight.w700, color: context.ink)),
               subtitle: Text('${money(r['amount'] as num, currency)} · ${_frequencies[r['frequency']] ?? r['frequency']}\nSonraki: ${shortDate('${r['nextDate']}')}'),
               onChanged: (active) => runAction(context, ref, _path, (api) => api.patch('recurring/${r['id']}', {'active': active})),
             ),
@@ -262,7 +262,7 @@ class AnalyticsScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 18),
-        const Text('En büyük giderler', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: ink)),
+        Text('En büyük giderler', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: context.ink)),
         const Gap(),
         if (largest.isEmpty)
           const EmptyNote('Bu ay gider yok.')
@@ -301,7 +301,7 @@ class _Metric extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(color: muted)),
+          Text(label, style: TextStyle(color: context.muted)),
           const SizedBox(height: 4),
           FittedBox(child: Text(value, style: TextStyle(color: color, fontSize: 19, fontWeight: FontWeight.w800))),
         ],

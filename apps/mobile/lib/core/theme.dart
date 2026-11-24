@@ -1,54 +1,131 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 const brand = Color(0xFF4258D5);
-const ink = Color(0xFF17213C);
-const muted = Color(0xFF737C91);
-const line = Color(0xFFE3E6EE);
 const income = Color(0xFF238B70);
 const expense = Color(0xFFD45050);
-const page = Color(0xFFF6F7FB);
 
-ThemeData buildTheme() {
+/// The few colors that differ between light and dark mode.
+class _Palette {
+  const _Palette({
+    required this.ink,
+    required this.muted,
+    required this.line,
+    required this.page,
+    required this.surface,
+    required this.soft,
+    required this.primary,
+  });
+
+  final Color ink;
+  final Color muted;
+  final Color line;
+  final Color page;
+  final Color surface;
+  final Color soft;
+  final Color primary;
+}
+
+const _light = _Palette(
+  ink: Color(0xFF17213C),
+  // The web's muted gray: 4.5:1 on white, unlike the earlier #737C91.
+  muted: Color(0xFF66708B),
+  line: Color(0xFFE3E6EE),
+  page: Color(0xFFF6F7FB),
+  surface: Colors.white,
+  soft: Color(0xFFE9ECF4),
+  primary: brand,
+);
+
+// The brand blue is lightened on dark surfaces so text and icons stay readable.
+const _dark = _Palette(
+  ink: Color(0xFFE8EBF4),
+  muted: Color(0xFF9AA3B8),
+  line: Color(0xFF2C3448),
+  page: Color(0xFF0F1420),
+  surface: Color(0xFF181F2E),
+  soft: Color(0xFF232B3D),
+  primary: Color(0xFF8193F0),
+);
+
+/// Theme-aware colors for widgets: `context.ink`, `context.muted`, ...
+extension AppColors on BuildContext {
+  _Palette get _palette =>
+      Theme.of(this).brightness == Brightness.dark ? _dark : _light;
+  Color get ink => _palette.ink;
+  Color get muted => _palette.muted;
+  Color get line => _palette.line;
+  Color get page => _palette.page;
+  Color get surface => _palette.surface;
+  Color get soft => _palette.soft;
+  Color get accent => _palette.primary;
+}
+
+ThemeData buildTheme([Brightness brightness = Brightness.light]) {
+  final p = brightness == Brightness.dark ? _dark : _light;
   final fieldBorder = OutlineInputBorder(
     borderRadius: BorderRadius.circular(12),
-    borderSide: const BorderSide(color: line),
+    borderSide: BorderSide(color: p.line),
   );
   return ThemeData(
     useMaterial3: true,
+    brightness: brightness,
     colorScheme: ColorScheme.fromSeed(
       seedColor: brand,
-      primary: brand,
-      surface: Colors.white,
+      brightness: brightness,
+      primary: p.primary,
+      onPrimary: brightness == Brightness.dark
+          ? const Color(0xFF0F1420)
+          : Colors.white,
+      surface: p.surface,
+      onSurface: p.ink,
+      onSurfaceVariant: p.muted,
+      outlineVariant: p.line,
     ),
-    scaffoldBackgroundColor: page,
-    appBarTheme: const AppBarTheme(
-      backgroundColor: page,
-      foregroundColor: ink,
+    scaffoldBackgroundColor: p.page,
+    appBarTheme: AppBarTheme(
+      // Status and navigation bar icons follow the mode.
+      systemOverlayStyle: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: brightness == Brightness.dark
+            ? Brightness.light
+            : Brightness.dark,
+        statusBarBrightness: brightness,
+        systemNavigationBarColor: p.surface,
+        systemNavigationBarIconBrightness: brightness == Brightness.dark
+            ? Brightness.light
+            : Brightness.dark,
+      ),
+      backgroundColor: p.page,
+      foregroundColor: p.ink,
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
       titleTextStyle: TextStyle(
-        color: ink,
+        color: p.ink,
         fontSize: 26,
         fontWeight: FontWeight.w800,
       ),
     ),
     cardTheme: CardThemeData(
-      color: Colors.white,
+      color: p.surface,
       elevation: 0,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
-        side: const BorderSide(color: line),
+        side: BorderSide(color: p.line),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: Colors.white,
+      fillColor: p.surface,
       border: fieldBorder,
       enabledBorder: fieldBorder,
     ),
+    navigationBarTheme: NavigationBarThemeData(backgroundColor: p.surface),
+    bottomSheetTheme: BottomSheetThemeData(backgroundColor: p.surface),
+    dialogTheme: DialogThemeData(backgroundColor: p.surface),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         minimumSize: const Size.fromHeight(52),
@@ -87,27 +164,29 @@ String monthLabel(String month) {
   return date == null ? month : DateFormat('MMM', 'tr_TR').format(date);
 }
 
-String categoryLabel(String name) => const {
-  'Housing': 'Konut',
-  'Groceries': 'Market',
-  'Dining': 'Yeme içme',
-  'Transport': 'Ulaşım',
-  'Utilities': 'Faturalar',
-  'Health': 'Sağlık',
-  'Education': 'Eğitim',
-  'Entertainment': 'Eğlence',
-  'Shopping': 'Alışveriş',
-  'Subscriptions': 'Abonelikler',
-  'Personal care': 'Kişisel bakım',
-  'Travel': 'Seyahat',
-  'Insurance': 'Sigorta',
-  'Debt payments': 'Borç ödemeleri',
-  'Gifts': 'Hediyeler',
-  'Other expenses': 'Diğer giderler',
-  'Salary': 'Maaş',
-  'Freelance income': 'Serbest gelir',
-  'Investment income': 'Yatırım geliri',
-  'Gift income': 'Hediye geliri',
-  'Other income': 'Diğer gelirler',
-  'Uncategorized': 'Kategorisiz',
-}[name] ?? name;
+String categoryLabel(String name) =>
+    const {
+      'Housing': 'Konut',
+      'Groceries': 'Market',
+      'Dining': 'Yeme içme',
+      'Transport': 'Ulaşım',
+      'Utilities': 'Faturalar',
+      'Health': 'Sağlık',
+      'Education': 'Eğitim',
+      'Entertainment': 'Eğlence',
+      'Shopping': 'Alışveriş',
+      'Subscriptions': 'Abonelikler',
+      'Personal care': 'Kişisel bakım',
+      'Travel': 'Seyahat',
+      'Insurance': 'Sigorta',
+      'Debt payments': 'Borç ödemeleri',
+      'Gifts': 'Hediyeler',
+      'Other expenses': 'Diğer giderler',
+      'Salary': 'Maaş',
+      'Freelance income': 'Serbest gelir',
+      'Investment income': 'Yatırım geliri',
+      'Gift income': 'Hediye geliri',
+      'Other income': 'Diğer gelirler',
+      'Uncategorized': 'Kategorisiz',
+    }[name] ??
+    name;
