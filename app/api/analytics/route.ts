@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { AccessError, requireAppUser } from "@/lib/auth/authorization";
 import { calculateBudgetUsage, calculateSavingsRate, getBudgetStatus } from "@/lib/finance/calculations";
+import { analyticsSeries } from "@/lib/finance/analytics-series";
 import { fetchAllRows } from "@/lib/supabase/query";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { Currency } from "@/types/finance";
@@ -50,6 +51,6 @@ export async function GET(request: Request) {
       if (error) throw error;
       budgets = (rows ?? []).map((budget) => { const spent = currentItems.filter((item) => item.type === "expense" && relation(item.category)?.id === budget.category_id).reduce((sum, item) => sum + Number(item.amount), 0); const limit = Number(budget.amount_limit); const usage = calculateBudgetUsage({ category: "", spent, limit }); return { id: budget.id, categoryName: relation(budget.category)?.name ?? "Uncategorized", spent, limit, usage, status: getBudgetStatus(usage) }; });
     }
-    return NextResponse.json({ filters: { month: endMonth, period, scope: familyId ? scope : "personal", accountId: selectedAccount?.id ?? "all", currency: effectiveCurrency, budgetCurrency: userResult.data.currency, accounts: availableAccounts, familyGroups, currencies }, summary: { income: current.income, expenses: current.expense, savingsRate: calculateSavingsRate(current.income, current.expense) }, monthly, largest, budgets });
+    return NextResponse.json({ filters: { month: endMonth, period, scope: familyId ? scope : "personal", accountId: selectedAccount?.id ?? "all", currency: effectiveCurrency, budgetCurrency: userResult.data.currency, accounts: availableAccounts, familyGroups, currencies }, summary: { income: current.income, expenses: current.expense, savingsRate: calculateSavingsRate(current.income, current.expense) }, monthly, series: analyticsSeries(ranged, endMonth, period), largest, budgets });
   } catch (error) { return errorResponse(error); }
 }
