@@ -55,7 +55,9 @@ class ParsedReceipt {
 final _amount = RegExp(
   r'(?<![\d.,])(\d{1,3}(?:[. ]\d{3})+,\s?\d{2}|\d+[.,]\s?\d{2}|(?<=\*)\d{1,3}(?:\.\d{3})*,\d)(?![\d])',
 );
-final _date = RegExp(r'(?<!\d)(\d{2})\s?[./-]\s?(\d{2})\s?[./-]\s?(\d{4}|\d{2})(?!\d)');
+final _date = RegExp(
+  r'(?<!\d)(\d{2})\s?[./-]\s?(\d{2})\s?[./-]\s?(\d{4}|\d{2})(?!\d)',
+);
 final _percent = RegExp(r'%\s*\d+(?:[.,]\d+)?');
 final _quantity = RegExp(
   r'^\s*(\d+(?:[.,]\d+)?)\s*(?:AD|ADET|KG|GR|LT)?\.?\s*[X*]\s*\*?(\d+(?:[. ]\d{3})*[.,]\s?\d{1,2})',
@@ -68,8 +70,19 @@ final _noise = RegExp(
 
 String _fold(String value) {
   const map = {
-    'ç': 'C', 'Ç': 'C', 'ğ': 'G', 'Ğ': 'G', 'ı': 'I', 'İ': 'I', 'i': 'I',
-    'ö': 'O', 'Ö': 'O', 'ş': 'S', 'Ş': 'S', 'ü': 'U', 'Ü': 'U',
+    'ç': 'C',
+    'Ç': 'C',
+    'ğ': 'G',
+    'Ğ': 'G',
+    'ı': 'I',
+    'İ': 'I',
+    'i': 'I',
+    'ö': 'O',
+    'Ö': 'O',
+    'ş': 'S',
+    'Ş': 'S',
+    'ü': 'U',
+    'Ü': 'U',
   };
   return value.split('').map((c) => map[c] ?? c.toUpperCase()).join();
 }
@@ -132,7 +145,9 @@ String? _findDate(List<String> rows) {
       final day = int.parse(match.group(1)!);
       final month = int.parse(match.group(2)!);
       final rawYear = match.group(3)!;
-      final year = rawYear.length == 2 ? 2000 + int.parse(rawYear) : int.parse(rawYear);
+      final year = rawYear.length == 2
+          ? 2000 + int.parse(rawYear)
+          : int.parse(rawYear);
       final date = DateTime.utc(year, month, day);
       if (date.day == day && date.month == month && year >= 2000) {
         return '${year.toString().padLeft(4, '0')}-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}';
@@ -145,7 +160,9 @@ String? _findDate(List<String> rows) {
 String? _findMerchant(List<String> rows) {
   for (final row in rows.take(6)) {
     final letters = RegExp(r'\p{L}', unicode: true).allMatches(row).length;
-    if (letters >= 3 && letters >= row.length / 2 && !_noise.hasMatch(_fold(row))) {
+    if (letters >= 3 &&
+        letters >= row.length / 2 &&
+        !_noise.hasMatch(_fold(row))) {
       return _cleanCase(row.trim());
     }
   }
@@ -158,12 +175,14 @@ String? _findMerchant(List<String> rows) {
   var grand = false;
   for (var i = 0; i < rows.length; i++) {
     final row = _fold(rows[i]);
-    final isTotal = RegExp(r'TOPLAM|\bTOP\b|\bTUTAR\b').hasMatch(row) &&
+    final isTotal =
+        RegExp(r'TOPLAM|\bTOP\b|\bTUTAR\b').hasMatch(row) &&
         !RegExp(r'ARA|KDV|INDIRIM').hasMatch(row);
     if (!isTotal) continue;
     final isGrand = row.contains('GENEL');
     if (grand && !isGrand) continue;
-    final amount = _lastAmount(rows[i]) ??
+    final amount =
+        _lastAmount(rows[i]) ??
         (i + 1 < rows.length ? _lastAmount(rows[i + 1]) : null);
     if (amount == null) continue;
     index = i;
@@ -178,7 +197,8 @@ double? _findTax(List<String> rows) {
   for (var i = 0; i < rows.length; i++) {
     final row = _fold(rows[i]);
     if (!row.contains('KDV')) continue;
-    final amount = _lastAmount(rows[i]) ??
+    final amount =
+        _lastAmount(rows[i]) ??
         (i + 1 < rows.length ? _lastAmount(rows[i + 1]) : null);
     if (amount == null) continue;
     if (row.contains('TOP')) return amount;
@@ -194,8 +214,13 @@ List<ReceiptItem> _findItems(List<String> rows, int totalIndex) {
   for (final raw in rows.take(end)) {
     final row = _fold(raw);
     final quantity = _quantity.firstMatch(row);
-    if (quantity != null && !RegExp(r'[A-Z]{3,}').hasMatch(row.replaceAll(RegExp(r'ADET|\bAD\b'), ''))) {
-      pending = (_plain(quantity.group(1)!), _parseAmount(quantity.group(2)!) ?? 0);
+    if (quantity != null &&
+        !RegExp(r'[A-Z]{3,}')
+            .hasMatch(row.replaceAll(RegExp(r'ADET|\bAD\b'), ''))) {
+      pending = (
+        _plain(quantity.group(1)!),
+        _parseAmount(quantity.group(2)!) ?? 0,
+      );
       continue;
     }
     if (_noise.hasMatch(row)) {

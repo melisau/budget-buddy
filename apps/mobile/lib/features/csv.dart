@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme.dart';
 import 'data.dart';
+import '../core/i18n.dart';
 
 /// Reads CSV bytes as text: UTF-8 (with or without BOM), else Windows-1254
 /// style bytes are kept as Latin-1 so the server can still report bad rows.
@@ -44,14 +45,14 @@ class _CsvCardState extends ConsumerState<CsvCard> {
           .read(apiProvider)
           .getBytes('transactions/export?scope=all');
       final saved = await FilePicker.saveFile(
-        dialogTitle: 'CSV dosyasını kaydet',
+        dialogTitle: t('CSV dosyasını kaydet'),
         fileName: 'budgetbuddy-islemler.csv',
         mimeType: 'text/csv',
         bytes: Uint8List.fromList(bytes),
       );
       if (saved != null) {
         messenger.showSnackBar(
-          const SnackBar(content: Text('İşlemlerin CSV olarak kaydedildi.')),
+          SnackBar(content: Text(t('İşlemlerin CSV olarak kaydedildi.'))),
         );
       }
     } catch (e) {
@@ -70,7 +71,7 @@ class _CsvCardState extends ConsumerState<CsvCard> {
     if (file == null || !mounted) return;
     if ((await file.length() ?? 0) > 2 * 1024 * 1024) {
       messenger.showSnackBar(
-        const SnackBar(content: Text('CSV dosyası en fazla 2 MB olabilir.')),
+        SnackBar(content: Text(t('CSV dosyası en fazla 2 MB olabilir.'))),
       );
       return;
     }
@@ -88,9 +89,11 @@ class _CsvCardState extends ConsumerState<CsvCard> {
       if (!mounted) return;
       if (count == 0) {
         messenger.showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
-              'Bu dosyadan işlem okunamadı. Tarih, açıklama ve tutar sütunları olmalı.',
+              t(
+                'Bu dosyadan işlem okunamadı. Tarih, açıklama ve tutar sütunları olmalı.',
+              ),
             ),
           ),
         );
@@ -99,20 +102,36 @@ class _CsvCardState extends ConsumerState<CsvCard> {
       final ok = await showDialog<bool>(
         context: context,
         builder: (dialog) => AlertDialog(
-          title: Text('$count işlem içe aktarılsın mı?'),
+          title: Text(
+            tx(
+              '$count işlem içe aktarılsın mı?',
+              'Import $count transactions?',
+              '$count Transaktionen importieren?',
+            ),
+          ),
           content: Text(
-            '${file.name} dosyasından $count işlem okundu.'
-            '${issueCount > 0 ? ' $issueCount satır okunamadı ve atlanacak.' : ''}'
-            ' Daha önce eklenmiş aynı işlemler tekrar eklenmez.',
+            tx(
+                  '${file.name} dosyasından $count işlem okundu.',
+                  '$count transactions were read from ${file.name}.',
+                  '$count Transaktionen wurden aus ${file.name} gelesen.',
+                ) +
+                (issueCount > 0
+                    ? tx(
+                        ' $issueCount satır okunamadı ve atlanacak.',
+                        ' $issueCount rows could not be read and will be skipped.',
+                        ' $issueCount Zeilen konnten nicht gelesen werden und werden übersprungen.',
+                      )
+                    : '') +
+                t(' Daha önce eklenmiş aynı işlemler tekrar eklenmez.'),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialog, false),
-              child: const Text('Vazgeç'),
+              child: Text(t('Vazgeç')),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(dialog, true),
-              child: const Text('İçe aktar'),
+              child: Text(t('İçe aktar')),
             ),
           ],
         ),
@@ -124,7 +143,8 @@ class _CsvCardState extends ConsumerState<CsvCard> {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            '$imported işlem aktarıldı${duplicates > 0 ? ', $duplicates mükerrer satır atlandı' : ''}.',
+            '${tx('$imported işlem aktarıldı', '$imported transactions imported', '$imported Transaktionen importiert')}'
+            '${duplicates > 0 ? tx(', $duplicates mükerrer satır atlandı', ', $duplicates duplicate rows skipped', ', $duplicates doppelte Zeilen übersprungen') : ''}.',
           ),
         ),
       );
@@ -143,16 +163,16 @@ class _CsvCardState extends ConsumerState<CsvCard> {
       children: [
         ListTile(
           leading: const Icon(Icons.file_download_outlined),
-          title: const Text('CSV olarak dışa aktar'),
-          subtitle: const Text('Tüm işlemlerini telefona kaydet'),
+          title: Text(t('CSV olarak dışa aktar')),
+          subtitle: Text(t('Tüm işlemlerini telefona kaydet')),
           enabled: !_busy,
           onTap: _export,
         ),
         Divider(height: 1, color: context.line),
         ListTile(
           leading: const Icon(Icons.file_upload_outlined),
-          title: const Text('CSV\'den içe aktar'),
-          subtitle: const Text('Banka ekstresi veya başka uygulamadan'),
+          title: Text(t('CSV\'den içe aktar')),
+          subtitle: Text(t('Banka ekstresi veya başka uygulamadan')),
           enabled: !_busy,
           onTap: _import,
           trailing: _busy

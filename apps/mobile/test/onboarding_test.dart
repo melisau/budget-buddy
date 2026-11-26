@@ -10,7 +10,8 @@ void main() {
   });
 
   test('unsupported values are never sent to the account', () {
-    expect(Onboarding.decode('de:EUR'), {'currency': 'EUR'});
+    expect(Onboarding.decode('de:EUR'), {'language': 'de', 'currency': 'EUR'});
+    expect(Onboarding.decode('fr:EUR'), {'currency': 'EUR'});
     expect(Onboarding.decode('xx:YYY'), isNull);
     expect(Onboarding.decode('broken'), isNull);
   });

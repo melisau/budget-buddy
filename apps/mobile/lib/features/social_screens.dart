@@ -7,9 +7,13 @@ import '../core/config.dart';
 import '../core/theme.dart';
 import 'common.dart';
 import 'data.dart';
+import '../core/i18n.dart';
 
 const _invitationsPath = 'family/invitations';
-const _inviteRoles = {'member': 'Üye', 'viewer': 'İzleyici'};
+Map<String, String> get _inviteRoles => {
+  'member': t('Üye'),
+  'viewer': t('İzleyici'),
+};
 
 bool isInviteEmail(String value) =>
     RegExp(r'^\S+@\S+\.\S+$').hasMatch(value.trim());
@@ -28,22 +32,22 @@ Future<bool> _confirm(
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialog, false),
-            child: const Text('Vazgeç'),
+            child: Text(t('Vazgeç')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialog, true),
-            child: Text(action, style: const TextStyle(color: expense)),
+            child: Text(action, style: TextStyle(color: expense)),
           ),
         ],
       ),
     ) ??
     false;
 
-const _occasions = {
-  'birthday': 'Doğum günü',
-  'housewarming': 'Ev hediyesi',
-  'new_year': 'Yeni yıl',
-  'other': 'Diğer',
+Map<String, String> get _occasions => {
+  'birthday': t('Doğum günü'),
+  'housewarming': t('Ev hediyesi'),
+  'new_year': t('Yeni yıl'),
+  'other': t('Diğer'),
 };
 
 class FamilyScreen extends StatelessWidget {
@@ -52,14 +56,14 @@ class FamilyScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ApiPage(
-    title: 'Aile Grubu',
+    title: t('Aile Grubu'),
     path: _path,
-    addLabel: 'Grup oluştur',
-    refreshAlso: const [_invitationsPath],
+    addLabel: t('Grup oluştur'),
+    refreshAlso: [_invitationsPath],
     onAdd: (context, ref, _) => showFormSheet(
       context,
-      title: 'Aile grubu oluştur',
-      fields: const [FieldSpec('name', 'Grup adı')],
+      title: t('Aile grubu oluştur'),
+      fields: [FieldSpec('name', t('Grup adı'))],
       onSubmit: (v) async {
         await ref.read(apiProvider).post(_path, {...v, 'currency': 'TRY'});
         ref.invalidate(pageProvider(_path));
@@ -68,7 +72,7 @@ class FamilyScreen extends StatelessWidget {
     builder: (context, ref, d) {
       final groups = rows(d['groups']);
       if (groups.isEmpty) {
-        return const [_Invitations(), EmptyNote('Henüz aile grubun yok.')];
+        return [_Invitations(), EmptyNote(t('Henüz aile grubun yok.'))];
       }
       return [
         const _Invitations(),
@@ -78,15 +82,29 @@ class FamilyScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ListTile(
-                  leading: const CircleAvatar(child: Icon(Icons.groups_outlined)),
-                  title: Text('${g['name']}', style: TextStyle(fontWeight: FontWeight.w800, color: context.ink)),
-                  subtitle: Text('${rows(g['members']).length} üye'),
+                  leading: const CircleAvatar(
+                    child: Icon(Icons.groups_outlined),
+                  ),
+                  title: Text(
+                    '${g['name']}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: context.ink,
+                    ),
+                  ),
+                  subtitle: Text(
+                    tx(
+                      '${rows(g['members']).length} üye',
+                      '${rows(g['members']).length} members',
+                      '${rows(g['members']).length} Mitglieder',
+                    ),
+                  ),
                 ),
                 for (final m in rows(g['members']))
                   ListTile(
                     dense: true,
                     leading: const Icon(Icons.person_outline),
-                    title: Text('${m['name'] ?? m['email'] ?? 'Üye'}'),
+                    title: Text('${m['name'] ?? m['email'] ?? t('Üye')}'),
                     subtitle: Text(_memberState(m)),
                     trailing: g['role'] == 'owner' && m['role'] != 'owner'
                         ? _memberMenu(context, ref, '${g['id']}', m)
@@ -99,21 +117,24 @@ class FamilyScreen extends StatelessWidget {
                           spacing: 4,
                           children: [
                             TextButton.icon(
-                              onPressed: () => _invite(context, ref, '${g['id']}'),
+                              onPressed: () =>
+                                  _invite(context, ref, '${g['id']}'),
                               icon: const Icon(Icons.person_add_alt_1_outlined),
-                              label: const Text('Üye davet et'),
+                              label: Text(t('Üye davet et')),
                             ),
                             if (transferCandidates(g).isNotEmpty)
                               TextButton.icon(
                                 onPressed: () => _transfer(context, ref, g),
                                 icon: const Icon(Icons.swap_horiz),
-                                label: const Text('Yöneticiliği devret'),
+                                label: Text(t('Yöneticiliği devret')),
                               ),
                             TextButton.icon(
                               onPressed: () => _deleteGroup(context, ref, g),
-                              style: TextButton.styleFrom(foregroundColor: expense),
+                              style: TextButton.styleFrom(
+                                foregroundColor: expense,
+                              ),
                               icon: const Icon(Icons.delete_outline),
-                              label: const Text('Grubu sil'),
+                              label: Text(t('Grubu sil')),
                             ),
                           ],
                         )
@@ -121,35 +142,47 @@ class FamilyScreen extends StatelessWidget {
                           onPressed: () => _leave(context, ref, g),
                           style: TextButton.styleFrom(foregroundColor: expense),
                           icon: const Icon(Icons.logout),
-                          label: const Text('Gruptan ayrıl'),
+                          label: Text(t('Gruptan ayrıl')),
                         ),
                 ),
               ],
             ),
           ),
-          const Gap(),
+          Gap(),
           _Shopping(groupId: '${g['id']}', canEdit: g['role'] != 'viewer'),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
         ],
       ];
     },
   );
 
   static String _memberState(Map<String, dynamic> m) {
-    final role = const {'owner': 'Sahip', 'member': 'Üye', 'viewer': 'İzleyici'}[m['role']] ?? '${m['role']}';
-    return m['invitationStatus'] == 'pending' ? '$role · davet bekliyor' : role;
+    final role =
+        {
+          'owner': t('Sahip'),
+          'member': t('Üye'),
+          'viewer': t('İzleyici'),
+        }[m['role']] ??
+        '${m['role']}';
+    return m['invitationStatus'] == 'pending'
+        ? tx(
+            '$role · davet bekliyor',
+            '$role · invitation pending',
+            '$role · Einladung ausstehend',
+          )
+        : role;
   }
 
   static void _invite(BuildContext context, WidgetRef ref, String groupId) {
     final messenger = ScaffoldMessenger.of(context);
     showFormSheet(
       context,
-      title: 'Üye davet et',
+      title: t('Üye davet et'),
       fields: [
         const FieldSpec('email', 'E-posta'),
         FieldSpec(
           'role',
-          'Yetki',
+          t('Yetki'),
           kind: FieldKind.choice,
           initial: 'member',
           options: (_) => _inviteRoles,
@@ -158,7 +191,7 @@ class FamilyScreen extends StatelessWidget {
       onSubmit: (v) async {
         final email = '${v['email']}'.trim().toLowerCase();
         if (!isInviteEmail(email)) {
-          throw ApiException('Geçerli bir e-posta girin.');
+          throw ApiException(t('Geçerli bir e-posta girin.'));
         }
         final Map<String, dynamic> result;
         try {
@@ -169,7 +202,7 @@ class FamilyScreen extends StatelessWidget {
           });
         } on ApiException catch (e) {
           if (e.status == 403) {
-            throw ApiException('Bu e-posta zaten davetli veya grupta.');
+            throw ApiException(t('Bu e-posta zaten davetli veya grupta.'));
           }
           rethrow;
         }
@@ -178,8 +211,10 @@ class FamilyScreen extends StatelessWidget {
           SnackBar(
             content: Text(
               result['emailed'] == true
-                  ? 'Davet e-postası gönderildi.'
-                  : 'Davet oluşturuldu. Kişi bu e-postayla giriş yapınca görecek.',
+                  ? t('Davet e-postası gönderildi.')
+                  : t(
+                      'Davet oluşturuldu. Kişi bu e-postayla giriş yapınca görecek.',
+                    ),
             ),
           ),
         );
@@ -195,21 +230,36 @@ class FamilyScreen extends StatelessWidget {
   ) {
     final path = 'family/$groupId/members/${m['id']}';
     final pending = m['invitationStatus'] == 'pending';
-    final name = '${m['name'] ?? m['email'] ?? 'Üye'}';
+    final name = '${m['name'] ?? m['email'] ?? t('Üye')}';
     return PopupMenuButton<String>(
-      tooltip: 'Üye seçenekleri',
+      tooltip: t('Üye seçenekleri'),
       onSelected: (choice) async {
         if (choice != 'remove') {
-          await runAction(context, ref, _path, (api) => api.patch(path, {'role': choice}));
+          await runAction(
+            context,
+            ref,
+            _path,
+            (api) => api.patch(path, {'role': choice}),
+          );
           return;
         }
         final confirmed = await _confirm(
           context,
-          title: pending ? 'Davet iptal edilsin mi?' : 'Üye çıkarılsın mı?',
+          title: pending
+              ? t('Davet iptal edilsin mi?')
+              : t('Üye çıkarılsın mı?'),
           message: pending
-              ? '$name için gönderilen davet iptal edilecek.'
-              : '$name aile grubundan çıkarılacak.',
-          action: pending ? 'İptal et' : 'Çıkar',
+              ? tx(
+                  '$name için gönderilen davet iptal edilecek.',
+                  'The invitation sent to $name will be cancelled.',
+                  'Die Einladung an $name wird zurückgezogen.',
+                )
+              : tx(
+                  '$name aile grubundan çıkarılacak.',
+                  '$name will be removed from the family group.',
+                  '$name wird aus der Familiengruppe entfernt.',
+                ),
+          action: pending ? t('İptal et') : t('Çıkar'),
         );
         if (confirmed && context.mounted) {
           await runAction(context, ref, _path, (api) => api.delete(path));
@@ -222,8 +272,8 @@ class FamilyScreen extends StatelessWidget {
         PopupMenuItem(
           value: 'remove',
           child: Text(
-            pending ? 'Daveti iptal et' : 'Gruptan çıkar',
-            style: const TextStyle(color: expense),
+            pending ? t('Daveti iptal et') : t('Gruptan çıkar'),
+            style: TextStyle(color: expense),
           ),
         ),
       ],
@@ -231,46 +281,76 @@ class FamilyScreen extends StatelessWidget {
   }
 
   /// Accepted members other than the owner, who can take over the group.
-  static List<Map<String, dynamic>> transferCandidates(Map<String, dynamic> g) =>
-      rows(g['members'])
-          .where((m) => m['role'] != 'owner' && m['invitationStatus'] == 'accepted' && m['userId'] != null)
-          .toList();
+  static List<Map<String, dynamic>> transferCandidates(
+    Map<String, dynamic> g,
+  ) => rows(g['members'])
+      .where(
+        (m) =>
+            m['role'] != 'owner' &&
+            m['invitationStatus'] == 'accepted' &&
+            m['userId'] != null,
+      )
+      .toList();
 
-  static void _transfer(BuildContext context, WidgetRef ref, Map<String, dynamic> g) {
+  static void _transfer(
+    BuildContext context,
+    WidgetRef ref,
+    Map<String, dynamic> g,
+  ) {
     final candidates = transferCandidates(g);
     showFormSheet(
       context,
-      title: 'Yöneticiliği devret',
+      title: t('Yöneticiliği devret'),
       fields: [
         FieldSpec(
           'userId',
-          'Yeni yönetici',
+          t('Yeni yönetici'),
           kind: FieldKind.choice,
-          options: (_) => {for (final m in candidates) '${m['userId']}': '${m['name'] ?? m['email'] ?? 'Üye'}'},
+          options: (_) => {
+            for (final m in candidates)
+              '${m['userId']}': '${m['name'] ?? m['email'] ?? t('Üye')}',
+          },
         ),
       ],
       onSubmit: (v) async {
-        final name = candidates.firstWhere((m) => '${m['userId']}' == v['userId'])['name'];
+        final name = candidates.firstWhere(
+          (m) => '${m['userId']}' == v['userId'],
+        )['name'];
         final confirmed = await _confirm(
           context,
-          title: 'Yöneticilik devredilsin mi?',
-          message: '${name ?? 'Seçilen üye'} grubun yöneticisi olacak; sen üye olarak kalırsın. Bunu yalnızca yeni yönetici geri alabilir.',
-          action: 'Devret',
+          title: t('Yöneticilik devredilsin mi?'),
+          message: tx(
+            '${name ?? 'Seçilen üye'} grubun yöneticisi olacak; sen üye olarak kalırsın. Bunu yalnızca yeni yönetici geri alabilir.',
+            '${name ?? 'The chosen member'} will own the group; you stay a member. Only the new owner can undo this.',
+            '${name ?? 'Das gewählte Mitglied'} wird Verwalter der Gruppe; du bleibst Mitglied. Nur der neue Verwalter kann das rückgängig machen.',
+          ),
+          action: t('Devret'),
         );
         if (!confirmed) return;
-        await ref.read(apiProvider).patch('family/${g['id']}', {'transferOwnershipTo': v['userId']});
+        await ref.read(apiProvider).patch('family/${g['id']}', {
+          'transferOwnershipTo': v['userId'],
+        });
         ref.invalidate(pageProvider(_path));
       },
     );
   }
 
-  static Future<void> _deleteGroup(BuildContext context, WidgetRef ref, Map<String, dynamic> g) async {
+  static Future<void> _deleteGroup(
+    BuildContext context,
+    WidgetRef ref,
+    Map<String, dynamic> g,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => _DeleteGroupDialog(name: '${g['name']}'),
     );
     if (confirmed == true && context.mounted) {
-      await runAction(context, ref, _path, (api) => api.delete('family/${g['id']}'));
+      await runAction(
+        context,
+        ref,
+        _path,
+        (api) => api.delete('family/${g['id']}'),
+      );
     }
   }
 
@@ -281,9 +361,13 @@ class FamilyScreen extends StatelessWidget {
   ) async {
     final confirmed = await _confirm(
       context,
-      title: 'Gruptan ayrılınsın mı?',
-      message: '"${g['name']}" grubuna erişimin sona erecek.',
-      action: 'Ayrıl',
+      title: t('Gruptan ayrılınsın mı?'),
+      message: tx(
+        '"${g['name']}" grubuna erişimin sona erecek.',
+        'You will lose access to "${g['name']}".',
+        'Du verlierst den Zugriff auf „${g['name']}“.',
+      ),
+      action: t('Ayrıl'),
     );
     if (confirmed && context.mounted) {
       await runAction(
@@ -308,9 +392,13 @@ class _Invitations extends ConsumerWidget {
     if (!accept) {
       final confirmed = await _confirm(
         context,
-        title: 'Davet reddedilsin mi?',
-        message: '"${invite['groupName']}" grubuna katılmayacaksın.',
-        action: 'Reddet',
+        title: t('Davet reddedilsin mi?'),
+        message: tx(
+          '"${invite['groupName']}" grubuna katılmayacaksın.',
+          'You will not join "${invite['groupName']}".',
+          'Du trittst „${invite['groupName']}“ nicht bei.',
+        ),
+        action: t('Reddet'),
       );
       if (!confirmed || !context.mounted) return;
     }
@@ -318,7 +406,9 @@ class _Invitations extends ConsumerWidget {
       context,
       ref,
       _invitationsPath,
-      (api) => api.post('$_invitationsPath/${invite['id']}/respond', {'accept': accept}),
+      (api) => api.post('$_invitationsPath/${invite['id']}/respond', {
+        'accept': accept,
+      }),
     );
     ref.invalidate(pageProvider(FamilyScreen._path));
   }
@@ -332,7 +422,7 @@ class _Invitations extends ConsumerWidget {
       error: (e, _) => Card(
         child: TextButton(
           onPressed: () => ref.invalidate(pageProvider(_invitationsPath)),
-          child: Text('Davetler yüklenemedi · Tekrar dene'),
+          child: Text(t('Davetler yüklenemedi · Tekrar dene')),
         ),
       ),
       data: (d) => Column(
@@ -349,11 +439,15 @@ class _Invitations extends ConsumerWidget {
                     children: [
                       Text(
                         '${invite['groupName']}',
-                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: context.ink),
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          color: context.ink,
+                        ),
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        'Aile grubu daveti · ${_inviteRoles[invite['role']] ?? invite['role']}',
+                        '${t('Aile grubu daveti')} · ${_inviteRoles[invite['role']] ?? invite['role']}',
                         style: TextStyle(color: context.muted),
                       ),
                       const SizedBox(height: 12),
@@ -361,15 +455,17 @@ class _Invitations extends ConsumerWidget {
                         children: [
                           Expanded(
                             child: OutlinedButton(
-                              onPressed: () => _respond(context, ref, invite, false),
-                              child: const Text('Reddet'),
+                              onPressed: () =>
+                                  _respond(context, ref, invite, false),
+                              child: Text(t('Reddet')),
                             ),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: FilledButton(
-                              onPressed: () => _respond(context, ref, invite, true),
-                              child: const Text('Kabul et'),
+                              onPressed: () =>
+                                  _respond(context, ref, invite, true),
+                              child: Text(t('Kabul et')),
                             ),
                           ),
                         ],
@@ -401,20 +497,26 @@ class _Shopping extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ListTile(
-            title: Text('Ortak alışveriş listesi', style: TextStyle(fontWeight: FontWeight.w800, color: context.ink)),
+            title: Text(
+              t('Ortak alışveriş listesi'),
+              style: TextStyle(fontWeight: FontWeight.w800, color: context.ink),
+            ),
             trailing: canEdit
                 ? IconButton(
-                    tooltip: 'Ürün ekle',
-                    icon: const Icon(Icons.add_circle_outline, color: brand),
+                    tooltip: t('Ürün ekle'),
+                    icon: Icon(Icons.add_circle_outline, color: brand),
                     onPressed: () => showFormSheet(
                       context,
-                      title: 'Ürün ekle',
-                      fields: const [
-                        FieldSpec('name', 'Ürün'),
-                        FieldSpec('quantity', 'Miktar', required: false),
+                      title: t('Ürün ekle'),
+                      fields: [
+                        FieldSpec('name', t('Ürün')),
+                        FieldSpec('quantity', t('Miktar'), required: false),
                       ],
                       onSubmit: (v) async {
-                        await ref.read(apiProvider).post(path, {...v, 'quantity': v['quantity'] ?? ''});
+                        await ref.read(apiProvider).post(path, {
+                          ...v,
+                          'quantity': v['quantity'] ?? '',
+                        });
                         ref.invalidate(pageProvider(path));
                       },
                     ),
@@ -422,17 +524,33 @@ class _Shopping extends ConsumerWidget {
                 : null,
           ),
           ...data.when(
-            loading: () => const [Padding(padding: EdgeInsets.all(18), child: Center(child: CircularProgressIndicator()))],
+            loading: () => const [
+              Padding(
+                padding: EdgeInsets.all(18),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            ],
             error: (e, _) => [
               Padding(
-                padding: const EdgeInsets.all(16),
-                child: TextButton(onPressed: () => ref.invalidate(pageProvider(path)), child: Text('$e · Tekrar dene')),
+                padding: EdgeInsets.all(16),
+                child: TextButton(
+                  onPressed: () => ref.invalidate(pageProvider(path)),
+                  child: Text('$e · ${t('Tekrar dene')}'),
+                ),
               ),
             ],
             data: (d) {
               final items = rows(d['items']);
               if (items.isEmpty) {
-                return [Padding(padding: EdgeInsets.fromLTRB(16, 0, 16, 18), child: Text('Liste boş.', style: TextStyle(color: context.muted)))];
+                return [
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(16, 0, 16, 18),
+                    child: Text(
+                      t('Liste boş.'),
+                      style: TextStyle(color: context.muted),
+                    ),
+                  ),
+                ];
               }
               return [
                 for (final i in items)
@@ -440,11 +558,25 @@ class _Shopping extends ConsumerWidget {
                     value: i['checked_at'] != null,
                     title: Text(
                       '${i['name']}',
-                      style: TextStyle(decoration: i['checked_at'] != null ? TextDecoration.lineThrough : null),
+                      style: TextStyle(
+                        decoration: i['checked_at'] != null
+                            ? TextDecoration.lineThrough
+                            : null,
+                      ),
                     ),
-                    subtitle: '${i['quantity'] ?? ''}'.isEmpty ? null : Text('${i['quantity']}'),
+                    subtitle: '${i['quantity'] ?? ''}'.isEmpty
+                        ? null
+                        : Text('${i['quantity']}'),
                     onChanged: canEdit
-                        ? (v) => runAction(context, ref, path, (api) => api.patch(path, {'itemId': i['id'], 'checked': v == true}))
+                        ? (v) => runAction(
+                            context,
+                            ref,
+                            path,
+                            (api) => api.patch(path, {
+                              'itemId': i['id'],
+                              'checked': v == true,
+                            }),
+                          )
                         : null,
                   ),
               ];
@@ -456,7 +588,7 @@ class _Shopping extends ConsumerWidget {
   }
 }
 
-const _onOff = {'true': 'Açık', 'false': 'Kapalı'};
+Map<String, String> get _onOff => {'true': t('Açık'), 'false': t('Kapalı')};
 
 String wishlistShareUrl(String token) => '${AppConfig.apiUrl}/w/$token';
 
@@ -474,20 +606,45 @@ class WishlistsScreen extends ConsumerWidget {
     Map<String, String> groups = {};
     try {
       final family = await ref.read(pageProvider(_familyPath).future);
-      groups = {for (final g in rows(family['groups'])) '${g['id']}': '${g['name']}'};
+      groups = {
+        for (final g in rows(family['groups'])) '${g['id']}': '${g['name']}',
+      };
     } catch (_) {
       // Without the groups the list can still be created as personal.
     }
     if (!context.mounted) return;
     await showFormSheet(
       context,
-      title: 'Yeni liste',
+      title: t('Yeni liste'),
       fields: [
-        const FieldSpec('title', 'Liste adı'),
-        FieldSpec('occasion', 'Vesile', kind: FieldKind.choice, options: (_) => _occasions, initial: 'birthday'),
-        const FieldSpec('eventDate', 'Tarih', kind: FieldKind.date, required: false),
-        FieldSpec('visibility', 'Kimler görsün', kind: FieldKind.choice, options: (_) => {'': 'Yalnızca ben', ...groups}, initial: ''),
-        FieldSpec('surprise', 'Sürpriz modu', kind: FieldKind.choice, options: (_) => _onOff, initial: 'true'),
+        FieldSpec('title', t('Liste adı')),
+        FieldSpec(
+          'occasion',
+          t('Vesile'),
+          kind: FieldKind.choice,
+          options: (_) => _occasions,
+          initial: 'birthday',
+        ),
+        FieldSpec(
+          'eventDate',
+          t('Tarih'),
+          kind: FieldKind.date,
+          required: false,
+        ),
+        FieldSpec(
+          'visibility',
+          t('Kimler görsün'),
+          kind: FieldKind.choice,
+          options: (_) => {'': t('Yalnızca ben'), ...groups},
+          initial: '',
+        ),
+        FieldSpec(
+          'surprise',
+          t('Sürpriz modu'),
+          kind: FieldKind.choice,
+          options: (_) => _onOff,
+          initial: 'true',
+        ),
       ],
       onSubmit: (v) async {
         final visibility = '${v['visibility'] ?? ''}';
@@ -503,10 +660,16 @@ class WishlistsScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _share(BuildContext context, WidgetRef ref, Map<String, dynamic> list) async {
+  Future<void> _share(
+    BuildContext context,
+    WidgetRef ref,
+    Map<String, dynamic> list,
+  ) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
-      final result = await ref.read(apiProvider).post('wishlists/${list['id']}/share', {});
+      final result = await ref
+          .read(apiProvider)
+          .post('wishlists/${list['id']}/share', {});
       ref.invalidate(pageProvider(_path));
       if (context.mounted) await _showLink(context, '${result['shareToken']}');
     } catch (e) {
@@ -519,41 +682,59 @@ class WishlistsScreen extends ConsumerWidget {
     return showDialog<void>(
       context: context,
       builder: (dialog) => AlertDialog(
-        title: const Text('Paylaşım bağlantısı'),
+        title: Text(t('Paylaşım bağlantısı')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Bağlantıyı alan herkes dilekleri görür. Kimin ne aldığını göremez.', style: TextStyle(color: context.muted)),
-            const SizedBox(height: 12),
+            Text(
+              t(
+                'Bağlantıyı alan herkes dilekleri görür. Kimin ne aldığını göremez.',
+              ),
+              style: TextStyle(color: context.muted),
+            ),
+            SizedBox(height: 12),
             SelectableText(url),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialog), child: const Text('Kapat')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialog),
+            child: Text(t('Kapat')),
+          ),
           FilledButton.icon(
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: url));
               if (dialog.mounted) Navigator.pop(dialog);
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bağlantı kopyalandı.')));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(t('Bağlantı kopyalandı.'))),
+                );
               }
             },
-            icon: const Icon(Icons.copy, size: 18),
-            label: const Text('Kopyala'),
+            icon: Icon(Icons.copy, size: 18),
+            label: Text(t('Kopyala')),
           ),
         ],
       ),
     );
   }
 
-  void _addWish(BuildContext context, WidgetRef ref, Map<String, dynamic> list) => showFormSheet(
+  void _addWish(
+    BuildContext context,
+    WidgetRef ref,
+    Map<String, dynamic> list,
+  ) => showFormSheet(
     context,
-    title: 'Dilek ekle',
-    fields: const [
-      FieldSpec('name', 'Dilek'),
-      FieldSpec('note', 'Not', required: false),
-      FieldSpec('productUrl', 'Ürün bağlantısı (https://…)', required: false),
+    title: t('Dilek ekle'),
+    fields: [
+      FieldSpec('name', t('Dilek')),
+      FieldSpec('note', t('Not'), required: false),
+      FieldSpec(
+        'productUrl',
+        t('Ürün bağlantısı (https://…)'),
+        required: false,
+      ),
     ],
     onSubmit: (v) async {
       final url = '${v['productUrl'] ?? ''}';
@@ -567,24 +748,54 @@ class WishlistsScreen extends ConsumerWidget {
     },
   );
 
-  Future<void> _onMenu(BuildContext context, WidgetRef ref, Map<String, dynamic> list, String action) async {
+  Future<void> _onMenu(
+    BuildContext context,
+    WidgetRef ref,
+    Map<String, dynamic> list,
+    String action,
+  ) async {
     final id = list['id'];
     switch (action) {
       case 'add':
         _addWish(context, ref, list);
       case 'surprise':
-        await runAction(context, ref, _path, (api) => api.patch('wishlists/$id', {'action': 'settings', 'surprise': list['surprise'] != true}));
+        await runAction(
+          context,
+          ref,
+          _path,
+          (api) => api.patch('wishlists/$id', {
+            'action': 'settings',
+            'surprise': list['surprise'] != true,
+          }),
+        );
       case 'share':
         await _share(context, ref, list);
       case 'showLink':
         await _showLink(context, '${list['shareToken']}');
       case 'unshare':
-        if (await _confirm(context, title: 'Bağlantı kaldırılsın mı?', message: 'Bağlantıyı alan kişiler listeyi artık göremez.', action: 'Kaldır') && context.mounted) {
-          await runAction(context, ref, _path, (api) => api.delete('wishlists/$id/share'));
+        if (await _confirm(
+              context,
+              title: t('Bağlantı kaldırılsın mı?'),
+              message: t('Bağlantıyı alan kişiler listeyi artık göremez.'),
+              action: t('Kaldır'),
+            ) &&
+            context.mounted) {
+          await runAction(
+            context,
+            ref,
+            _path,
+            (api) => api.delete('wishlists/$id/share'),
+          );
         }
       case 'delete':
-        if (await confirmDelete(context, '${list['title']}') && context.mounted) {
-          await runAction(context, ref, _path, (api) => api.delete('wishlists/$id', {}));
+        if (await confirmDelete(context, '${list['title']}') &&
+            context.mounted) {
+          await runAction(
+            context,
+            ref,
+            _path,
+            (api) => api.delete('wishlists/$id', {}),
+          );
         }
     }
   }
@@ -593,14 +804,21 @@ class WishlistsScreen extends ConsumerWidget {
     final parts = <String>[
       _occasions[l['occasion']] ?? '${l['occasion']}',
       if (l['eventDate'] != null) shortDate('${l['eventDate']}'),
-      l['familyGroupId'] == null ? 'Yalnızca sen' : (groups['${l['familyGroupId']}'] ?? 'Aile'),
-      if (l['mine'] == true && l['surprise'] == true) 'Sürpriz',
-      if (l['shareToken'] != null) 'Bağlantıyla paylaşıldı',
+      l['familyGroupId'] == null
+          ? t('Yalnızca sen')
+          : (groups['${l['familyGroupId']}'] ?? 'Aile'),
+      if (l['mine'] == true && l['surprise'] == true) t('Sürpriz'),
+      if (l['shareToken'] != null) t('Bağlantıyla paylaşıldı'),
     ];
     return parts.join(' · ');
   }
 
-  Widget _item(BuildContext context, WidgetRef ref, Map<String, dynamic> l, Map<String, dynamic> i) {
+  Widget _item(
+    BuildContext context,
+    WidgetRef ref,
+    Map<String, dynamic> l,
+    Map<String, dynamic> i,
+  ) {
     final note = '${i['note'] ?? ''}';
     final url = '${i['productUrl'] ?? ''}';
     final mine = l['mine'] == true;
@@ -610,26 +828,41 @@ class WishlistsScreen extends ConsumerWidget {
       title: Text('${i['name']}'),
       subtitle: note.isEmpty && url.isEmpty
           ? null
-          : Text([if (note.isNotEmpty) note, if (url.isNotEmpty) url].join('\n'), maxLines: 3, overflow: TextOverflow.ellipsis),
+          : Text(
+              [if (note.isNotEmpty) note, if (url.isNotEmpty) url].join('\n'),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
       onLongPress: url.isEmpty
           ? null
           : () async {
               await Clipboard.setData(ClipboardData(text: url));
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ürün bağlantısı kopyalandı.')));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(t('Ürün bağlantısı kopyalandı.'))),
+                );
               }
             },
       trailing: mine
           ? Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (i['reserved'] == true) Text('Alınıyor', style: TextStyle(color: context.muted)),
+                if (i['reserved'] == true)
+                  Text(t('Alınıyor'), style: TextStyle(color: context.muted)),
                 IconButton(
-                  tooltip: 'Dileği sil',
+                  tooltip: t('Dileği sil'),
                   icon: const Icon(Icons.delete_outline),
                   onPressed: () async {
-                    if (await confirmDelete(context, '${i['name']}') && context.mounted) {
-                      await runAction(context, ref, _path, (api) => api.delete('wishlists/${l['id']}', {'itemId': i['id']}));
+                    if (await confirmDelete(context, '${i['name']}') &&
+                        context.mounted) {
+                      await runAction(
+                        context,
+                        ref,
+                        _path,
+                        (api) => api.delete('wishlists/${l['id']}', {
+                          'itemId': i['id'],
+                        }),
+                      );
                     }
                   },
                 ),
@@ -638,25 +871,36 @@ class WishlistsScreen extends ConsumerWidget {
           : TextButton(
               onPressed: i['reserved'] == true && i['reservedByMe'] != true
                   ? null
-                  : () => runAction(context, ref, _path, (api) => api.patch('wishlists/${l['id']}', {
-                      'action': i['reservedByMe'] == true ? 'release' : 'reserve',
-                      'itemId': i['id'],
-                    })),
-              child: Text(i['reservedByMe'] == true ? 'Bırak' : (i['reserved'] == true ? 'Ayrıldı' : 'Ben alırım')),
+                  : () => runAction(
+                      context,
+                      ref,
+                      _path,
+                      (api) => api.patch('wishlists/${l['id']}', {
+                        'action': i['reservedByMe'] == true
+                            ? 'release'
+                            : 'reserve',
+                        'itemId': i['id'],
+                      }),
+                    ),
+              child: Text(
+                i['reservedByMe'] == true
+                    ? t('Bırak')
+                    : (i['reserved'] == true ? t('Ayrıldı') : t('Ben alırım')),
+              ),
             ),
     );
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => ApiPage(
-    title: 'Dilek Listeleri',
+    title: t('Dilek Listeleri'),
     path: _path,
-    addLabel: 'Yeni liste',
+    addLabel: t('Yeni liste'),
     onAdd: (context, ref, _) => _create(context, ref),
     builder: (context, ref, d) {
       final lists = rows(d['lists']);
       final groups = _groups(ref);
-      if (lists.isEmpty) return const [EmptyNote('Henüz dilek listen yok.')];
+      if (lists.isEmpty) return [EmptyNote(t('Henüz dilek listen yok.'))];
       return [
         for (final l in lists) ...[
           Card(
@@ -665,19 +909,57 @@ class WishlistsScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 ListTile(
-                  title: Text('${l['title']}', style: TextStyle(fontWeight: FontWeight.w800, color: context.ink)),
+                  title: Text(
+                    '${l['title']}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: context.ink,
+                    ),
+                  ),
                   subtitle: Text(_subtitle(l, groups)),
                   trailing: l['mine'] == true
                       ? PopupMenuButton<String>(
-                          tooltip: 'Liste seçenekleri',
-                          onSelected: (action) => _onMenu(context, ref, l, action),
+                          tooltip: t('Liste seçenekleri'),
+                          onSelected: (action) =>
+                              _onMenu(context, ref, l, action),
                           itemBuilder: (_) => [
-                            const PopupMenuItem(value: 'add', child: Text('Dilek ekle')),
-                            PopupMenuItem(value: 'surprise', child: Text(l['surprise'] == true ? 'Sürpriz modunu kapat' : 'Sürpriz modunu aç')),
-                            if (l['shareToken'] != null) const PopupMenuItem(value: 'showLink', child: Text('Bağlantıyı göster')),
-                            PopupMenuItem(value: 'share', child: Text(l['shareToken'] == null ? 'Bağlantıyla paylaş' : 'Yeni bağlantı oluştur')),
-                            if (l['shareToken'] != null) const PopupMenuItem(value: 'unshare', child: Text('Bağlantıyı kaldır')),
-                            const PopupMenuItem(value: 'delete', child: Text('Listeyi sil', style: TextStyle(color: expense))),
+                            PopupMenuItem(
+                              value: 'add',
+                              child: Text(t('Dilek ekle')),
+                            ),
+                            PopupMenuItem(
+                              value: 'surprise',
+                              child: Text(
+                                l['surprise'] == true
+                                    ? t('Sürpriz modunu kapat')
+                                    : t('Sürpriz modunu aç'),
+                              ),
+                            ),
+                            if (l['shareToken'] != null)
+                              PopupMenuItem(
+                                value: 'showLink',
+                                child: Text(t('Bağlantıyı göster')),
+                              ),
+                            PopupMenuItem(
+                              value: 'share',
+                              child: Text(
+                                l['shareToken'] == null
+                                    ? t('Bağlantıyla paylaş')
+                                    : t('Yeni bağlantı oluştur'),
+                              ),
+                            ),
+                            if (l['shareToken'] != null)
+                              PopupMenuItem(
+                                value: 'unshare',
+                                child: Text(t('Bağlantıyı kaldır')),
+                              ),
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Text(
+                                t('Listeyi sil'),
+                                style: TextStyle(color: expense),
+                              ),
+                            ),
                           ],
                         )
                       : null,
@@ -715,20 +997,24 @@ class _DeleteGroupDialogState extends State<_DeleteGroupDialog> {
   Widget build(BuildContext context) {
     final ready = _input.text.trim() == widget.name.trim();
     return AlertDialog(
-      title: const Text('Aile grubu silinsin mi?'),
+      title: Text(t('Aile grubu silinsin mi?')),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '“${widget.name}” grubu, ortak işlemleri, alışveriş listesi ve gruba ait dilek listeleri herkes için kalıcı olarak silinir. Bu işlem geri alınamaz.',
+            tx(
+              '“${widget.name}” grubu, ortak işlemleri, alışveriş listesi ve gruba ait dilek listeleri herkes için kalıcı olarak silinir. Bu işlem geri alınamaz.',
+              '“${widget.name}”, its shared transactions, shopping list and wishlists are permanently deleted for everyone. This cannot be undone.',
+              '„${widget.name}“ mit gemeinsamen Transaktionen, Einkaufsliste und Wunschlisten wird für alle dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden.',
+            ),
           ),
           const SizedBox(height: 14),
           TextField(
             controller: _input,
             autocorrect: false,
             decoration: InputDecoration(
-              labelText: 'Onaylamak için grup adını yaz',
+              labelText: t('Onaylamak için grup adını yaz'),
               hintText: widget.name,
             ),
             onChanged: (_) => setState(() {}),
@@ -738,12 +1024,12 @@ class _DeleteGroupDialogState extends State<_DeleteGroupDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('Vazgeç'),
+          child: Text(t('Vazgeç')),
         ),
         TextButton(
           onPressed: ready ? () => Navigator.pop(context, true) : null,
           child: Text(
-            'Kalıcı olarak sil',
+            t('Kalıcı olarak sil'),
             style: TextStyle(color: ready ? expense : context.muted),
           ),
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/theme.dart';
+import '../core/i18n.dart';
 
 const _addSlot = 2;
 
@@ -29,28 +30,28 @@ class AppNavigationBar extends StatelessWidget {
         onTabSelected(slot < _addSlot ? slot : slot - 1);
       }
     },
-    destinations: const [
+    destinations: [
       NavigationDestination(
         icon: Icon(Icons.home_outlined),
         selectedIcon: Icon(Icons.home),
-        label: 'Ana Sayfa',
+        label: t('Ana Sayfa'),
       ),
       NavigationDestination(
         icon: Icon(Icons.receipt_long_outlined),
         selectedIcon: Icon(Icons.receipt_long),
-        label: 'İşlemler',
+        label: t('İşlemler'),
       ),
       NavigationDestination(
         icon: _AddIcon(),
-        label: 'Ekle',
-        tooltip: 'İşlem ekle',
+        label: t('Ekle'),
+        tooltip: t('İşlem ekle'),
       ),
       NavigationDestination(
         icon: Icon(Icons.auto_awesome_outlined),
         selectedIcon: Icon(Icons.auto_awesome),
-        label: 'AI Asistanı',
+        label: t('AI Asistanı'),
       ),
-      NavigationDestination(icon: Icon(Icons.more_horiz), label: 'Diğer'),
+      NavigationDestination(icon: Icon(Icons.more_horiz), label: t('Diğer')),
     ],
   );
 }

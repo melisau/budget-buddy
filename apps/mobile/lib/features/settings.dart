@@ -8,6 +8,7 @@ import 'avatar.dart';
 import 'common.dart';
 import 'csv.dart';
 import 'data.dart';
+import '../core/i18n.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -32,7 +33,7 @@ class SettingsScreen extends ConsumerWidget {
     try {
       await ref.read(apiProvider).delete('account');
       navigator.pop();
-      messenger.showSnackBar(const SnackBar(content: Text('Hesabın silindi.')));
+      messenger.showSnackBar(SnackBar(content: Text(t('Hesabın silindi.'))));
       try {
         await Supabase.instance.client.auth.signOut(scope: SignOutScope.local);
       } catch (_) {
@@ -68,11 +69,11 @@ class SettingsScreen extends ConsumerWidget {
     final fullName = auth.currentUser?.userMetadata?['full_name'];
     final displayName = fullName is String && fullName.trim().isNotEmpty
         ? fullName.trim()
-        : auth.currentUser?.email?.split('@').first ?? 'Hesabım';
+        : auth.currentUser?.email?.split('@').first ?? t('Hesabım');
     final account = ref.watch(pageProvider('account'));
     final notifications = ref.watch(pageProvider('notifications'));
     return Scaffold(
-      appBar: AppBar(title: const Text('Ayarlar')),
+      appBar: AppBar(title: Text(t('Ayarlar'))),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -99,28 +100,66 @@ class SettingsScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Görünüm',
+                    t('Dil'),
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: context.ink,
                     ),
                   ),
                   const SizedBox(height: 10),
+                  SegmentedButton<String>(
+                    segments: [
+                      for (final entry in I18n.names.entries)
+                        ButtonSegment(
+                          value: entry.key,
+                          label: Text(entry.value),
+                        ),
+                    ],
+                    selected: {I18n.language.value},
+                    onSelectionChanged: (value) async {
+                      await I18n.set(value.first);
+                      try {
+                        // Also used for the website and e-mails.
+                        await ref.read(apiProvider).patch('account', {
+                          'language': value.first,
+                        });
+                      } catch (_) {}
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const Gap(),
+          Card(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(16, 12, 16, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    t('Görünüm'),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: context.ink,
+                    ),
+                  ),
+                  SizedBox(height: 10),
                   SegmentedButton<ThemeMode>(
-                    segments: const [
+                    segments: [
                       ButtonSegment(
                         value: ThemeMode.system,
-                        label: Text('Sistem'),
+                        label: Text(t('Sistem')),
                         icon: Icon(Icons.brightness_auto_outlined),
                       ),
                       ButtonSegment(
                         value: ThemeMode.light,
-                        label: Text('Açık'),
+                        label: Text(t('Açık')),
                         icon: Icon(Icons.light_mode_outlined),
                       ),
                       ButtonSegment(
                         value: ThemeMode.dark,
-                        label: Text('Koyu'),
+                        label: Text(t('Koyu')),
                         icon: Icon(Icons.dark_mode_outlined),
                       ),
                     ],
@@ -136,7 +175,7 @@ class SettingsScreen extends ConsumerWidget {
           Card(
             child: ListTile(
               leading: const Icon(Icons.currency_exchange),
-              title: const Text('Para birimi'),
+              title: Text(t('Para birimi')),
               trailing: account.maybeWhen(
                 data: (d) => DropdownButton<String>(
                   value: '${d['currency']}',
@@ -149,7 +188,7 @@ class SettingsScreen extends ConsumerWidget {
                     if (v != null && v != d['currency']) {
                       _save(context, ref, 'account', 'patch', {
                         'currency': v,
-                      }, 'Para birimi güncellendi.');
+                      }, t('Para birimi güncellendi.'));
                     }
                   },
                 ),
@@ -167,9 +206,7 @@ class SettingsScreen extends ConsumerWidget {
                 secondary: const Icon(Icons.mail_outline),
                 title: const Text('E-posta bildirimleri'),
                 value: d['emailEnabled'] == true,
-                subtitle: const Text(
-                  'Bütçe ve hedef uyarılarının günlük özeti',
-                ),
+                subtitle: Text(t('Bütçe ve hedef uyarılarının günlük özeti')),
                 onChanged: (v) => _save(
                   context,
                   ref,
@@ -190,16 +227,13 @@ class SettingsScreen extends ConsumerWidget {
           const Gap(),
           Card(
             child: ListTile(
-              leading: const Icon(
-                Icons.delete_forever_outlined,
-                color: expense,
-              ),
-              title: const Text(
-                'Hesabı sil',
+              leading: Icon(Icons.delete_forever_outlined, color: expense),
+              title: Text(
+                t('Hesabı sil'),
                 style: TextStyle(color: expense, fontWeight: FontWeight.w700),
               ),
-              subtitle: const Text(
-                'Hesabın ve tüm verilerin kalıcı olarak silinir',
+              subtitle: Text(
+                t('Hesabın ve tüm verilerin kalıcı olarak silinir'),
               ),
               onTap: () => _deleteAccount(context, ref),
             ),
@@ -207,9 +241,9 @@ class SettingsScreen extends ConsumerWidget {
           const Gap(),
           Card(
             child: ListTile(
-              leading: const Icon(Icons.logout, color: expense),
-              title: const Text(
-                'Çıkış yap',
+              leading: Icon(Icons.logout, color: expense),
+              title: Text(
+                t('Çıkış yap'),
                 style: TextStyle(color: expense, fontWeight: FontWeight.w700),
               ),
               onTap: () => auth.signOut(scope: SignOutScope.local),
@@ -229,7 +263,7 @@ class _DeleteAccountDialog extends StatefulWidget {
 }
 
 class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
-  static const _accepted = {'SİL', 'SIL', 'Sil', 'sil'};
+  static Set<String> get _accepted => {'SİL', 'SIL', t('Sil'), 'sil'};
   final _input = TextEditingController();
 
   @override
@@ -242,21 +276,21 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
   Widget build(BuildContext context) {
     final ready = _accepted.contains(_input.text.trim());
     return AlertDialog(
-      title: const Text('Hesabın silinsin mi?'),
+      title: Text(t('Hesabın silinsin mi?')),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Hesabın, işlemlerin, bütçelerin, hedeflerin ve fişlerin kalıcı olarak silinir. Bu işlem geri alınamaz.',
+          Text(
+            t(
+              'Hesabın, işlemlerin, bütçelerin, hedeflerin ve fişlerin kalıcı olarak silinir. Bu işlem geri alınamaz.',
+            ),
           ),
           const SizedBox(height: 14),
           TextField(
             controller: _input,
             autocorrect: false,
-            decoration: const InputDecoration(
-              labelText: 'Onaylamak için SİL yaz',
-            ),
+            decoration: InputDecoration(labelText: t('Onaylamak için SİL yaz')),
             onChanged: (_) => setState(() {}),
           ),
         ],
@@ -264,12 +298,12 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('Vazgeç'),
+          child: Text(t('Vazgeç')),
         ),
         TextButton(
           onPressed: ready ? () => Navigator.pop(context, true) : null,
           child: Text(
-            'Kalıcı olarak sil',
+            t('Kalıcı olarak sil'),
             style: TextStyle(color: ready ? expense : context.muted),
           ),
         ),

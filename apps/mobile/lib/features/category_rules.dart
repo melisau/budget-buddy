@@ -3,12 +3,16 @@ import 'package:flutter/material.dart';
 import '../core/theme.dart';
 import 'common.dart';
 import 'data.dart';
+import '../core/i18n.dart';
 
 /// "If the description contains X, use category Y" rules, same as the web.
 class CategoryRulesScreen extends StatelessWidget {
   const CategoryRulesScreen({super.key});
   static const _path = 'category-rules';
-  static const _types = {'expense': 'Gider', 'income': 'Gelir'};
+  static Map<String, String> get _types => {
+    'expense': t('Gider'),
+    'income': t('Gelir'),
+  };
 
   static Map<String, String> categoriesFor(
     List<Map<String, dynamic>> categories,
@@ -21,17 +25,17 @@ class CategoryRulesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ApiPage(
-    title: 'Kategori kuralları',
+    title: t('Kategori kuralları'),
     path: _path,
-    addLabel: 'Kural ekle',
+    addLabel: t('Kural ekle'),
     onAdd: (context, ref, d) => showFormSheet(
       context,
-      title: 'Kural ekle',
+      title: t('Kural ekle'),
       fields: [
-        const FieldSpec('keyword', 'Açıklama şunu içerirse'),
-        const FieldSpec(
+        FieldSpec('keyword', t('Açıklama şunu içerirse')),
+        FieldSpec(
           'type',
-          'Tür',
+          t('Tür'),
           kind: FieldKind.choice,
           options: _typeOptions,
           initial: 'expense',
@@ -39,7 +43,7 @@ class CategoryRulesScreen extends StatelessWidget {
         ),
         FieldSpec(
           'categoryId',
-          'Kategori',
+          t('Kategori'),
           kind: FieldKind.choice,
           options: (v) => categoriesFor(rows(d['categories']), v['type']),
         ),
@@ -54,19 +58,21 @@ class CategoryRulesScreen extends StatelessWidget {
     ),
     builder: (context, ref, d) {
       if (d['available'] == false) {
-        return const [EmptyNote('Kategori kuralları şu anda kullanılamıyor.')];
+        return [EmptyNote(t('Kategori kuralları şu anda kullanılamıyor.'))];
       }
       final items = rows(d['rules']);
       return [
         Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: Text(
-            'Yeni ve içe aktarılan işlemlerin açıklaması bir kelimeyi içeriyorsa kategori otomatik seçilir.',
+            t(
+              'Yeni ve içe aktarılan işlemlerin açıklaması bir kelimeyi içeriyorsa kategori otomatik seçilir.',
+            ),
             style: TextStyle(color: context.muted),
           ),
         ),
         if (items.isEmpty)
-          const EmptyNote('Henüz kural yok. Örneğin "Migros" → Market.'),
+          EmptyNote(t('Henüz kural yok. Örneğin "Migros" → Market.')),
         for (final r in items)
           Card(
             child: ListTile(
@@ -85,7 +91,7 @@ class CategoryRulesScreen extends StatelessWidget {
                 '${_types[r['type']] ?? ''} → ${categoryLabel('${r['categoryName']}')}',
               ),
               trailing: IconButton(
-                tooltip: 'Kuralı sil',
+                tooltip: t('Kuralı sil'),
                 icon: Icon(Icons.delete_outline, color: context.muted),
                 onPressed: () async {
                   if (await confirmDelete(context, '“${r['keyword']}”') &&

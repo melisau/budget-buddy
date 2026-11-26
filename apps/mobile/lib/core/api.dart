@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config.dart';
+import 'i18n.dart';
 
 class ApiException implements Exception {
   ApiException(this.message, [this.status, this.outcomeUnknown = false]);
@@ -29,7 +30,9 @@ class Api {
   Future<List<int>> getBytes(String path) async {
     final auth = Supabase.instance.client.auth;
     var session = auth.currentSession;
-    if (session == null) throw ApiException('Oturum açmanız gerekiyor.', 401);
+    if (session == null) {
+      throw ApiException(t('Oturum açmanız gerekiyor.'), 401);
+    }
     try {
       if (session.isExpired) {
         session = (await auth.refreshSession()).session ?? session;
@@ -57,9 +60,9 @@ class Api {
       }
       return bytes;
     } on SocketException {
-      throw ApiException('İnternet bağlantısı yok. Lütfen tekrar deneyin.');
+      throw ApiException(t('İnternet bağlantısı yok. Lütfen tekrar deneyin.'));
     } on TimeoutException {
-      throw ApiException('Sunucu yanıt vermedi. Lütfen tekrar deneyin.');
+      throw ApiException(t('Sunucu yanıt vermedi. Lütfen tekrar deneyin.'));
     }
   }
 
@@ -85,7 +88,9 @@ class Api {
   }) async {
     final auth = Supabase.instance.client.auth;
     var session = auth.currentSession;
-    if (session == null) throw ApiException('Oturum açmanız gerekiyor.', 401);
+    if (session == null) {
+      throw ApiException(t('Oturum açmanız gerekiyor.'), 401);
+    }
     try {
       if (session.isExpired) {
         session = (await auth.refreshSession()).session ?? session;
@@ -120,7 +125,7 @@ class Api {
       if (response.statusCode >= 400) {
         throw ApiException(
           response.statusCode == 400
-              ? 'JPG, PNG veya WebP biçiminde, en fazla 2 MB bir görsel seç.'
+              ? t('JPG, PNG veya WebP biçiminde, en fazla 2 MB bir görsel seç.')
               : _messageFor(response.statusCode),
           response.statusCode,
         );
@@ -129,9 +134,9 @@ class Api {
           ? <String, dynamic>{}
           : jsonDecode(text) as Map<String, dynamic>;
     } on SocketException {
-      throw ApiException('İnternet bağlantısı yok. Lütfen tekrar deneyin.');
+      throw ApiException(t('İnternet bağlantısı yok. Lütfen tekrar deneyin.'));
     } on TimeoutException {
-      throw ApiException('Sunucu yanıt vermedi. Lütfen tekrar deneyin.');
+      throw ApiException(t('Sunucu yanıt vermedi. Lütfen tekrar deneyin.'));
     }
   }
 
@@ -150,7 +155,9 @@ class Api {
     var session = auth.currentSession;
     var sent = false;
     final isWrite = method != 'GET';
-    if (session == null) throw ApiException('Oturum açmanız gerekiyor.', 401);
+    if (session == null) {
+      throw ApiException(t('Oturum açmanız gerekiyor.'), 401);
+    }
     try {
       if (session.isExpired) {
         session = (await auth.refreshSession()).session ?? session;
@@ -186,33 +193,36 @@ class Api {
           : jsonDecode(text) as Map<String, dynamic>;
     } on SocketException {
       if (sent && isWrite) throw _unknownOutcome();
-      throw ApiException('İnternet bağlantısı yok. Lütfen tekrar deneyin.');
+      throw ApiException(t('İnternet bağlantısı yok. Lütfen tekrar deneyin.'));
     } on TimeoutException {
       if (sent && isWrite) throw _unknownOutcome();
-      throw ApiException('Sunucu yanıt vermedi. Lütfen tekrar deneyin.');
+      throw ApiException(t('Sunucu yanıt vermedi. Lütfen tekrar deneyin.'));
     } on HttpException {
       if (sent && isWrite) throw _unknownOutcome();
-      throw ApiException('Sunucuya ulaşılamadı. Lütfen tekrar deneyin.');
+      throw ApiException(t('Sunucuya ulaşılamadı. Lütfen tekrar deneyin.'));
     } on FormatException {
-      throw ApiException('Sunucudan beklenmeyen bir yanıt geldi.');
+      throw ApiException(t('Sunucudan beklenmeyen bir yanıt geldi.'));
     } on AuthException {
-      throw ApiException('Oturumunuz yenilenemedi. Tekrar giriş yapın.', 401);
+      throw ApiException(
+        t('Oturumunuz yenilenemedi. Tekrar giriş yapın.'),
+        401,
+      );
     }
   }
 
   ApiException _unknownOutcome() => ApiException(
-    'Yanıt alınamadı. İşlem kaydedilmiş olabilir, listeyi kontrol edin.',
+    t('Yanıt alınamadı. İşlem kaydedilmiş olabilir, listeyi kontrol edin.'),
     null,
     true,
   );
 
   String _messageFor(int status) => switch (status) {
-    400 => 'Lütfen alanları kontrol edin.',
-    401 => 'Oturumunuz sona erdi. Tekrar giriş yapın.',
-    403 => 'Bu işlem için yetkiniz yok.',
-    404 => 'Kayıt bulunamadı. Listeyi yenileyin.',
-    409 => 'Bu işlem zaten kaydedildi. Listeyi yenileyin.',
-    429 => 'Çok fazla istek gönderildi. Biraz sonra deneyin.',
-    _ => 'Bir sorun oluştu. Lütfen tekrar deneyin.',
+    400 => t('Lütfen alanları kontrol edin.'),
+    401 => t('Oturumunuz sona erdi. Tekrar giriş yapın.'),
+    403 => t('Bu işlem için yetkiniz yok.'),
+    404 => t('Kayıt bulunamadı. Listeyi yenileyin.'),
+    409 => t('Bu işlem zaten kaydedildi. Listeyi yenileyin.'),
+    429 => t('Çok fazla istek gönderildi. Biraz sonra deneyin.'),
+    _ => t('Bir sorun oluştu. Lütfen tekrar deneyin.'),
   };
 }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme.dart';
 import 'common.dart';
 import 'data.dart';
+import '../core/i18n.dart';
 
 /// How a monthly allowance splits into savings and spending.
 ({num saved, num spendable}) splitAllowance(num monthly, num percent) {
@@ -22,17 +23,17 @@ class AllowanceScreen extends ConsumerWidget {
     Map<String, dynamic>? plan,
   ) => showFormSheet(
     context,
-    title: plan == null ? 'Gelir planı oluştur' : 'Gelir planını düzenle',
+    title: plan == null ? t('Gelir planı oluştur') : t('Gelir planını düzenle'),
     fields: [
       FieldSpec(
         'monthlyAmount',
-        'Aylık gelir',
+        t('Aylık gelir'),
         kind: FieldKind.amount,
         initial: plan?['monthly_amount'],
       ),
       FieldSpec(
         'savingsPercent',
-        'Birikim yüzdesi (0–100)',
+        t('Birikim yüzdesi (0–100)'),
         kind: FieldKind.amount,
         initial: plan?['savings_percent'] ?? 20,
       ),
@@ -55,20 +56,22 @@ class AllowanceScreen extends ConsumerWidget {
         ref.watch(pageProvider('account')).value?['currency']?.toString() ??
         'TRY';
     return ApiPage(
-      title: 'Gelir Planı',
+      title: t('Gelir Planı'),
       path: _path,
       builder: (context, ref, d) {
         final plan = (d['plan'] as Map?)?.cast<String, dynamic>();
         if (plan == null) {
           return [
-            const EmptyNote(
-              'Henüz gelir planın yok. Aylık gelirini ve ne kadarını biriktirmek istediğini belirle.',
+            EmptyNote(
+              t(
+                'Henüz gelir planın yok. Aylık gelirini ve ne kadarını biriktirmek istediğini belirle.',
+              ),
             ),
             const Gap(),
             FilledButton.icon(
               onPressed: () => _edit(context, ref, null),
               icon: const Icon(Icons.add),
-              label: const Text('Plan oluştur'),
+              label: Text(t('Plan oluştur')),
             ),
           ];
         }
@@ -82,7 +85,10 @@ class AllowanceScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Aylık gelir', style: TextStyle(color: context.muted)),
+                  Text(
+                    t('Aylık gelir'),
+                    style: TextStyle(color: context.muted),
+                  ),
                   Text(
                     money(monthly, currency),
                     style: TextStyle(
@@ -103,14 +109,18 @@ class AllowanceScreen extends ConsumerWidget {
                   const SizedBox(height: 14),
                   _row(
                     context,
-                    'Biriktir (%$percent)',
+                    tx(
+                      'Biriktir (%$percent)',
+                      'Save ($percent%)',
+                      'Sparen ($percent %)',
+                    ),
                     money(split.saved, currency),
                     income,
                   ),
                   const SizedBox(height: 6),
                   _row(
                     context,
-                    'Harcayabilirsin',
+                    t('Harcayabilirsin'),
                     money(split.spendable, currency),
                     context.ink,
                   ),
@@ -120,14 +130,14 @@ class AllowanceScreen extends ConsumerWidget {
           ),
           const Gap(),
           Text(
-            'Bu plan yalnızca sana görünür.',
+            t('Bu plan yalnızca sana görünür.'),
             style: TextStyle(color: context.muted),
           ),
           const Gap(),
           OutlinedButton.icon(
             onPressed: () => _edit(context, ref, plan),
             icon: const Icon(Icons.edit_outlined),
-            label: const Text('Planı düzenle'),
+            label: Text(t('Planı düzenle')),
           ),
         ];
       },

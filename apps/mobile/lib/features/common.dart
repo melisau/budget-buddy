@@ -6,6 +6,7 @@ import '../core/api.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import 'data.dart';
+import '../core/i18n.dart';
 
 final pageProvider = FutureProvider.autoDispose
     .family<Map<String, dynamic>, String>(
@@ -49,7 +50,7 @@ class ApiPage extends ConsumerWidget {
               backgroundColor: brand,
               foregroundColor: Colors.white,
               icon: const Icon(Icons.add),
-              label: Text(addLabel ?? 'Ekle'),
+              label: Text(addLabel ?? t('Ekle')),
               onPressed: () => onAdd!(context, ref, data.requireValue),
             )
           : null,
@@ -178,16 +179,22 @@ Future<bool> confirmDelete(BuildContext context, String name) async =>
     await showDialog<bool>(
       context: context,
       builder: (dialog) => AlertDialog(
-        title: const Text('Silinsin mi?'),
-        content: Text('"$name" silinecek. Bu işlem geri alınamaz.'),
+        title: Text(t('Silinsin mi?')),
+        content: Text(
+          tx(
+            '"$name" silinecek. Bu işlem geri alınamaz.',
+            '"$name" will be deleted. This cannot be undone.',
+            '„$name“ wird gelöscht. Dies kann nicht rückgängig gemacht werden.',
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialog, false),
-            child: const Text('Vazgeç'),
+            child: Text(t('Vazgeç')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialog, true),
-            child: const Text('Sil', style: TextStyle(color: expense)),
+            child: Text(t('Sil'), style: TextStyle(color: expense)),
           ),
         ],
       ),
@@ -278,7 +285,7 @@ class _FormSheetState extends State<_FormSheet> {
     } catch (_) {
       if (mounted) {
         setState(() {
-          _error = 'Bir sorun oluştu. Lütfen tekrar deneyin.';
+          _error = t('Bir sorun oluştu. Lütfen tekrar deneyin.');
           _busy = false;
         });
       }
@@ -309,13 +316,13 @@ class _FormSheetState extends State<_FormSheet> {
             _values[f.key] = v;
             if (f.resets != null) _values.remove(f.resets);
           }),
-          validator: (v) => f.required && v == null ? 'Seçin' : null,
+          validator: (v) => f.required && v == null ? t('Seçin') : null,
         );
       case FieldKind.date:
         final value = _values[f.key] as String?;
         return FormField<String>(
           validator: (_) =>
-              f.required && _values[f.key] == null ? 'Tarih seçin' : null,
+              f.required && _values[f.key] == null ? t('Tarih seçin') : null,
           builder: (state) => InkWell(
             onTap: () async {
               final picked = await showDatePicker(
@@ -334,7 +341,7 @@ class _FormSheetState extends State<_FormSheet> {
                 errorText: state.errorText,
                 suffixIcon: const Icon(Icons.calendar_today, size: 18),
               ),
-              child: Text(value == null ? 'Seçilmedi' : shortDate(value)),
+              child: Text(value == null ? t('Seçilmedi') : shortDate(value)),
             ),
           ),
         );
@@ -349,7 +356,7 @@ class _FormSheetState extends State<_FormSheet> {
           validator: (v) {
             if (!f.required && (v ?? '').isEmpty) return null;
             final n = parseAmount(v ?? '');
-            return n != null && n >= 0 ? null : 'Geçerli bir tutar girin.';
+            return n != null && n >= 0 ? null : t('Geçerli bir tutar girin.');
           },
           onSaved: (v) => _values[f.key] = parseAmount(v ?? ''),
         );
@@ -358,8 +365,9 @@ class _FormSheetState extends State<_FormSheet> {
           initialValue: f.initial?.toString(),
           textCapitalization: TextCapitalization.sentences,
           decoration: decoration,
-          validator: (v) =>
-              f.required && (v ?? '').trim().length < 2 ? 'En az 2 karakter girin.' : null,
+          validator: (v) => f.required && (v ?? '').trim().length < 2
+              ? t('En az 2 karakter girin.')
+              : null,
           onSaved: (v) => _values[f.key] = (v ?? '').trim(),
         );
     }
@@ -396,11 +404,11 @@ class _FormSheetState extends State<_FormSheet> {
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
-                child: Text(_error!, style: const TextStyle(color: expense)),
+                child: Text(_error!, style: TextStyle(color: expense)),
               ),
             FilledButton(
               onPressed: _busy ? null : _save,
-              child: Text(_busy ? 'Kaydediliyor…' : 'Kaydet'),
+              child: Text(_busy ? t('Kaydediliyor…') : t('Kaydet')),
             ),
           ],
         ),

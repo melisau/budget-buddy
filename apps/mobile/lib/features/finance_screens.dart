@@ -6,16 +6,21 @@ import '../core/widgets.dart';
 import 'common.dart';
 import 'data.dart';
 import 'overview.dart';
+import '../core/i18n.dart';
 
-const _accountTypes = {
-  'cash': 'Nakit',
-  'checking': 'Vadesiz hesap',
-  'savings': 'Birikim',
-  'credit_card': 'Kredi kartı',
-  'digital_wallet': 'Dijital cüzdan',
+Map<String, String> get _accountTypes => {
+  'cash': t('Nakit'),
+  'checking': t('Vadesiz hesap'),
+  'savings': t('Birikim'),
+  'credit_card': t('Kredi kartı'),
+  'digital_wallet': t('Dijital cüzdan'),
 };
 const _currencies = {'TRY': 'TRY', 'EUR': 'EUR', 'USD': 'USD', 'GBP': 'GBP'};
-const _frequencies = {'weekly': 'Haftalık', 'monthly': 'Aylık', 'yearly': 'Yıllık'};
+Map<String, String> get _frequencies => {
+  'weekly': t('Haftalık'),
+  'monthly': t('Aylık'),
+  'yearly': t('Yıllık'),
+};
 
 Map<String, String> _named(List<Map<String, dynamic>> items) => {
   for (final i in items) '${i['id']}': categoryLabel('${i['name']}'),
@@ -27,31 +32,31 @@ class AccountsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ApiPage(
-    title: 'Hesaplar',
+    title: t('Hesaplar'),
     path: _path,
-    addLabel: 'Hesap ekle',
+    addLabel: t('Hesap ekle'),
     onAdd: (context, ref, _) => showFormSheet(
       context,
-      title: 'Hesap ekle',
+      title: t('Hesap ekle'),
       fields: [
-        const FieldSpec('name', 'Hesap adı'),
+        FieldSpec('name', t('Hesap adı')),
         FieldSpec(
           'type',
-          'Tür',
+          t('Tür'),
           kind: FieldKind.choice,
           options: (_) => _accountTypes,
           initial: 'checking',
         ),
         FieldSpec(
           'currency',
-          'Para birimi',
+          t('Para birimi'),
           kind: FieldKind.choice,
           options: (_) => _currencies,
           initial: 'TRY',
         ),
-        const FieldSpec(
+        FieldSpec(
           'initialBalance',
-          'Başlangıç bakiyesi',
+          t('Başlangıç bakiyesi'),
           kind: FieldKind.amount,
           initial: 0,
         ),
@@ -66,24 +71,24 @@ class AccountsScreen extends StatelessWidget {
     builder: (context, ref, d) {
       final items = rows(d['accounts']);
       final all = ref.watch(pageProvider(_archivedPath)).value;
-      final archived = rows(
-        all?['accounts'],
-      ).where((a) => a['archivedAt'] != null).toList();
+      final archived = rows(all?['accounts'])
+          .where((a) => a['archivedAt'] != null)
+          .toList();
       return [
         if (items.length >= 2)
           Align(
             alignment: Alignment.centerRight,
             child: TextButton.icon(
               icon: const Icon(Icons.swap_horiz),
-              label: const Text('Hesaplar arası transfer'),
+              label: Text(t('Hesaplar arası transfer')),
               onPressed: () => _transfer(context, ref, items),
             ),
           ),
-        if (items.isEmpty) const EmptyNote('Henüz hesap yok.'),
+        if (items.isEmpty) EmptyNote(t('Henüz hesap yok.')),
         for (final a in items) ...[
           Card(
             child: ListTile(
-              leading: const CircleAvatar(
+              leading: CircleAvatar(
                 child: Icon(Icons.account_balance_outlined),
               ),
               title: Text(
@@ -97,13 +102,16 @@ class AccountsScreen extends StatelessWidget {
                 '${_accountTypes[a['type']] ?? a['type']} · ${money(a['balance'] as num, '${a['currency']}')}',
               ),
               trailing: PopupMenuButton<String>(
-                tooltip: 'Hesap işlemleri',
+                tooltip: t('Hesap işlemleri'),
                 onSelected: (v) => v == 'rename'
                     ? _rename(context, ref, a)
                     : _setArchived(context, ref, a, true),
-                itemBuilder: (_) => const [
-                  PopupMenuItem(value: 'rename', child: Text('Adını değiştir')),
-                  PopupMenuItem(value: 'archive', child: Text('Arşivle')),
+                itemBuilder: (_) => [
+                  PopupMenuItem(
+                    value: 'rename',
+                    child: Text(t('Adını değiştir')),
+                  ),
+                  PopupMenuItem(value: 'archive', child: Text(t('Arşivle'))),
                 ],
               ),
             ),
@@ -113,7 +121,11 @@ class AccountsScreen extends StatelessWidget {
         if (archived.isNotEmpty)
           ExpansionTile(
             title: Text(
-              'Arşivlenen hesaplar (${archived.length})',
+              tx(
+                'Arşivlenen hesaplar (${archived.length})',
+                'Archived accounts (${archived.length})',
+                'Archivierte Konten (${archived.length})',
+              ),
               style: TextStyle(color: context.ink),
             ),
             children: [
@@ -126,7 +138,7 @@ class AccountsScreen extends StatelessWidget {
                   title: Text('${a['name']}'),
                   trailing: TextButton(
                     onPressed: () => _setArchived(context, ref, a, false),
-                    child: const Text('Geri al'),
+                    child: Text(t('Geri al')),
                   ),
                 ),
             ],
@@ -148,17 +160,19 @@ class AccountsScreen extends StatelessWidget {
         context: context,
         builder: (c) => AlertDialog(
           title: Text('“${a['name']}” arşivlensin mi?'),
-          content: const Text(
-            'İşlemleri silinmez. Hesap listelerde ve formlarda görünmez; istediğin zaman geri alabilirsin.',
+          content: Text(
+            t(
+              'İşlemleri silinmez. Hesap listelerde ve formlarda görünmez; istediğin zaman geri alabilirsin.',
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(c, false),
-              child: const Text('Vazgeç'),
+              child: Text(t('Vazgeç')),
             ),
             TextButton(
               onPressed: () => Navigator.pop(c, true),
-              child: const Text('Arşivle'),
+              child: Text(t('Arşivle')),
             ),
           ],
         ),
@@ -180,8 +194,8 @@ class AccountsScreen extends StatelessWidget {
     Map<String, dynamic> a,
   ) => showFormSheet(
     context,
-    title: 'Hesabın adını değiştir',
-    fields: [FieldSpec('name', 'Hesap adı', initial: '${a['name']}')],
+    title: t('Hesabın adını değiştir'),
+    fields: [FieldSpec('name', t('Hesap adı'), initial: '${a['name']}')],
     onSubmit: (v) async {
       await ref.read(apiProvider).patch('accounts/${a['id']}', {
         'name': '${v['name']}'.trim(),
@@ -201,25 +215,25 @@ class AccountsScreen extends StatelessWidget {
     };
     return showFormSheet(
       context,
-      title: 'Hesaplar arası transfer',
+      title: t('Hesaplar arası transfer'),
       fields: [
         FieldSpec(
           'fromAccountId',
-          'Gönderen hesap',
+          t('Gönderen hesap'),
           kind: FieldKind.choice,
           options: (_) => names,
           resets: 'toAccountId',
         ),
         FieldSpec(
           'toAccountId',
-          'Alan hesap',
+          t('Alan hesap'),
           kind: FieldKind.choice,
           options: (v) => {...names}..remove(v['fromAccountId']),
         ),
-        const FieldSpec('amount', 'Tutar', kind: FieldKind.amount),
+        FieldSpec('amount', t('Tutar'), kind: FieldKind.amount),
         FieldSpec(
           'date',
-          'Tarih',
+          t('Tarih'),
           kind: FieldKind.date,
           initial: isoDate(DateTime.now()),
         ),
@@ -242,15 +256,20 @@ class BudgetsScreen extends StatelessWidget {
     final month = currentMonth();
     final path = 'budgets?month=$month';
     return ApiPage(
-      title: 'Bütçeler',
+      title: t('Bütçeler'),
       path: path,
-      addLabel: 'Bütçe ekle',
+      addLabel: t('Bütçe ekle'),
       onAdd: (context, ref, d) => showFormSheet(
         context,
-        title: 'Bütçe ekle',
+        title: t('Bütçe ekle'),
         fields: [
-          FieldSpec('categoryId', 'Kategori', kind: FieldKind.choice, options: (_) => _named(rows(d['categories']))),
-          const FieldSpec('amountLimit', 'Aylık limit', kind: FieldKind.amount),
+          FieldSpec(
+            'categoryId',
+            t('Kategori'),
+            kind: FieldKind.choice,
+            options: (_) => _named(rows(d['categories'])),
+          ),
+          FieldSpec('amountLimit', t('Aylık limit'), kind: FieldKind.amount),
         ],
         onSubmit: (v) async {
           await ref.read(apiProvider).post('budgets', {...v, 'month': month});
@@ -260,20 +279,30 @@ class BudgetsScreen extends StatelessWidget {
       builder: (context, ref, d) {
         final items = rows(d['budgets']);
         final currency = '${d['currency']}';
-        if (items.isEmpty) return const [EmptyNote('Bu ay için bütçe yok.')];
+        if (items.isEmpty) return [EmptyNote(t('Bu ay için bütçe yok.'))];
         return [
           for (final b in items) ...[
             ProgressCard(
               title: categoryLabel('${b['categoryName']}'),
               value: (b['spent'] as num) / (b['limit'] as num),
-              detail: '${money(b['spent'] as num, currency)} / ${money(b['limit'] as num, currency)}',
+              detail:
+                  '${money(b['spent'] as num, currency)} / ${money(b['limit'] as num, currency)}',
               actions: [
                 IconButton(
-                  tooltip: 'Bütçeyi sil',
+                  tooltip: t('Bütçeyi sil'),
                   icon: Icon(Icons.delete_outline, color: context.muted),
                   onPressed: () async {
-                    if (await confirmDelete(context, categoryLabel('${b['categoryName']}')) && context.mounted) {
-                      await runAction(context, ref, path, (api) => api.delete('budgets/${b['id']}'));
+                    if (await confirmDelete(
+                          context,
+                          categoryLabel('${b['categoryName']}'),
+                        ) &&
+                        context.mounted) {
+                      await runAction(
+                        context,
+                        ref,
+                        path,
+                        (api) => api.delete('budgets/${b['id']}'),
+                      );
                     }
                   },
                 ),
@@ -293,16 +322,21 @@ class GoalsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ApiPage(
-    title: 'Hedefler',
+    title: t('Hedefler'),
     path: _path,
-    addLabel: 'Hedef ekle',
+    addLabel: t('Hedef ekle'),
     onAdd: (context, ref, _) => showFormSheet(
       context,
-      title: 'Hedef ekle',
-      fields: const [
-        FieldSpec('name', 'Hedef adı'),
-        FieldSpec('targetAmount', 'Hedef tutar', kind: FieldKind.amount),
-        FieldSpec('deadline', 'Hedef tarihi', kind: FieldKind.date, required: false),
+      title: t('Hedef ekle'),
+      fields: [
+        FieldSpec('name', t('Hedef adı')),
+        FieldSpec('targetAmount', t('Hedef tutar'), kind: FieldKind.amount),
+        FieldSpec(
+          'deadline',
+          t('Hedef tarihi'),
+          kind: FieldKind.date,
+          required: false,
+        ),
       ],
       onSubmit: (v) async {
         await ref.read(apiProvider).post(_path, v);
@@ -312,21 +346,28 @@ class GoalsScreen extends StatelessWidget {
     builder: (context, ref, d) {
       final items = rows(d['goals']);
       final currency = '${d['currency']}';
-      if (items.isEmpty) return const [EmptyNote('Henüz hedef yok.')];
+      if (items.isEmpty) return [EmptyNote(t('Henüz hedef yok.'))];
       return [
         for (final g in items) ...[
           ProgressCard(
             title: '${g['name']}',
             value: (g['current_amount'] as num) / (g['target_amount'] as num),
-            detail: '${money(g['current_amount'] as num, currency)} / ${money(g['target_amount'] as num, currency)}',
+            detail:
+                '${money(g['current_amount'] as num, currency)} / ${money(g['target_amount'] as num, currency)}',
             actions: [
               IconButton(
-                tooltip: 'Para ekle',
-                icon: const Icon(Icons.add_circle_outline, color: brand),
+                tooltip: t('Para ekle'),
+                icon: Icon(Icons.add_circle_outline, color: brand),
                 onPressed: () => showFormSheet(
                   context,
-                  title: '${g['name']} için ekle',
-                  fields: const [FieldSpec('addAmount', 'Tutar', kind: FieldKind.amount)],
+                  title: tx(
+                    '${g['name']} için ekle',
+                    'Add to ${g['name']}',
+                    'Zu ${g['name']} hinzufügen',
+                  ),
+                  fields: [
+                    FieldSpec('addAmount', t('Tutar'), kind: FieldKind.amount),
+                  ],
                   onSubmit: (v) async {
                     await ref.read(apiProvider).patch('goals/${g['id']}', v);
                     ref.invalidate(pageProvider(_path));
@@ -334,11 +375,17 @@ class GoalsScreen extends StatelessWidget {
                 ),
               ),
               IconButton(
-                tooltip: 'Hedefi sil',
+                tooltip: t('Hedefi sil'),
                 icon: Icon(Icons.delete_outline, color: context.muted),
                 onPressed: () async {
-                  if (await confirmDelete(context, '${g['name']}') && context.mounted) {
-                    await runAction(context, ref, _path, (api) => api.delete('goals/${g['id']}'));
+                  if (await confirmDelete(context, '${g['name']}') &&
+                      context.mounted) {
+                    await runAction(
+                      context,
+                      ref,
+                      _path,
+                      (api) => api.delete('goals/${g['id']}'),
+                    );
                   }
                 },
               ),
@@ -357,40 +404,98 @@ class RecurringScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ApiPage(
-    title: 'Otomatik Talimatlar',
+    title: t('Otomatik Talimatlar'),
     path: _path,
-    addLabel: 'Talimat ekle',
+    addLabel: t('Talimat ekle'),
     onAdd: (context, ref, d) => showFormSheet(
       context,
-      title: 'Talimat ekle',
+      title: t('Talimat ekle'),
       fields: [
-        FieldSpec('kind', 'Tür', kind: FieldKind.choice, options: (_) => const {'regular': 'Düzenli', 'subscription': 'Abonelik'}, initial: 'regular'),
-        FieldSpec('type', 'Gelir / gider', kind: FieldKind.choice, options: (_) => const {'expense': 'Gider', 'income': 'Gelir'}, initial: 'expense', resets: 'category'),
+        FieldSpec(
+          'kind',
+          t('Tür'),
+          kind: FieldKind.choice,
+          options: (_) => {
+            'regular': t('Düzenli'),
+            'subscription': t('Abonelik'),
+          },
+          initial: 'regular',
+        ),
+        FieldSpec(
+          'type',
+          t('Gelir / gider'),
+          kind: FieldKind.choice,
+          options: (_) => {'expense': t('Gider'), 'income': t('Gelir')},
+          initial: 'expense',
+          resets: 'category',
+        ),
         const FieldSpec('title', 'Ad'),
-        const FieldSpec('amount', 'Tutar', kind: FieldKind.amount),
-        FieldSpec('category', 'Kategori', kind: FieldKind.choice, options: (v) => _named(rows(d['categories']).where((c) => c['type'] == v['type']).toList())),
-        FieldSpec('account', 'Hesap', kind: FieldKind.choice, required: false, options: (_) => _named(rows(d['accounts']))),
-        FieldSpec('frequency', 'Sıklık', kind: FieldKind.choice, options: (_) => _frequencies, initial: 'monthly'),
-        FieldSpec('startDate', 'Başlangıç', kind: FieldKind.date, initial: isoDate(DateTime.now())),
+        FieldSpec('amount', t('Tutar'), kind: FieldKind.amount),
+        FieldSpec(
+          'category',
+          t('Kategori'),
+          kind: FieldKind.choice,
+          options: (v) => _named(
+            rows(d['categories']).where((c) => c['type'] == v['type']).toList(),
+          ),
+        ),
+        FieldSpec(
+          'account',
+          t('Hesap'),
+          kind: FieldKind.choice,
+          required: false,
+          options: (_) => _named(rows(d['accounts'])),
+        ),
+        FieldSpec(
+          'frequency',
+          t('Sıklık'),
+          kind: FieldKind.choice,
+          options: (_) => _frequencies,
+          initial: 'monthly',
+        ),
+        FieldSpec(
+          'startDate',
+          t('Başlangıç'),
+          kind: FieldKind.date,
+          initial: isoDate(DateTime.now()),
+        ),
       ],
       onSubmit: (v) async {
-        await ref.read(apiProvider).post(_path, {...v, 'account': v['account'] ?? ''});
+        await ref.read(apiProvider).post(_path, {
+          ...v,
+          'account': v['account'] ?? '',
+        });
         ref.invalidate(pageProvider(_path));
       },
     ),
     builder: (context, ref, d) {
-      if (d['available'] == false) return const [EmptyNote('Bu özellik şu an kullanılamıyor.')];
+      if (d['available'] == false) {
+        return [EmptyNote(t('Bu özellik şu an kullanılamıyor.'))];
+      }
       final items = rows(d['items']);
       final currency = '${d['currency']}';
-      if (items.isEmpty) return const [EmptyNote('Henüz tekrarlayan işlem yok.')];
+      if (items.isEmpty) return [EmptyNote(t('Henüz tekrarlayan işlem yok.'))];
       return [
         for (final r in items) ...[
           Card(
             child: SwitchListTile(
               value: r['active'] == true,
-              title: Text('${r['title']}', style: TextStyle(fontWeight: FontWeight.w700, color: context.ink)),
-              subtitle: Text('${money(r['amount'] as num, currency)} · ${_frequencies[r['frequency']] ?? r['frequency']}\nSonraki: ${shortDate('${r['nextDate']}')}'),
-              onChanged: (active) => runAction(context, ref, _path, (api) => api.patch('recurring/${r['id']}', {'active': active})),
+              title: Text(
+                '${r['title']}',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: context.ink,
+                ),
+              ),
+              subtitle: Text(
+                '${money(r['amount'] as num, currency)} · ${_frequencies[r['frequency']] ?? r['frequency']}\n${t('Sonraki')}: ${shortDate('${r['nextDate']}')}',
+              ),
+              onChanged: (active) => runAction(
+                context,
+                ref,
+                _path,
+                (api) => api.patch('recurring/${r['id']}', {'active': active}),
+              ),
             ),
           ),
           const Gap(),
@@ -405,7 +510,7 @@ class AnalyticsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ApiPage(
-    title: 'Analiz',
+    title: t('Analiz'),
     path: 'analytics',
     builder: (context, ref, d) {
       final summary = d['summary'] as Map<String, dynamic>;
@@ -414,25 +519,51 @@ class AnalyticsScreen extends StatelessWidget {
       return [
         Row(
           children: [
-            Expanded(child: _Metric('Gelir', money(summary['income'] as num, currency), income)),
+            Expanded(
+              child: _Metric(
+                t('Gelir'),
+                money(summary['income'] as num, currency),
+                income,
+              ),
+            ),
             const SizedBox(width: 8),
-            Expanded(child: _Metric('Gider', money(summary['expenses'] as num, currency), expense)),
+            Expanded(
+              child: _Metric(
+                t('Gider'),
+                money(summary['expenses'] as num, currency),
+                expense,
+              ),
+            ),
           ],
         ),
         const Gap(),
-        _Metric('Tasarruf oranı', '%${(summary['savingsRate'] as num).toStringAsFixed(1)}', brand),
+        _Metric(
+          t('Tasarruf oranı'),
+          '%${(summary['savingsRate'] as num).toStringAsFixed(1)}',
+          brand,
+        ),
         const Gap(),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: SizedBox(height: 200, child: CashFlowChart(rows(d['monthly']))),
+            child: SizedBox(
+              height: 200,
+              child: CashFlowChart(rows(d['monthly'])),
+            ),
           ),
         ),
         const SizedBox(height: 18),
-        Text('En büyük giderler', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: context.ink)),
+        Text(
+          t('En büyük giderler'),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: context.ink,
+          ),
+        ),
         const Gap(),
         if (largest.isEmpty)
-          const EmptyNote('Bu ay gider yok.')
+          EmptyNote(t('Bu ay gider yok.'))
         else
           Card(
             clipBehavior: Clip.antiAlias,
@@ -470,7 +601,16 @@ class _Metric extends StatelessWidget {
         children: [
           Text(label, style: TextStyle(color: context.muted)),
           const SizedBox(height: 4),
-          FittedBox(child: Text(value, style: TextStyle(color: color, fontSize: 19, fontWeight: FontWeight.w800))),
+          FittedBox(
+            child: Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 19,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
         ],
       ),
     ),

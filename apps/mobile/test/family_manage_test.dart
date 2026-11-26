@@ -11,9 +11,9 @@ void main() {
         {'userId': 'u4', 'role': 'viewer', 'invitationStatus': 'accepted'},
       ],
     };
-    expect(
-      FamilyScreen.transferCandidates(group).map((m) => m['userId']),
-      ['u2', 'u4'],
-    );
+    expect(FamilyScreen.transferCandidates(group).map((m) => m['userId']), [
+      'u2',
+      'u4',
+    ]);
   });
 }

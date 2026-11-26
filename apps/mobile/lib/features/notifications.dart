@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../core/theme.dart';
 import 'common.dart';
 import 'data.dart';
+import '../core/i18n.dart';
 
 /// Title, body and target screen for a stored notification. Mirrors
 /// lib/notifications/messages.ts on the web so both say the same thing.
@@ -15,65 +16,107 @@ import 'data.dart';
   final currency = '${data['currency'] ?? 'TRY'}';
   String amount(Object? v) => money(num.tryParse('$v') ?? 0, currency);
   final total = data['scope'] == 'total';
-  final category = total
-      ? 'Genel aylık'
-      : categoryLabel('${data['categoryName'] ?? ''}');
+  final category = categoryLabel('${data['categoryName'] ?? ''}');
+  final spent = amount(data['spent']);
+  final limit = amount(data['limit']);
+  String whenText(int days) => days <= 0
+      ? t('bugün')
+      : days == 1
+      ? t('yarın')
+      : tx('$days gün sonra', 'in $days days', 'in $days Tagen');
   switch (kind) {
     case 'budget_warning':
+      final usage = data['usage'];
       return (
         title: total
-            ? "Genel aylık bütçenin %${data['usage']}'ini kullandın"
-            : "$category bütçesinin %${data['usage']}'ini kullandın",
-        body:
-            '${amount(data['spent'])} / ${amount(data['limit'])} harcadın. Limite yaklaşıyorsun.',
+            ? tx(
+                "Genel aylık bütçenin %$usage'ini kullandın",
+                'You used $usage% of your overall monthly budget',
+                'Du hast $usage % deines monatlichen Gesamtbudgets genutzt',
+              )
+            : tx(
+                "$category bütçesinin %$usage'ini kullandın",
+                'You used $usage% of your $category budget',
+                'Du hast $usage % deines Budgets für $category genutzt',
+              ),
+        body: tx(
+          '$spent / $limit harcadın. Limite yaklaşıyorsun.',
+          'You spent $spent of $limit. You are close to the limit.',
+          'Du hast $spent von $limit ausgegeben. Du näherst dich dem Limit.',
+        ),
         route: '/more/budgets',
       );
     case 'budget_exceeded':
       return (
         title: total
-            ? 'Genel aylık bütçeni aştın'
-            : '$category bütçesini aştın',
-        body:
-            '${amount(data['spent'])} harcadın; limit ${amount(data['limit'])}.',
+            ? t('Genel aylık bütçeni aştın')
+            : tx(
+                '$category bütçesini aştın',
+                'You went over your $category budget',
+                'Du hast dein Budget für $category überschritten',
+              ),
+        body: tx(
+          '$spent harcadın; limit $limit.',
+          'You spent $spent; the limit is $limit.',
+          'Du hast $spent ausgegeben; das Limit ist $limit.',
+        ),
         route: '/more/budgets',
       );
     case 'goal_due':
-      final days = int.tryParse('${data['daysLeft']}') ?? 0;
-      final when = days == 0
-          ? 'bugün'
-          : days == 1
-          ? 'yarın'
-          : '$days gün sonra';
+      final when = whenText(int.tryParse('${data['daysLeft']}') ?? 0);
+      final goal = data['goalName'];
+      final left = amount(data['remaining']);
+      final deadline = data['deadline'] ?? '';
       return (
-        title: "${data['goalName']} hedefinin tarihi $when",
-        body:
-            'Hedefe ${amount(data['remaining'])} kaldı (son tarih ${data['deadline'] ?? ''}).',
+        title: tx(
+          '$goal hedefinin tarihi $when',
+          'Your goal “$goal” is due $when',
+          'Dein Ziel „$goal“ ist $when fällig',
+        ),
+        body: tx(
+          'Hedefe $left kaldı (son tarih $deadline).',
+          '$left left to reach it (deadline $deadline).',
+          'Noch $left bis zum Ziel (Frist $deadline).',
+        ),
         route: '/more/goals',
       );
     case 'recurring_due':
-      final days = int.tryParse('${data['daysLeft']}') ?? 0;
-      final when = days <= 0
-          ? 'bugün'
-          : days == 1
-          ? 'yarın'
-          : '$days gün sonra';
+      final when = whenText(int.tryParse('${data['daysLeft']}') ?? 0);
+      final name = data['title'];
       final income = data['type'] == 'income';
+      final due = '${amount(data['amount'])} · ${data['dueDate'] ?? ''}';
       return (
         title: income
-            ? "${data['title']} geliri $when"
-            : "${data['title']} ödemesi $when",
-        body:
-            "${amount(data['amount'])} · ${data['dueDate'] ?? ''}. Genel Bakış'taki hatırlatmadan “Ödedim” ya da “Bu sefer ödemedim” seç.",
+            ? tx(
+                '$name geliri $when',
+                '$name income is due $when',
+                'Einnahme $name ist $when fällig',
+              )
+            : tx(
+                '$name ödemesi $when',
+                '$name payment is due $when',
+                'Zahlung $name ist $when fällig',
+              ),
+        body: tx(
+          "$due. Genel Bakış'taki hatırlatmadan “Ödedim” ya da “Bu sefer ödemedim” seç.",
+          '$due. Mark it as paid or skipped in the reminder on Overview.',
+          '$due. Markiere sie in der Erinnerung auf der Übersicht als bezahlt oder übersprungen.',
+        ),
         route: '/overview',
       );
     case 'family_invite':
+      final group = data['groupName'];
       return (
-        title: '“${data['groupName']}” grubuna davet edildin',
-        body: 'Daveti Aile sayfasından kabul edebilir veya reddedebilirsin.',
+        title: tx(
+          '“$group” grubuna davet edildin',
+          'You were invited to “$group”',
+          'Du wurdest zu „$group“ eingeladen',
+        ),
+        body: t('Daveti Aile sayfasından kabul edebilir veya reddedebilirsin.'),
         route: '/more/family',
       );
     default:
-      return (title: 'Bildirim', body: '', route: '/overview');
+      return (title: t('Bildirim'), body: '', route: '/overview');
   }
 }
 
@@ -105,18 +148,20 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) => ApiPage(
-    title: 'Bildirimler',
+    title: t('Bildirimler'),
     path: 'notifications',
     builder: (context, ref, d) {
       final items = rows(d['notifications']);
       final unread = (d['unreadCount'] as num?)?.toInt() ?? 0;
       if (d['available'] == false) {
-        return const [EmptyNote('Bildirimler şu anda kullanılamıyor.')];
+        return [EmptyNote(t('Bildirimler şu anda kullanılamıyor.'))];
       }
       if (items.isEmpty) {
-        return const [
+        return [
           EmptyNote(
-            'Henüz bildirimin yok. Bütçe ve hedeflerinle ilgili uyarılar burada görünür.',
+            t(
+              'Henüz bildirimin yok. Bütçe ve hedeflerinle ilgili uyarılar burada görünür.',
+            ),
           ),
         ];
       }
@@ -127,7 +172,13 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             child: TextButton.icon(
               onPressed: _marking ? null : () => _markRead(),
               icon: const Icon(Icons.done_all),
-              label: Text('Tümünü okundu say ($unread)'),
+              label: Text(
+                tx(
+                  'Tümünü okundu say ($unread)',
+                  'Mark all as read ($unread)',
+                  'Alle als gelesen markieren ($unread)',
+                ),
+              ),
             ),
           ),
         for (final n in items) _tile(context, n),
