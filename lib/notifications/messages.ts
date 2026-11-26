@@ -29,10 +29,12 @@ export function renderNotification(kind: NotificationKind, data: NotificationDat
     case "budget_warning":
       if (data.scope === "total") return {
         href: "/budgets",
-        title: tr ? `Genel aylık bütçenin %${data.usage}'ini kullandın` : `You used ${data.usage}% of your overall monthly budget`,
-        body: tr
-          ? `${money(data.spent, data.currency, language)} / ${money(data.limit, data.currency, language)} harcadın. Ay bitmeden limite yaklaşıyorsun.`
-          : `You spent ${money(data.spent, data.currency, language)} of ${money(data.limit, data.currency, language)}. You are close to this month's limit.`,
+        title: L(`Genel aylık bütçenin %${data.usage}'ini kullandın`, `You used ${data.usage}% of your overall monthly budget`, `Du hast ${data.usage} % deines monatlichen Gesamtbudgets genutzt`),
+        body: L(
+          `${m(data.spent)} / ${m(data.limit)} harcadın. Ay bitmeden limite yaklaşıyorsun.`,
+          `You spent ${m(data.spent)} of ${m(data.limit)}. You are close to this month's limit.`,
+          `Du hast ${m(data.spent)} von ${m(data.limit)} ausgegeben. Du näherst dich dem Monatslimit.`,
+        ),
       };
       return {
         href: "/budgets",
@@ -42,10 +44,12 @@ export function renderNotification(kind: NotificationKind, data: NotificationDat
     case "budget_exceeded":
       if (data.scope === "total") return {
         href: "/budgets",
-        title: tr ? "Genel aylık bütçeni aştın" : "You went over your overall monthly budget",
-        body: tr
-          ? `Bu ay ${money(data.spent, data.currency, language)} harcadın; genel limitin ${money(data.limit, data.currency, language)}.`
-          : `You spent ${money(data.spent, data.currency, language)} this month; the overall limit is ${money(data.limit, data.currency, language)}.`,
+        title: L("Genel aylık bütçeni aştın", "You went over your overall monthly budget", "Du hast dein monatliches Gesamtbudget überschritten"),
+        body: L(
+          `Bu ay ${m(data.spent)} harcadın; genel limitin ${m(data.limit)}.`,
+          `You spent ${m(data.spent)} this month; the overall limit is ${m(data.limit)}.`,
+          `Du hast diesen Monat ${m(data.spent)} ausgegeben; dein Gesamtlimit ist ${m(data.limit)}.`,
+        ),
       };
       return {
         href: "/budgets",
