@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../core/theme.dart';
 import 'common.dart';
 import 'data.dart';
+import '../core/i18n.dart';
 
 const avatarPath = 'account/avatar';
 
@@ -77,7 +78,7 @@ Future<void> showAvatarPicker(
         await action();
         ref.invalidate(pageProvider(avatarPath));
         messenger.showSnackBar(
-          const SnackBar(content: Text('Profil fotoğrafın güncellendi.')),
+          SnackBar(content: Text(t('Profil fotoğrafın güncellendi.'))),
         );
       } catch (e) {
         messenger.showSnackBar(SnackBar(content: Text('$e')));
@@ -92,7 +93,7 @@ Future<void> showAvatarPicker(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Profil fotoğrafı',
+              t('Profil fotoğrafı'),
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
@@ -103,8 +104,8 @@ Future<void> showAvatarPicker(
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Galeriden fotoğraf seç'),
-              subtitle: const Text('JPG, PNG veya WebP, en fazla 2 MB'),
+              title: Text(t('Galeriden fotoğraf seç')),
+              subtitle: Text(t('JPG, PNG veya WebP, en fazla 2 MB')),
               onTap: () => run(() async {
                 final image = await ImagePicker().pickImage(
                   source: ImageSource.gallery,

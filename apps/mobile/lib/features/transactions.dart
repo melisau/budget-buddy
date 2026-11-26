@@ -11,6 +11,7 @@ import '../core/theme.dart';
 import '../core/widgets.dart';
 import 'data.dart';
 import 'receipt_scan.dart';
+import '../core/i18n.dart' as i18n;
 
 class TransactionsScreen extends ConsumerStatefulWidget {
   const TransactionsScreen({super.key});
@@ -103,15 +104,15 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     });
     final data = ref.watch(transactionsProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('İşlemler')),
+      appBar: AppBar(title: Text(i18n.t('İşlemler'))),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
             child: TextField(
               onChanged: _onSearch,
-              decoration: const InputDecoration(
-                hintText: 'İşlemlerde ara',
+              decoration: InputDecoration(
+                hintText: i18n.t('İşlemlerde ara'),
                 prefixIcon: Icon(Icons.search),
                 isDense: true,
               ),
@@ -151,7 +152,10 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       return ListView(
         children: [
           const SizedBox(height: 120),
-          Text(_pageError ?? 'İşlem bulunamadı.', textAlign: TextAlign.center),
+          Text(
+            _pageError ?? i18n.t('İşlem bulunamadı.'),
+            textAlign: TextAlign.center,
+          ),
         ],
       );
     }
@@ -182,8 +186,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                           if (!_ownCursor) _cursor = cursor;
                           _load();
                         },
-                        child: const Text(
-                          'Daha fazla yüklenemedi. Tekrar dene',
+                        child: Text(
+                          i18n.t('Daha fazla yüklenemedi. Tekrar dene'),
                         ),
                       )
                     : const CircularProgressIndicator(),
@@ -268,7 +272,9 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
       if (scan == null || !mounted) return;
       if (scan.total == null && scan.date == null && scan.merchant == null) {
         setState(
-          () => _error = 'Fiş okunamadı. Daha aydınlık bir fotoğraf dene.',
+          () => _error = i18n.t(
+            'Fiş okunamadı. Daha aydınlık bir fotoğraf dene.',
+          ),
         );
         return;
       }
@@ -284,7 +290,9 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
         if (date != null) _date = date;
       });
     } catch (_) {
-      if (mounted) setState(() => _error = 'Fiş taranamadı. Tekrar dene.');
+      if (mounted) {
+        setState(() => _error = i18n.t('Fiş taranamadı. Tekrar dene.'));
+      }
     } finally {
       if (mounted) setState(() => _scanning = false);
     }
@@ -370,21 +378,21 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialog) => AlertDialog(
-        title: const Text('İşlem silinsin mi?'),
+        title: Text(i18n.t('İşlem silinsin mi?')),
         content: Text(
           hasReceipt
-              ? 'Bu işlem ve eklenmiş fişi kalıcı olarak silinecek.'
-              : 'Bu işlem kalıcı olarak silinecek.',
+              ? i18n.t('Bu işlem ve eklenmiş fişi kalıcı olarak silinecek.')
+              : i18n.t('Bu işlem kalıcı olarak silinecek.'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialog, false),
-            child: const Text('Vazgeç'),
+            child: Text(i18n.t('Vazgeç')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialog, true),
             style: TextButton.styleFrom(foregroundColor: expense),
-            child: const Text('Sil'),
+            child: Text(i18n.t('Sil')),
           ),
         ],
       ),
@@ -413,7 +421,9 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
       if (e.outcomeUnknown && retrySafe) {
         if (mounted) {
           setState(() {
-            _error = 'Yanıt alınamadı. Kaydet\'e tekrar basabilirsin, işlem iki kez eklenmez.';
+            _error = i18n.t(
+              'Yanıt alınamadı. Kaydet\'e tekrar basabilirsin, işlem iki kez eklenmez.',
+            );
             _busy = false;
           });
         }
@@ -487,8 +497,12 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
     const SizedBox(height: 8),
     Text(
       scan.tax == null
-          ? 'Fişten dolduruldu. Kaydetmeden önce kontrol et.'
-          : 'Fişten dolduruldu, KDV ${money(scan.tax!)}. Kaydetmeden önce kontrol et.',
+          ? i18n.t('Fişten dolduruldu. Kaydetmeden önce kontrol et.')
+          : i18n.tx(
+              'Fişten dolduruldu, KDV ${money(scan.tax!)}. Kaydetmeden önce kontrol et.',
+              'Filled from the receipt, VAT ${money(scan.tax!)}. Check before saving.',
+              'Aus dem Beleg ausgefüllt, MwSt. ${money(scan.tax!)}. Prüfe vor dem Speichern.',
+            ),
       style: TextStyle(color: context.muted, fontSize: 13),
     ),
     if (scan.itemsMatchTotal)
@@ -497,7 +511,13 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
         controlAffinity: ListTileControlAffinity.leading,
         value: _saveItems,
         onChanged: (v) => setState(() => _saveItems = v ?? false),
-        title: Text('${scan.items.length} ürünü de kaydet'),
+        title: Text(
+          i18n.tx(
+            '${scan.items.length} ürünü de kaydet',
+            'Also save the ${scan.items.length} items',
+            'Auch die ${scan.items.length} Artikel speichern',
+          ),
+        ),
         subtitle: Text(
           scan.items.take(4).map((e) => e.name).join(', '),
           maxLines: 2,
@@ -506,7 +526,7 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
       )
     else if (scan.items.isNotEmpty)
       Text(
-        'Ürün satırları toplamla uyuşmadığı için kaydedilmeyecek.',
+        i18n.t('Ürün satırları toplamla uyuşmadığı için kaydedilmeyecek.'),
         style: TextStyle(color: context.muted, fontSize: 13),
       ),
   ];
@@ -523,7 +543,7 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
     if (_account != null && !accounts.any((a) => '${a['id']}' == _account)) {
       accounts.add({
         'id': _account,
-        'name': widget.existing?['accountName'] ?? 'Hesap',
+        'name': widget.existing?['accountName'] ?? i18n.t('Hesap'),
       });
     }
     // A category outside this list must be chosen again before saving.
@@ -539,18 +559,18 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              _editing ? 'İşlemi düzenle' : 'İşlem ekle',
+              _editing ? i18n.t('İşlemi düzenle') : i18n.t('İşlem ekle'),
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
                 color: context.ink,
               ),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(value: 'expense', label: Text('Gider')),
-                ButtonSegment(value: 'income', label: Text('Gelir')),
+              segments: [
+                ButtonSegment(value: 'expense', label: Text(i18n.t('Gider'))),
+                ButtonSegment(value: 'income', label: Text(i18n.t('Gelir'))),
               ],
               selected: {_type},
               onSelectionChanged: (v) => setState(() {
@@ -565,7 +585,9 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
               OutlinedButton.icon(
                 onPressed: _busy || _scanning ? null : _scanReceipt,
                 icon: const Icon(Icons.document_scanner_outlined),
-                label: Text(_scanning ? 'Fiş okunuyor…' : 'Fiş tara'),
+                label: Text(
+                  _scanning ? i18n.t('Fiş okunuyor…') : i18n.t('Fiş tara'),
+                ),
               ),
             ],
             if (_scan != null) ..._scanSummary(_scan!),
@@ -579,15 +601,15 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
               ],
-              decoration: const InputDecoration(
-                labelText: 'Tutar',
+              decoration: InputDecoration(
+                labelText: i18n.t('Tutar'),
                 prefixText: '₺ ',
               ),
               validator: (v) {
                 final amount = parseAmount(v ?? '');
                 return amount != null && amount > 0
                     ? null
-                    : 'Geçerli bir tutar girin.';
+                    : i18n.t('Geçerli bir tutar girin.');
               },
             ),
             const SizedBox(height: 12),
@@ -595,13 +617,13 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
               controller: _title,
               maxLength: 160,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Açıklama',
+              decoration: InputDecoration(
+                labelText: i18n.t('Açıklama'),
                 counterText: '',
               ),
               validator: (v) => (v ?? '').trim().length >= 2
                   ? null
-                  : 'Kısa bir açıklama girin.',
+                  : i18n.t('Kısa bir açıklama girin.'),
             ),
             const SizedBox(height: 12),
             Row(
@@ -612,7 +634,7 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
                     key: ValueKey(_type),
                     isExpanded: true,
                     initialValue: _category,
-                    decoration: const InputDecoration(labelText: 'Kategori'),
+                    decoration: InputDecoration(labelText: i18n.t('Kategori')),
                     items: [
                       for (final c in categories)
                         DropdownMenuItem(
@@ -624,7 +646,7 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
                         ),
                     ],
                     onChanged: (v) => _category = v,
-                    validator: (v) => v == null ? 'Seçin' : null,
+                    validator: (v) => v == null ? i18n.t('Seçin') : null,
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -632,7 +654,7 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
                   child: DropdownButtonFormField<String>(
                     isExpanded: true,
                     initialValue: _account,
-                    decoration: const InputDecoration(labelText: 'Hesap'),
+                    decoration: InputDecoration(labelText: i18n.t('Hesap')),
                     items: [
                       for (final a in accounts)
                         DropdownMenuItem(
@@ -654,12 +676,11 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
               icon: const Icon(Icons.calendar_today, size: 18),
               label: Text(shortDate(_date.toIso8601String())),
             ),
-            if (_error != null)
-              Text(_error!, style: const TextStyle(color: expense)),
+            if (_error != null) Text(_error!, style: TextStyle(color: expense)),
             const SizedBox(height: 8),
             FilledButton(
               onPressed: _busy ? null : _save,
-              child: Text(_busy ? 'Kaydediliyor…' : 'Kaydet'),
+              child: Text(_busy ? i18n.t('Kaydediliyor…') : i18n.t('Kaydet')),
             ),
             if (_editing) ...[
               const SizedBox(height: 6),
@@ -670,7 +691,7 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
                   minimumSize: const Size.fromHeight(48),
                 ),
                 icon: const Icon(Icons.delete_outline),
-                label: const Text('İşlemi sil'),
+                label: Text(i18n.t('İşlemi sil')),
               ),
             ],
           ],

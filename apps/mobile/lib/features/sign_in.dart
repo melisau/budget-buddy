@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/config.dart';
 import '../core/google_auth.dart';
 import '../core/theme.dart';
+import '../core/i18n.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -39,10 +40,12 @@ class _SignInScreenState extends State<SignInScreen> {
         password: _password.text,
       );
     } on AuthException {
-      if (mounted) setState(() => _error = 'E-posta veya şifre hatalı.');
+      if (mounted) setState(() => _error = t('E-posta veya şifre hatalı.'));
     } catch (_) {
       if (mounted) {
-        setState(() => _error = 'Bağlantı kurulamadı. Lütfen tekrar deneyin.');
+        setState(
+          () => _error = t('Bağlantı kurulamadı. Lütfen tekrar deneyin.'),
+        );
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -58,7 +61,9 @@ class _SignInScreenState extends State<SignInScreen> {
       await signInWithGoogle();
     } catch (_) {
       if (mounted) {
-        setState(() => _error = 'Google ile giriş yapılamadı. Tekrar deneyin.');
+        setState(
+          () => _error = t('Google ile giriş yapılamadı. Tekrar deneyin.'),
+        );
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -80,15 +85,21 @@ class _SignInScreenState extends State<SignInScreen> {
                   Text.rich(
                     TextSpan(
                       children: [
-                        TextSpan(text: 'Budget', style: TextStyle(color: context.ink)),
-                        TextSpan(text: 'Buddy', style: TextStyle(color: brand)),
+                        TextSpan(
+                          text: 'Budget',
+                          style: TextStyle(color: context.ink),
+                        ),
+                        TextSpan(
+                          text: 'Buddy',
+                          style: TextStyle(color: brand),
+                        ),
                       ],
                     ),
                     style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Finansal yolculuğuna devam et.',
+                    t('Finansal yolculuğuna devam et.'),
                     style: TextStyle(fontSize: 16, color: context.muted),
                   ),
                   const SizedBox(height: 30),
@@ -103,7 +114,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     ),
                     validator: (v) => (v ?? '').contains('@')
                         ? null
-                        : 'Geçerli bir e-posta girin.',
+                        : t('Geçerli bir e-posta girin.'),
                   ),
                   const SizedBox(height: 14),
                   TextFormField(
@@ -112,10 +123,12 @@ class _SignInScreenState extends State<SignInScreen> {
                     autofillHints: const [AutofillHints.password],
                     onFieldSubmitted: (_) => _submit(),
                     decoration: InputDecoration(
-                      labelText: 'Şifre',
+                      labelText: t('Şifre'),
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
-                        tooltip: _hidden ? 'Şifreyi göster' : 'Şifreyi gizle',
+                        tooltip: _hidden
+                            ? t('Şifreyi göster')
+                            : t('Şifreyi gizle'),
                         onPressed: () => setState(() => _hidden = !_hidden),
                         icon: Icon(
                           _hidden
@@ -125,15 +138,12 @@ class _SignInScreenState extends State<SignInScreen> {
                       ),
                     ),
                     validator: (v) =>
-                        (v ?? '').isEmpty ? 'Şifrenizi girin.' : null,
+                        (v ?? '').isEmpty ? t('Şifrenizi girin.') : null,
                   ),
                   if (_error != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 12),
-                      child: Text(
-                        _error!,
-                        style: const TextStyle(color: expense),
-                      ),
+                      child: Text(_error!, style: TextStyle(color: expense)),
                     ),
                   const SizedBox(height: 20),
                   FilledButton(
@@ -143,7 +153,7 @@ class _SignInScreenState extends State<SignInScreen> {
                             dimension: 22,
                             child: CircularProgressIndicator(strokeWidth: 2.5),
                           )
-                        : const Text('Giriş yap'),
+                        : Text(t('Giriş yap')),
                   ),
                   if (AppConfig.googleEnabled) ...[
                     const SizedBox(height: 12),
@@ -153,7 +163,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         minimumSize: const Size.fromHeight(52),
                       ),
                       icon: const Icon(Icons.account_circle_outlined),
-                      label: const Text('Google ile giriş yap'),
+                      label: Text(t('Google ile giriş yap')),
                     ),
                   ],
                 ],

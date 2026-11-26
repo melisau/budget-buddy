@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
+import 'i18n.dart';
+
 const brand = Color(0xFF4258D5);
 const income = Color(0xFF238B70);
 const expense = Color(0xFFD45050);
@@ -76,7 +78,7 @@ ThemeData buildTheme([Brightness brightness = Brightness.light]) {
       brightness: brightness,
       primary: p.primary,
       onPrimary: brightness == Brightness.dark
-          ? const Color(0xFF0F1420)
+          ? Color(0xFF0F1420)
           : Colors.white,
       surface: p.surface,
       onSurface: p.ink,
@@ -128,9 +130,9 @@ ThemeData buildTheme([Brightness brightness = Brightness.light]) {
     dialogTheme: DialogThemeData(backgroundColor: p.surface),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        minimumSize: const Size.fromHeight(52),
+        minimumSize: Size.fromHeight(52),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
       ),
     ),
   );
@@ -139,7 +141,7 @@ ThemeData buildTheme([Brightness brightness = Brightness.light]) {
 String money(num value, [String currency = 'TRY']) {
   const symbols = {'TRY': '₺', 'EUR': '€', 'USD': r'$', 'GBP': '£'};
   return NumberFormat.currency(
-    locale: 'tr_TR',
+    locale: I18n.locale,
     symbol: symbols[currency] ?? currency,
     decimalDigits: 2,
   ).format(value);
@@ -147,7 +149,9 @@ String money(num value, [String currency = 'TRY']) {
 
 String shortDate(String iso) {
   final date = DateTime.tryParse(iso);
-  return date == null ? iso : DateFormat('d MMM yyyy', 'tr_TR').format(date);
+  return date == null
+      ? iso
+      : DateFormat('d MMM yyyy', I18n.locale).format(date);
 }
 
 /// Accepts Turkish input such as 1.250,50 as well as 1250.50.
@@ -161,32 +165,32 @@ double? parseAmount(String input) {
 
 String monthLabel(String month) {
   final date = DateTime.tryParse('$month-01');
-  return date == null ? month : DateFormat('MMM', 'tr_TR').format(date);
+  return date == null ? month : DateFormat('MMM', I18n.locale).format(date);
 }
 
 String categoryLabel(String name) =>
-    const {
-      'Housing': 'Konut',
-      'Groceries': 'Market',
-      'Dining': 'Yeme içme',
-      'Transport': 'Ulaşım',
-      'Utilities': 'Faturalar',
-      'Health': 'Sağlık',
-      'Education': 'Eğitim',
-      'Entertainment': 'Eğlence',
-      'Shopping': 'Alışveriş',
-      'Subscriptions': 'Abonelikler',
-      'Personal care': 'Kişisel bakım',
-      'Travel': 'Seyahat',
-      'Insurance': 'Sigorta',
-      'Debt payments': 'Borç ödemeleri',
-      'Gifts': 'Hediyeler',
-      'Other expenses': 'Diğer giderler',
-      'Salary': 'Maaş',
-      'Freelance income': 'Serbest gelir',
-      'Investment income': 'Yatırım geliri',
-      'Gift income': 'Hediye geliri',
-      'Other income': 'Diğer gelirler',
-      'Uncategorized': 'Kategorisiz',
+    {
+      'Housing': t('Konut'),
+      'Groceries': t('Market'),
+      'Dining': t('Yeme içme'),
+      'Transport': t('Ulaşım'),
+      'Utilities': t('Faturalar'),
+      'Health': t('Sağlık'),
+      'Education': t('Eğitim'),
+      'Entertainment': t('Eğlence'),
+      'Shopping': t('Alışveriş'),
+      'Subscriptions': t('Abonelikler'),
+      'Personal care': t('Kişisel bakım'),
+      'Travel': t('Seyahat'),
+      'Insurance': t('Sigorta'),
+      'Debt payments': t('Borç ödemeleri'),
+      'Gifts': t('Hediyeler'),
+      'Other expenses': t('Diğer giderler'),
+      'Salary': t('Maaş'),
+      'Freelance income': t('Serbest gelir'),
+      'Investment income': t('Yatırım geliri'),
+      'Gift income': t('Hediye geliri'),
+      'Other income': t('Diğer gelirler'),
+      'Uncategorized': t('Kategorisiz'),
     }[name] ??
     name;

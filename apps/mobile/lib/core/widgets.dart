@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'theme.dart';
+import 'i18n.dart';
 
 class ErrorRetry extends StatelessWidget {
   const ErrorRetry({super.key, required this.message, required this.onRetry});
@@ -21,7 +22,7 @@ class ErrorRetry extends StatelessWidget {
         style: TextStyle(color: context.ink, fontSize: 16),
       ),
       const SizedBox(height: 18),
-      FilledButton(onPressed: onRetry, child: const Text('Tekrar dene')),
+      FilledButton(onPressed: onRetry, child: Text(t('Tekrar dene'))),
     ],
   );
 }

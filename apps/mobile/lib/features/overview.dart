@@ -7,6 +7,7 @@ import '../core/widgets.dart';
 import 'common.dart';
 import 'data.dart';
 import 'reminders.dart';
+import '../core/i18n.dart';
 
 class OverviewScreen extends ConsumerWidget {
   const OverviewScreen({super.key});
@@ -16,7 +17,7 @@ class OverviewScreen extends ConsumerWidget {
     final data = ref.watch(dashboardProvider);
     final cached = ref.watch(cachedDashboardProvider).value;
     return Scaffold(
-      appBar: AppBar(title: const Text('Genel Bakış')),
+      appBar: AppBar(title: Text(t('Genel Bakış'))),
       body: RefreshIndicator(
         onRefresh: () {
           ref.invalidate(pageProvider(remindersPath));
@@ -71,8 +72,8 @@ class _Content extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Toplam bakiye',
+              Text(
+                t('Toplam bakiye'),
                 style: TextStyle(color: Color(0xFFC7CEE2)),
               ),
               const SizedBox(height: 6),
@@ -94,7 +95,7 @@ class _Content extends StatelessWidget {
           children: [
             Expanded(
               child: _Stat(
-                'Aylık gelir',
+                t('Aylık gelir'),
                 money(summary['income'] as num, currency),
                 income,
               ),
@@ -102,7 +103,7 @@ class _Content extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: _Stat(
-                'Aylık gider',
+                t('Aylık gider'),
                 money(summary['expenses'] as num, currency),
                 expense,
               ),
@@ -117,7 +118,7 @@ class _Content extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Nakit akışı',
+                  t('Nakit akışı'),
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
@@ -132,7 +133,7 @@ class _Content extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         Text(
-          'Son işlemler',
+          t('Son işlemler'),
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w800,
@@ -141,11 +142,11 @@ class _Content extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         if (recent.isEmpty)
-          const Card(
+          Card(
             child: Padding(
               padding: EdgeInsets.all(24),
               child: Text(
-                'Bu ay henüz işlem yok.',
+                t('Bu ay henüz işlem yok.'),
                 textAlign: TextAlign.center,
               ),
             ),

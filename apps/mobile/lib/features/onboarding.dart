@@ -5,39 +5,48 @@ import 'package:go_router/go_router.dart';
 import '../core/onboarding.dart';
 import '../core/theme.dart';
 import '../core/theme_mode.dart';
+import '../core/i18n.dart';
 
 class _Intro {
-  const _Intro(this.icon, this.color, this.title, this.body);
+  _Intro(this.icon, this.color, this.title, this.body);
   final IconData icon;
   final Color color;
   final String title;
   final String body;
 }
 
-const _intros = [
+List<_Intro> get _intros => [
   _Intro(
     Icons.receipt_long_rounded,
     Color(0xFF4258D5),
-    'Paran nereye gidiyor, gör',
-    'Gelir ve giderlerini saniyeler içinde ekle. Sık kullanılan kategoriler tek dokunuşla, fişler tarayarak.',
+    t('Paran nereye gidiyor, gör'),
+    t(
+      'Gelir ve giderlerini saniyeler içinde ekle. Sık kullanılan kategoriler tek dokunuşla, fişler tarayarak.',
+    ),
   ),
   _Intro(
     Icons.savings_rounded,
     Color(0xFF238B70),
-    'Bütçe koy, hedef belirle',
-    'Bütçe, bir kategoride bu ay en fazla ne kadar harcayacağın. Hedef, bir şey için biriktirmek istediğin tutar.',
+    t('Bütçe koy, hedef belirle'),
+    t(
+      'Bütçe, bir kategoride bu ay en fazla ne kadar harcayacağın. Hedef, bir şey için biriktirmek istediğin tutar.',
+    ),
   ),
   _Intro(
     Icons.groups_rounded,
     Color(0xFFC84F43),
-    'Ailecek birlikte',
-    'Ortak harcamaları, alışveriş listesini ve dilek listelerini aile grubunla paylaş.',
+    t('Ailecek birlikte'),
+    t(
+      'Ortak harcamaları, alışveriş listesini ve dilek listelerini aile grubunla paylaş.',
+    ),
   ),
   _Intro(
     Icons.lock_rounded,
     Color(0xFF7565D6),
-    'Verilerin sende',
-    'Banka hesabına bağlanmayız, kart bilgisi istemeyiz. Kayıtların yalnızca sana ve izin verdiklerine görünür.',
+    t('Verilerin sende'),
+    t(
+      'Banka hesabına bağlanmayız, kart bilgisi istemeyiz. Kayıtların yalnızca sana ve izin verdiklerine görünür.',
+    ),
   ),
 ];
 
@@ -53,7 +62,7 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _pages = PageController();
   int _page = 0;
-  String _language = 'tr';
+  String _language = I18n.language.value;
   String _currency = 'TRY';
 
   int get _last => _intros.length;
@@ -91,7 +100,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         duration: const Duration(milliseconds: 320),
                         curve: Curves.easeOut,
                       ),
-                child: Text(onPrefs ? '' : 'Atla'),
+                child: Text(onPrefs ? '' : t('Atla')),
               ),
             ),
             Expanded(
@@ -127,7 +136,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 height: 52,
                 child: FilledButton(
                   onPressed: onPrefs ? _finish : _next,
-                  child: Text(onPrefs ? 'Başla' : 'İleri'),
+                  child: Text(onPrefs ? t('Başla') : t('İleri')),
                 ),
               ),
             ),
@@ -141,7 +150,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
     children: [
       Text(
-        'Senin için ayarlayalım',
+        t('Senin için ayarlayalım'),
         style: TextStyle(
           fontSize: 26,
           fontWeight: FontWeight.w800,
@@ -150,26 +159,29 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       ),
       const SizedBox(height: 8),
       Text(
-        'Bunları daha sonra Ayarlar\'dan değiştirebilirsin.',
+        t('Bunları daha sonra Ayarlar\'dan değiştirebilirsin.'),
         style: TextStyle(color: context.muted),
       ),
       const SizedBox(height: 26),
-      _label(context, 'Dil'),
+      _label(context, t('Dil')),
       SegmentedButton<String>(
         segments: [
           for (final entry in Onboarding.languages.entries)
             ButtonSegment(value: entry.key, label: Text(entry.value)),
         ],
         selected: {_language},
-        onSelectionChanged: (value) => setState(() => _language = value.first),
+        onSelectionChanged: (value) {
+          setState(() => _language = value.first);
+          I18n.set(value.first);
+        },
       ),
       const SizedBox(height: 6),
       Text(
-        'Uygulama şimdilik Türkçe; seçimin web sitesine ve e-postalarına uygulanır.',
+        t('Uygulama bu dilde açılır; web sitesi ve e-postalar da.'),
         style: TextStyle(color: context.muted, fontSize: 12),
       ),
-      const SizedBox(height: 22),
-      _label(context, 'Para birimi'),
+      SizedBox(height: 22),
+      _label(context, t('Para birimi')),
       Wrap(
         spacing: 8,
         runSpacing: 8,
@@ -182,13 +194,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
         ],
       ),
-      const SizedBox(height: 22),
-      _label(context, 'Görünüm'),
+      SizedBox(height: 22),
+      _label(context, t('Görünüm')),
       SegmentedButton<ThemeMode>(
-        segments: const [
-          ButtonSegment(value: ThemeMode.system, label: Text('Sistem')),
-          ButtonSegment(value: ThemeMode.light, label: Text('Açık')),
-          ButtonSegment(value: ThemeMode.dark, label: Text('Koyu')),
+        segments: [
+          ButtonSegment(value: ThemeMode.system, label: Text(t('Sistem'))),
+          ButtonSegment(value: ThemeMode.light, label: Text(t('Açık'))),
+          ButtonSegment(value: ThemeMode.dark, label: Text(t('Koyu'))),
         ],
         selected: {ref.watch(themeModeProvider)},
         onSelectionChanged: (value) =>

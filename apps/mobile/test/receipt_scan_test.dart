@@ -4,15 +4,16 @@ import 'package:flutter_test/flutter_test.dart';
 
 Map<String, dynamic> _request(ParsedReceipt scan, double total, bool items) =>
     receiptRequest(
-      scan: scan,
-      scanId: newScanId(),
-      title: 'MARKET',
-      category: 'category',
-      account: null,
-      total: total,
-      date: '2026-11-23',
-      includeItems: items,
-    )['receipt'] as Map<String, dynamic>;
+          scan: scan,
+          scanId: newScanId(),
+          title: 'MARKET',
+          category: 'category',
+          account: null,
+          total: total,
+          date: '2026-11-23',
+          includeItems: items,
+        )['receipt']
+        as Map<String, dynamic>;
 
 void main() {
   const scan = ParsedReceipt(
@@ -26,7 +27,11 @@ void main() {
   test('creates a valid UUID v4', () {
     expect(
       newScanId(),
-      matches(RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$')),
+      matches(
+        RegExp(
+          r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+        ),
+      ),
     );
   });
 

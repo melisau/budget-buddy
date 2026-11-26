@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme.dart';
 import 'data.dart';
+import '../core/i18n.dart';
 
 class AssistantScreen extends ConsumerStatefulWidget {
   const AssistantScreen({super.key});
@@ -51,9 +52,12 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
         'conversationId': ?_conversationId,
       });
       final session = result['session'] as Map<String, dynamic>?;
-      _conversationId = session?['conversation_id'] as String? ?? _conversationId;
+      _conversationId =
+          session?['conversation_id'] as String? ?? _conversationId;
       if (mounted) {
-        setState(() => _messages.add((mine: false, text: '${result['answer']}')));
+        setState(
+          () => _messages.add((mine: false, text: '${result['answer']}')),
+        );
       }
     } catch (e) {
       if (mounted) setState(() => _messages.add((mine: false, text: '$e')));
@@ -65,7 +69,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('AI Asistan')),
+    appBar: AppBar(title: Text(t('AI Asistan'))),
     body: Column(
       children: [
         Expanded(
@@ -74,7 +78,9 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                   child: Padding(
                     padding: EdgeInsets.all(32),
                     child: Text(
-                      'Harcamalarını sor, sade bir açıklama al.\nYatırım tavsiyesi vermez.',
+                      t(
+                        'Harcamalarını sor, sade bir açıklama al.\nYatırım tavsiyesi vermez.',
+                      ),
                       textAlign: TextAlign.center,
                       style: TextStyle(color: context.muted, fontSize: 16),
                     ),
@@ -90,23 +96,41 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                         alignment: Alignment.centerLeft,
                         child: Padding(
                           padding: EdgeInsets.all(10),
-                          child: SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2.5)),
+                          child: SizedBox.square(
+                            dimension: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2.5),
+                          ),
                         ),
                       );
                     }
                     final m = _messages[i];
                     return Align(
-                      alignment: m.mine ? Alignment.centerRight : Alignment.centerLeft,
+                      alignment: m.mine
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
                       child: Container(
-                        constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * .82),
+                        constraints: BoxConstraints(
+                          maxWidth: MediaQuery.sizeOf(context).width * .82,
+                        ),
                         margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
                         decoration: BoxDecoration(
                           color: m.mine ? brand : context.surface,
-                          border: m.mine ? null : Border.all(color: context.line),
+                          border: m.mine
+                              ? null
+                              : Border.all(color: context.line),
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        child: SelectableText(m.text, style: TextStyle(color: m.mine ? Colors.white : context.ink, height: 1.35)),
+                        child: SelectableText(
+                          m.text,
+                          style: TextStyle(
+                            color: m.mine ? Colors.white : context.ink,
+                            height: 1.35,
+                          ),
+                        ),
                       ),
                     );
                   },
@@ -125,12 +149,16 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                     minLines: 1,
                     maxLines: 4,
                     textCapitalization: TextCapitalization.sentences,
-                    decoration: const InputDecoration(hintText: 'Bir soru yaz', counterText: '', isDense: true),
+                    decoration: InputDecoration(
+                      hintText: t('Bir soru yaz'),
+                      counterText: '',
+                      isDense: true,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 IconButton.filled(
-                  tooltip: 'Gönder',
+                  tooltip: t('Gönder'),
                   onPressed: _busy ? null : _send,
                   icon: const Icon(Icons.send_rounded),
                 ),

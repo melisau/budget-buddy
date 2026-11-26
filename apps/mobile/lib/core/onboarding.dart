@@ -10,7 +10,7 @@ class Onboarding {
   static const _doneKey = 'onboarding_done';
   static const _pendingKey = 'onboarding_pending';
 
-  static const languages = {'tr': 'Türkçe', 'en': 'English'};
+  static const languages = {'tr': 'Türkçe', 'en': 'English', 'de': 'Deutsch'};
   static const currencies = ['TRY', 'EUR', 'USD', 'GBP'];
 
   /// Read once at startup so the router can decide synchronously.

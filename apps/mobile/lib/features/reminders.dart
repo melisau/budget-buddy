@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../core/theme.dart';
 import 'common.dart';
 import 'data.dart';
+import '../core/i18n.dart';
 
 const remindersPath = 'recurring/reminders';
 
@@ -16,10 +17,16 @@ String dueText(String date, DateTime today) {
     due.month,
     due.day,
   ).difference(DateTime(today.year, today.month, today.day)).inDays;
-  if (days < 0) return '${-days} gün gecikti';
-  if (days == 0) return 'bugün';
-  if (days == 1) return 'yarın';
-  return '$days gün sonra';
+  if (days < 0) {
+    return tx(
+      '${-days} gün gecikti',
+      '${-days} days overdue',
+      '${-days} Tage überfällig',
+    );
+  }
+  if (days == 0) return t('bugün');
+  if (days == 1) return t('yarın');
+  return tx('$days gün sonra', 'in $days days', 'in $days Tagen');
 }
 
 /// Recurring payments waiting for "paid" or "not this time", like the web's
@@ -40,27 +47,37 @@ class DueReminders extends ConsumerWidget {
     );
     final date = DateFormat(
       'd MMMM',
-      'tr_TR',
+      I18n.locale,
     ).format(DateTime.parse('${item['nextDate']}'));
     final ok = await showDialog<bool>(
       context: context,
       builder: (dialog) => AlertDialog(
         title: Text(
-          paid ? 'Ödendi olarak kaydedilsin mi?' : 'Bu dönem atlansın mı?',
+          paid
+              ? t('Ödendi olarak kaydedilsin mi?')
+              : t('Bu dönem atlansın mı?'),
         ),
         content: Text(
           paid
-              ? '“${item['title']}” · $amount · $date. ${income ? 'Gelir' : 'Gider'} olarak işlemlerine eklenecek.'
-              : '“${item['title']}” · $amount · $date. Bu dönem için işlem eklenmeyecek; sonraki ödeme yine hatırlatılacak.',
+              ? tx(
+                  '“${item['title']}” · $amount · $date. ${income ? 'Gelir' : 'Gider'} olarak işlemlerine eklenecek.',
+                  '“${item['title']}” · $amount · $date. It will be added to your transactions as ${income ? 'income' : 'an expense'}.',
+                  '„${item['title']}“ · $amount · $date. Sie wird als ${income ? 'Einnahme' : 'Ausgabe'} zu deinen Transaktionen hinzugefügt.',
+                )
+              : tx(
+                  '“${item['title']}” · $amount · $date. Bu dönem için işlem eklenmeyecek; sonraki ödeme yine hatırlatılacak.',
+                  '“${item['title']}” · $amount · $date. No transaction is added this time; the next payment is reminded as usual.',
+                  '„${item['title']}“ · $amount · $date. Diesmal wird keine Transaktion hinzugefügt; an die nächste Zahlung wird wie gewohnt erinnert.',
+                ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialog, false),
-            child: const Text('Geri dön'),
+            child: Text(t('Geri dön')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialog, true),
-            child: Text(paid ? 'Evet, kaydet' : 'Evet, atla'),
+            child: Text(paid ? t('Evet, kaydet') : t('Evet, atla')),
           ),
         ],
       ),
@@ -76,8 +93,16 @@ class DueReminders extends ConsumerWidget {
         SnackBar(
           content: Text(
             paid
-                ? '${item['title']} kaydedildi.'
-                : '${item['title']} bu dönem için atlandı.',
+                ? tx(
+                    '${item['title']} kaydedildi.',
+                    '${item['title']} recorded.',
+                    '${item['title']} erfasst.',
+                  )
+                : tx(
+                    '${item['title']} bu dönem için atlandı.',
+                    '${item['title']} skipped this time.',
+                    '${item['title']} diesmal übersprungen.',
+                  ),
           ),
         ),
       );
@@ -109,11 +134,21 @@ class DueReminders extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.notifications_active, color: brand),
+                      Icon(Icons.notifications_active, color: brand),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          '${item['title']} ${item['type'] == 'income' ? 'geliri' : 'ödemesi'} ${dueText('${item['nextDate']}', today)}',
+                          item['type'] == 'income'
+                              ? tx(
+                                  '${item['title']} geliri ${dueText('${item['nextDate']}', today)}',
+                                  '${item['title']} income ${dueText('${item['nextDate']}', today)}',
+                                  'Einnahme ${item['title']} ${dueText('${item['nextDate']}', today)}',
+                                )
+                              : tx(
+                                  '${item['title']} ödemesi ${dueText('${item['nextDate']}', today)}',
+                                  '${item['title']} payment ${dueText('${item['nextDate']}', today)}',
+                                  'Zahlung ${item['title']} ${dueText('${item['nextDate']}', today)}',
+                                ),
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             color: context.ink,
@@ -142,15 +177,15 @@ class DueReminders extends ConsumerWidget {
                         onPressed: () => _settle(context, ref, item, false),
                         child: Text(
                           item['type'] == 'income'
-                              ? 'Bu sefer gelmedi'
-                              : 'Bu sefer ödemedim',
+                              ? t('Bu sefer gelmedi')
+                              : t('Bu sefer ödemedim'),
                         ),
                       ),
                       const SizedBox(width: 8),
                       FilledButton(
                         onPressed: () => _settle(context, ref, item, true),
                         child: Text(
-                          item['type'] == 'income' ? 'Geldi' : 'Ödedim',
+                          item['type'] == 'income' ? t('Geldi') : t('Ödedim'),
                         ),
                       ),
                     ],
