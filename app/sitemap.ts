@@ -22,6 +22,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     { url: absolute("/"), lastModified: new Date(UPDATED.landing), changeFrequency: "weekly", priority: 1, alternates: { languages: landingLanguages } },
     { url: absolute("/en"), lastModified: new Date(UPDATED.landing), changeFrequency: "weekly", priority: 0.9, alternates: { languages: landingLanguages } },
+    { url: absolute("/de"), lastModified: new Date(UPDATED.landing), changeFrequency: "weekly", priority: 0.9, alternates: { languages: landingLanguages } },
     { url: absolute("/sign-up"), lastModified: new Date(UPDATED.signUp), changeFrequency: "monthly", priority: 0.6 },
     { url: absolute("/privacy"), lastModified: new Date(UPDATED.privacy), changeFrequency: "yearly", priority: 0.3 },
     { url: absolute("/terms"), lastModified: new Date(UPDATED.terms), changeFrequency: "yearly", priority: 0.3 },

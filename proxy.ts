@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { parseBearerCredential } from "@/lib/auth/bearer";
 import { readSupabasePublicConfig } from "@/lib/supabase/config";
-import { LANDING_LANGUAGE_BY_PATH, PAGE_LANGUAGE_HEADER } from "@/lib/seo/i18n";
+import { LANDING_LANGUAGE_BY_PATH, LANDING_LANGUAGE_COOKIE, PAGE_LANGUAGE_HEADER, preferredLandingPath } from "@/lib/seo/i18n";
 
 // Refreshes the Supabase session cookie on every matched request so server
 // code always sees a valid session. Authorization itself is checked next to
@@ -11,6 +11,19 @@ export async function proxy(request: NextRequest) {
   // Public landing pages: no session work, only tell the root layout which
   // language the page is in so the server HTML carries the right <html lang>.
   const landingLanguage = LANDING_LANGUAGE_BY_PATH[request.nextUrl.pathname];
+  // First visit to "/": send German and other non-Turkish browsers to their
+  // landing page. Search engine bots and anyone who already picked a language
+  // stay on the Turkish page, so "/" keeps being indexed as Turkish.
+  if (request.nextUrl.pathname === "/" && !request.cookies.has(LANDING_LANGUAGE_COOKIE) && !/bot|crawl|spider|slurp|facebookexternalhit|preview/i.test(request.headers.get("user-agent") ?? "")) {
+    const target = preferredLandingPath(request.headers.get("accept-language"));
+    if (target) {
+      const url = request.nextUrl.clone();
+      url.pathname = target;
+      const redirect = NextResponse.redirect(url, 307);
+      redirect.headers.set("Vary", "Accept-Language, Cookie");
+      return redirect;
+    }
+  }
   if (landingLanguage) {
     const headers = new Headers(request.headers);
     headers.set(PAGE_LANGUAGE_HEADER, landingLanguage);
@@ -63,7 +76,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/", "/en",
+    "/", "/en", "/de",
     "/sign-in", "/sign-up", "/auth/:path*", "/forgot-password", "/update-password",
     "/dashboard/:path*", "/accounts/:path*", "/analytics/:path*", "/assistant/:path*",
     "/budgets/:path*", "/family/:path*", "/goals/:path*", "/recurring/:path*", "/settings/:path*",

@@ -6,23 +6,25 @@ import { LANDING_FAQ } from "../lib/seo/landing-faq.ts";
 import { LANDING_LANGUAGE_BY_PATH, pageLanguage } from "../lib/seo/i18n.ts";
 import { LEGAL_LAST_UPDATED_ISO } from "../lib/legal.ts";
 
-test("sitemap lists both landing languages with reciprocal hreflang", () => {
+test("sitemap lists every landing language with reciprocal hreflang", () => {
   const entries = sitemap();
   const tr = entries.find((entry) => !new URL(entry.url).pathname.replace(/^\/$/, ""));
   const en = entries.find((entry) => entry.url.endsWith("/en"));
-  assert.ok(tr && en, "both landing pages are listed");
-  for (const entry of [tr, en]) {
-    assert.deepEqual(Object.keys(entry.alternates?.languages ?? {}).sort(), ["en", "tr", "x-default"]);
+  const de = entries.find((entry) => entry.url.endsWith("/de"));
+  assert.ok(tr && en && de, "every landing page is listed");
+  for (const entry of [tr, en, de]) {
+    assert.deepEqual(Object.keys(entry.alternates?.languages ?? {}).sort(), ["de", "en", "tr", "x-default"]);
   }
   assert.ok(entries.every((entry) => !/dashboard|settings|api|sign-in/.test(entry.url)), "no private pages");
 });
 
-test("each landing page is self-canonical and points to the other language", () => {
+test("each landing page is self-canonical and points to the other languages", () => {
   const tr = landingMetadata("tr");
   const en = landingMetadata("en");
   assert.equal(tr.alternates?.canonical, "/");
   assert.equal(en.alternates?.canonical, "/en");
-  assert.deepEqual(tr.alternates?.languages, { tr: "/", en: "/en", "x-default": "/" });
+  assert.equal(landingMetadata("de").alternates?.canonical, "/de");
+  assert.deepEqual(tr.alternates?.languages, { tr: "/", en: "/en", de: "/de", "x-default": "/" });
   assert.deepEqual(en.alternates?.languages, tr.alternates?.languages);
   assert.match(String((tr.title as { absolute: string }).absolute), /bütçe/i);
 });
@@ -58,10 +60,12 @@ test("each landing page has FAQPage data in its own language, matching the page'
 test("server HTML language follows the landing page and defaults to English", () => {
   assert.equal(LANDING_LANGUAGE_BY_PATH["/"], "tr");
   assert.equal(LANDING_LANGUAGE_BY_PATH["/en"], "en");
+  assert.equal(LANDING_LANGUAGE_BY_PATH["/de"], "de");
   assert.equal(pageLanguage("tr"), "tr");
   assert.equal(pageLanguage("en"), "en");
   assert.equal(pageLanguage(null), "en");
-  assert.equal(pageLanguage("de"), "en");
+  assert.equal(pageLanguage("de"), "de");
+  assert.equal(pageLanguage("fr"), "en");
 });
 
 test("sitemap dates are real dates and the privacy page uses the date it shows", () => {
