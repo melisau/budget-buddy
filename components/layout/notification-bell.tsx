@@ -7,6 +7,7 @@ import { LanguageContext } from "@/components/providers/language-provider";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { renderNotification } from "@/lib/notifications/messages";
 import type { NotificationData, NotificationKind } from "@/lib/notifications/rules";
+import { localized } from "@/lib/i18n/localized";
 
 type Item = { id: string; kind: NotificationKind; data: NotificationData; readAt: string | null; createdAt: string };
 type State = { status: "loading" | "ready" | "error" | "unavailable"; items: Item[]; unread: number };
@@ -49,7 +50,7 @@ export function NotificationBell() {
 
   // The notification table does not exist until migration 0019 is applied.
   if (state.status === "unavailable") return null;
-  const label = tr ? "Bildirimler" : "Notifications";
+  const label = tr ? "Bildirimler" : localized("Notifications");
 
   // A span wrapper, not a bare button and not a div: the header hides its direct buttons on phones
   // and gives every direct div margin-right:auto, which pushed the bell to the middle.
@@ -65,9 +66,9 @@ export function NotificationBell() {
       <PopoverContent align="end" collisionPadding={16} className="w-[min(22rem,calc(100vw-2rem))] p-0">
         <p className="border-b px-4 py-3 text-sm font-semibold">{label}</p>
         <div className="max-h-96 overflow-y-auto" aria-live="polite">
-          {state.status === "loading" && <p className="px-4 py-6 text-center text-sm text-muted-foreground">{tr ? "Yükleniyor…" : "Loading…"}</p>}
-          {state.status === "error" && <div className="px-4 py-6 text-center text-sm"><p>{tr ? "Bildirimler yüklenemedi." : "Unable to load notifications."}</p><button type="button" className="mt-2 font-semibold text-[var(--c-t-4258d5)] underline" onClick={() => { setState({ status: "loading", items: [], unread: 0 }); void load(); }}>{tr ? "Tekrar dene" : "Try again"}</button></div>}
-          {state.status === "ready" && state.items.length === 0 && <p className="px-4 py-6 text-center text-sm text-muted-foreground">{tr ? "Henüz bildirimin yok. Bütçe, hedef ve aile davetleri burada görünür." : "No notifications yet. Budget, goal and family invitation updates appear here."}</p>}
+          {state.status === "loading" && <p className="px-4 py-6 text-center text-sm text-muted-foreground">{tr ? "Yükleniyor…" : localized("Loading…")}</p>}
+          {state.status === "error" && <div className="px-4 py-6 text-center text-sm"><p>{tr ? "Bildirimler yüklenemedi." : localized("Unable to load notifications.")}</p><button type="button" className="mt-2 font-semibold text-[var(--c-t-4258d5)] underline" onClick={() => { setState({ status: "loading", items: [], unread: 0 }); void load(); }}>{tr ? "Tekrar dene" : localized("Try again")}</button></div>}
+          {state.status === "ready" && state.items.length === 0 && <p className="px-4 py-6 text-center text-sm text-muted-foreground">{tr ? "Henüz bildirimin yok. Bütçe, hedef ve aile davetleri burada görünür." : localized("No notifications yet. Budget, goal and family invitation updates appear here.")}</p>}
           {state.status === "ready" && <ul>{state.items.map((item) => {
             const text = renderNotification(item.kind, item.data, language);
             return <li key={item.id} className="border-b last:border-b-0"><Link href={text.href} onClick={() => setOpen(false)} className={`block px-4 py-3 text-sm hover:bg-muted ${item.readAt ? "" : "bg-[var(--c-s-f1f4ff)]"}`}><span className="block font-semibold">{text.title}</span><span className="mt-0.5 block text-muted-foreground">{text.body}</span></Link></li>;

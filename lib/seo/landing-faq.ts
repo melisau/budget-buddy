@@ -1,4 +1,4 @@
-import type { Language } from "@/components/providers/language-provider";
+import type { Language } from "@/lib/seo/i18n";
 
 /**
  * Landing page FAQ. The page shows the English text through the shared

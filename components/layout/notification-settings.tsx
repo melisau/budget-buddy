@@ -5,6 +5,7 @@ import { Mail } from "lucide-react";
 import { toast } from "sonner";
 import { LanguageContext } from "@/components/providers/language-provider";
 import { Switch } from "@/components/ui/switch";
+import { localized } from "@/lib/i18n/localized";
 
 /** Settings row: whether budget and goal notifications are also sent by e-mail. */
 export function NotificationSettings() {
@@ -37,18 +38,18 @@ export function NotificationSettings() {
       if (!response.ok) throw new Error();
     } catch {
       setEnabled(previous);
-      toast.error(tr ? "Tercih kaydedilemedi." : "Unable to save the preference.");
+      toast.error(tr ? "Tercih kaydedilemedi." : localized("Unable to save the preference."));
     } finally {
       setSaving(false);
     }
   }
 
   if (state === "hidden") return null;
-  const title = tr ? "E-posta bildirimleri" : "E-mail notifications";
+  const title = tr ? "E-posta bildirimleri" : localized("E-mail notifications");
   return (
     <div className="settings-option-row">
       <span className="settings-row-icon" aria-hidden="true"><Mail /></span>
-      <span className="settings-option-text"><b id="notify-email-label">{title}</b><small>{tr ? "Bütçe ve hedef hatırlatmaları" : "Budget and goal reminders"}</small></span>
+      <span className="settings-option-text"><b id="notify-email-label">{title}</b><small>{tr ? "Bütçe ve hedef hatırlatmaları" : localized("Budget and goal reminders")}</small></span>
       <Switch checked={enabled} disabled={state === "loading" || saving} onCheckedChange={(next) => void change(next)} aria-labelledby="notify-email-label" />
     </div>
   );

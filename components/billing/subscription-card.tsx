@@ -3,6 +3,7 @@
 import { useContext, useEffect, useState } from "react";
 import { CreditCard, Sparkles } from "lucide-react";
 import { LanguageContext, useT } from "@/components/providers/language-provider";
+import { localized } from "@/lib/i18n/localized";
 
 type BillingDetails = {
   billingEnabled?: boolean;
@@ -49,7 +50,7 @@ export function SubscriptionCard() {
   const { subscription } = billing;
   if (!billing.billingEnabled) {
     return <article className="panel subscription-card launch-membership">
-      <span className="settings-row-icon" aria-hidden="true"><Sparkles /></span><div><h3>{language === "tr" ? "Lansmana özel ücretsiz" : "Free during launch"}</h3><p>{language === "tr" ? "Şu anda tüm özellikler ücretsiz." : "All features are currently free."}</p></div><span className="launch-membership-status">{t("Active")}</span>
+      <span className="settings-row-icon" aria-hidden="true"><Sparkles /></span><div><h3>{language === "tr" ? "Lansmana özel ücretsiz" : localized("Free during launch")}</h3><p>{language === "tr" ? "Şu anda tüm özellikler ücretsiz." : localized("All features are currently free.")}</p></div><span className="launch-membership-status">{t("Active")}</span>
     </article>;
   }
   return <article className="panel subscription-card">

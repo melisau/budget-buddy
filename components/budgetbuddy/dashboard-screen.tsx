@@ -24,6 +24,7 @@ import { LanguageContext, useT } from "@/components/providers/language-provider"
 
 import type { Currency } from "@/types/finance";
 import { PlansCard } from "@/components/dashboard/plans-card";
+import { localized } from "@/lib/i18n/localized";
 
 type DashboardData = {
 
@@ -67,7 +68,7 @@ export function DashboardScreen({ go }: { go: Navigate }) {
 
   const dataVersion = useFinanceDataVersion();
 
-  const locale = language === "tr" ? "tr-TR" : "en-US";
+  const locale = language === "tr" ? "tr-TR" : localized("en-US");
 
   const months = useMemo(() => Array.from({ length: 18 }, (_, index) => { const [year, number] = currentMonth.split("-").map(Number); const date = new Date(Date.UTC(year, number - 1 - index, 1)); return { value: `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`, label: new Intl.DateTimeFormat(locale, { month: "long", year: "numeric", timeZone: "UTC" }).format(date) }; }), [locale]);
 
@@ -112,7 +113,7 @@ export function DashboardScreen({ go }: { go: Navigate }) {
   return <>
     <h2 className="dashboard-page-heading">{t("Dashboard")}</h2>
 
-    {data && !data.hasGoals && data.filters.accounts.length === 0 && data.recent.length === 0 && <div className="mb-5 rounded-2xl bg-gradient-to-r from-[var(--c-s-172340)] to-[var(--c-s-344d99)] p-6 text-white sm:p-8"><span className="text-xs font-bold uppercase tracking-widest text-[var(--c-t-b9c5ff)]">{language === "tr" ? "İlk adım" : "First step"}</span><h2 className="mt-2 text-2xl font-bold">{language === "tr" ? "İlk hedefinle başla" : "Start with your first goal"}</h2><p className="mt-2 max-w-xl text-sm leading-6 text-[var(--c-t-d7dff3)]">{language === "tr" ? "Banka hesabı bağlamana veya eski harcamalarını girmene gerek yok. Bir hedef seç, tutarını yaz ve ilerlemeni takip et." : "No bank account or past spending required. Pick a goal and start tracking progress."}</p><Link href="/goals?create=1" className="mt-5 inline-flex rounded-xl bg-[var(--c-s-ffffff)] px-5 py-2.5 text-sm font-bold text-[var(--c-t-263b8f)] hover:bg-[var(--c-s-eef0ff)]">{language === "tr" ? "Hedefimi oluştur" : "Create my goal"}</Link></div>}
+    {data && !data.hasGoals && data.filters.accounts.length === 0 && data.recent.length === 0 && <div className="mb-5 rounded-2xl bg-gradient-to-r from-[var(--c-s-172340)] to-[var(--c-s-344d99)] p-6 text-white sm:p-8"><span className="text-xs font-bold uppercase tracking-widest text-[var(--c-t-b9c5ff)]">{language === "tr" ? "İlk adım" : localized("First step")}</span><h2 className="mt-2 text-2xl font-bold">{language === "tr" ? "İlk hedefinle başla" : localized("Start with your first goal")}</h2><p className="mt-2 max-w-xl text-sm leading-6 text-[var(--c-t-d7dff3)]">{language === "tr" ? "Banka hesabı bağlamana veya eski harcamalarını girmene gerek yok. Bir hedef seç, tutarını yaz ve ilerlemeni takip et." : localized("No bank account or past spending required. Pick a goal and start tracking progress.")}</p><Link href="/goals?create=1" className="mt-5 inline-flex rounded-xl bg-[var(--c-s-ffffff)] px-5 py-2.5 text-sm font-bold text-[var(--c-t-263b8f)] hover:bg-[var(--c-s-eef0ff)]">{language === "tr" ? "Hedefimi oluştur" : localized("Create my goal")}</Link></div>}
 
     <DashboardViewControls view={view} onChange={(next) => { if (next.month !== month || next.scope !== scope || next.accountId !== accountId || next.currency !== currency) { setLoading(true); setView(next); } }} filters={data?.filters} months={months} />
 
@@ -134,11 +135,11 @@ export function DashboardScreen({ go }: { go: Navigate }) {
 
       <div className="dash">
 
-        <article className="panel dashboard-cashflow"><div className="panel-head"><div><h3>{t("Cash flow")}</h3><p>{t("Income and expenses · Last 6 months")}</p></div></div><div className="chart" role="img" aria-label={language === "tr" ? "Son altı ayın gelir ve gider grafiği" : "Income and expenses chart for the last six months"}><ResponsiveContainer minWidth={0} initialDimension={{ width: 320, height: 220 }}><AreaChart data={chartData}><CartesianGrid vertical={false} /><XAxis dataKey="label" /><YAxis width={52} tickFormatter={(value: number) => new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value)} /><Tooltip formatter={(value) => money(Number(value))} /><Area dataKey="income" name={t("Income")} stroke="#249779" fill="#24977922" /><Area dataKey="expense" name={t("Expenses")} stroke="#f18470" fill="#f1847018" /></AreaChart></ResponsiveContainer></div><ul className="sr-only">{chartData.map((item) => <li key={item.month}>{item.label}: {t("Income")} {money(item.income)}, {t("Expenses")} {money(item.expense)}</li>)}</ul></article><PlansCard month={view.month} />
+        <article className="panel dashboard-cashflow"><div className="panel-head"><div><h3>{t("Cash flow")}</h3><p>{t("Income and expenses · Last 6 months")}</p></div></div><div className="chart" role="img" aria-label={language === "tr" ? "Son altı ayın gelir ve gider grafiği" : localized("Income and expenses chart for the last six months")}><ResponsiveContainer minWidth={0} initialDimension={{ width: 320, height: 220 }}><AreaChart data={chartData}><CartesianGrid vertical={false} /><XAxis dataKey="label" /><YAxis width={52} tickFormatter={(value: number) => new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value)} /><Tooltip formatter={(value) => money(Number(value))} /><Area dataKey="income" name={t("Income")} stroke="#249779" fill="#24977922" /><Area dataKey="expense" name={t("Expenses")} stroke="#f18470" fill="#f1847018" /></AreaChart></ResponsiveContainer></div><ul className="sr-only">{chartData.map((item) => <li key={item.month}>{item.label}: {t("Income")} {money(item.income)}, {t("Expenses")} {money(item.expense)}</li>)}</ul></article><PlansCard month={view.month} />
 
         <article className="panel"><div className="panel-head"><div><h3>{t("Spending by category")}</h3><p>{monthLabel}</p></div></div><div className="live-list">{data?.categories.length ? data.categories.map((item, index) => <div key={item.name}><i style={{ background: ["#5267df", "#249779", "#f18470", "#d7a33c"][index % 4] }} />{t(item.name)}<b>{money(item.value)}</b></div>) : <p>{t("No expenses this month.")}</p>}</div></article>
 
-        <article className="panel dashboard-recent"><div className="panel-head"><div><h3>{t("Recent transactions")}</h3><p>{monthLabel}</p></div><button type="button" onClick={() => go("transactions")}>{t("View all")}</button></div><div className="live-list">{data?.recent.length ? data.recent.map((item) => { const category = Array.isArray(item.category) ? item.category[0] : item.category; return <div key={item.id}><span><b>{item.title}</b><small>{t(category?.name ?? "Uncategorized")} · {item.transaction_date}</small></span><b className={item.type === "income" ? "pos" : "neg"}>{item.type === "income" ? "+" : "−"}{money(item.amount)}</b></div>; }) : <p>{language === "tr" ? "Bu filtrelerde işlem yok." : "No transactions match these filters."}</p>}</div></article>
+        <article className="panel dashboard-recent"><div className="panel-head"><div><h3>{t("Recent transactions")}</h3><p>{monthLabel}</p></div><button type="button" onClick={() => go("transactions")}>{t("View all")}</button></div><div className="live-list">{data?.recent.length ? data.recent.map((item) => { const category = Array.isArray(item.category) ? item.category[0] : item.category; return <div key={item.id}><span><b>{item.title}</b><small>{t(category?.name ?? "Uncategorized")} · {item.transaction_date}</small></span><b className={item.type === "income" ? "pos" : "neg"}>{item.type === "income" ? "+" : "−"}{money(item.amount)}</b></div>; }) : <p>{language === "tr" ? "Bu filtrelerde işlem yok." : localized("No transactions match these filters.")}</p>}</div></article>
 
       </div>
 

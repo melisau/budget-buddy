@@ -14,6 +14,7 @@ import { transactionSchema, type TransactionInput } from "@/validations/transact
 import { LanguageContext, useT } from "@/components/providers/language-provider";
 import { matchCategoryRule, type CategoryRule } from "@/lib/finance/category-rules";
 import type { StoredTransaction, TransactionOption } from "@/types/finance";
+import { localized } from "@/lib/i18n/localized";
 
 const NO_ACCOUNT = "none";
 /** Default category names shown as chips, most used first. */
@@ -71,7 +72,7 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
         setCategories(payload.categories);
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") return;
-        setOptionsError(tr ? "Hesaplar ve kategoriler yüklenemedi." : "Unable to load accounts and categories.");
+        setOptionsError(tr ? "Hesaplar ve kategoriler yüklenemedi." : localized("Unable to load accounts and categories."));
       }
     }
 
@@ -116,8 +117,8 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
       if (!response.ok) throw new Error(payload.error);
 
       toast.success(transaction
-        ? (tr ? "İşlem güncellendi." : "Transaction updated.")
-        : (tr ? "İşlem başarıyla eklendi." : "Transaction added successfully."));
+        ? (tr ? "İşlem güncellendi." : localized("Transaction updated."))
+        : (tr ? "İşlem başarıyla eklendi." : localized("Transaction added successfully.")));
       if (!transaction) {
         setRequestId(crypto.randomUUID());
         form.reset({ ...values, amount: undefined, title: "", note: "" });
@@ -128,7 +129,7 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
     } catch (error) {
       toast.error(error instanceof Error && error.message
         ? error.message
-        : (tr ? "İşlem kaydedilemedi." : "Unable to save the transaction."));
+        : (tr ? "İşlem kaydedilemedi." : localized("Unable to save the transaction.")));
     } finally {
       setIsSubmitting(false);
     }
@@ -156,16 +157,16 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
       const payload = await response.json().catch(() => ({})) as { error?: string };
       if (!response.ok) throw new Error(payload.error);
       setHasStoredReceipt(false);
-      toast.success(tr ? "Fiş görseli kaldırıldı." : "Receipt image removed.");
+      toast.success(tr ? "Fiş görseli kaldırıldı." : localized("Receipt image removed."));
     } catch (error) {
-      toast.error(error instanceof Error && error.message ? error.message : (tr ? "Fiş görseli kaldırılamadı." : "Unable to remove receipt image."));
+      toast.error(error instanceof Error && error.message ? error.message : (tr ? "Fiş görseli kaldırılamadı." : localized("Unable to remove receipt image.")));
     } finally { setIsRemovingReceipt(false); }
   };
 
   return (
     <form className="modal transaction-form" onSubmit={form.handleSubmit(submit)} noValidate>
       <fieldset className="transaction-type-picker">
-        <legend>{tr ? "İşlem türünü seçin" : "Choose transaction type"}</legend>
+        <legend>{tr ? "İşlem türünü seçin" : localized("Choose transaction type")}</legend>
         {(["expense", "income"] as const).map((value) => (
           <button
             aria-pressed={type === value}
@@ -176,64 +177,64 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
           >
             <i>{value === "expense" ? <Minus /> : <Plus />}</i>
             <span>
-              <strong>{value === "expense" ? (tr ? "Gider" : "Expense") : (tr ? "Gelir" : "Income")}</strong>
-              <small>{value === "expense" ? (tr ? "Bakiyeden düşülür" : "Subtracts from balance") : (tr ? "Bakiyeye eklenir" : "Adds to balance")}</small>
+              <strong>{value === "expense" ? (tr ? "Gider" : localized("Expense")) : (tr ? "Gelir" : localized("Income"))}</strong>
+              <small>{value === "expense" ? (tr ? "Bakiyeden düşülür" : localized("Subtracts from balance")) : (tr ? "Bakiyeye eklenir" : localized("Adds to balance"))}</small>
             </span>
           </button>
         ))}
       </fieldset>
       <p className={`transaction-type-result ${type}`} role="status">
-        {type === "expense" ? (tr ? "− Bu işlem harcama olarak sayılacak." : "− This transaction will count as spending.") : (tr ? "+ Bu işlem kazanç olarak sayılacak." : "+ This transaction will count as income.")}
+        {type === "expense" ? (tr ? "− Bu işlem harcama olarak sayılacak." : localized("− This transaction will count as spending.")) : (tr ? "+ Bu işlem kazanç olarak sayılacak." : localized("+ This transaction will count as income."))}
       </p>
 
       <label>
-        <span className="field-label">{tr ? "Tutar" : "Amount"}<RequiredMark /></span>
+        <span className="field-label">{tr ? "Tutar" : localized("Amount")}<RequiredMark /></span>
         <Input inputMode="decimal" placeholder="₺0.00" {...form.register("amount")} aria-invalid={!!form.formState.errors.amount} />
         {form.formState.errors.amount && <small className="field-error">{form.formState.errors.amount.message}</small>}
       </label>
       <label>
-        <span className="field-label">{tr ? "Açıklama" : "Description"}<RequiredMark /></span>
-        <Input placeholder={tr ? "Haftalık market alışverişi" : "Weekly groceries"} {...titleField} onChange={(event) => { void titleField.onChange(event); applyRule(event.target.value, type); }} aria-invalid={!!form.formState.errors.title} />
+        <span className="field-label">{tr ? "Açıklama" : localized("Description")}<RequiredMark /></span>
+        <Input placeholder={tr ? "Haftalık market alışverişi" : localized("Weekly groceries")} {...titleField} onChange={(event) => { void titleField.onChange(event); applyRule(event.target.value, type); }} aria-invalid={!!form.formState.errors.title} />
         {form.formState.errors.title && <small className="field-error">{form.formState.errors.title.message}</small>}
       </label>
       {hasStoredReceipt && <div className="receipt-field">
-        <p className="receipt-visibility"><ReceiptText />{tr ? "Bu işlemde kayıtlı bir fiş görseli var." : "This transaction already has a saved receipt image."}<button type="button" disabled={isRemovingReceipt} onClick={() => void removeStoredReceipt()}><Trash2 />{isRemovingReceipt ? (tr ? "Kaldırılıyor…" : "Removing…") : (tr ? "Kaldır" : "Remove")}</button></p>
+        <p className="receipt-visibility"><ReceiptText />{tr ? "Bu işlemde kayıtlı bir fiş görseli var." : localized("This transaction already has a saved receipt image.")}<button type="button" disabled={isRemovingReceipt} onClick={() => void removeStoredReceipt()}><Trash2 />{isRemovingReceipt ? (tr ? "Kaldırılıyor…" : localized("Removing…")) : (tr ? "Kaldır" : localized("Remove"))}</button></p>
       </div>}
-      {quickCategories.length > 0 && <div className="category-chips" role="group" aria-label={tr ? "Sık kullanılan kategoriler" : "Common categories"}>
+      {quickCategories.length > 0 && <div className="category-chips" role="group" aria-label={tr ? "Sık kullanılan kategoriler" : localized("Common categories")}>
         {quickCategories.map((item) => <button type="button" key={item.id} aria-pressed={category === item.id} className={category === item.id ? "active" : ""} onClick={() => { setCategory(item.id); setPickedByRule(false); form.setValue("category", item.id, { shouldValidate: true }); }}>{t(item.name)}</button>)}
       </div>}
       <div className="form-grid tx-pair">
         <label>
-          <span className="field-label">{tr ? "Kategori" : "Category"}<RequiredMark /></span>
+          <span className="field-label">{tr ? "Kategori" : localized("Category")}<RequiredMark /></span>
           <Select onValueChange={(value) => { setCategory(value); setPickedByRule(false); form.setValue("category", value, { shouldValidate: true }); }} value={category}>
-            <SelectTrigger aria-invalid={!!form.formState.errors.category}><SelectValue placeholder={tr ? "Kategori seç" : "Select category"} /></SelectTrigger>
+            <SelectTrigger aria-invalid={!!form.formState.errors.category}><SelectValue placeholder={tr ? "Kategori seç" : localized("Select category")} /></SelectTrigger>
             <SelectContent>{availableCategories.map((item) => <SelectItem value={item.id} key={item.id}>{t(item.name)}</SelectItem>)}</SelectContent>
           </Select>
-          {pickedByRule && <small>{tr ? "Kategori kurallarına göre seçildi." : "Picked from your category rules."}</small>}
+          {pickedByRule && <small>{tr ? "Kategori kurallarına göre seçildi." : localized("Picked from your category rules.")}</small>}
           {form.formState.errors.category && <small className="field-error">{form.formState.errors.category.message}</small>}
         </label>
         <label>
-          {tr ? "Hesap (isteğe bağlı)" : "Account (optional)"}
+          {tr ? "Hesap (isteğe bağlı)" : localized("Account (optional)")}
           <Select onValueChange={(value) => { const next = value === NO_ACCOUNT ? "" : value; setAccount(next); form.setValue("account", next, { shouldValidate: true }); }} value={account || NO_ACCOUNT}>
-            <SelectTrigger aria-invalid={!!form.formState.errors.account}><SelectValue placeholder={tr ? "Hesap seç" : "Select account"} /></SelectTrigger>
-            <SelectContent><SelectItem value={NO_ACCOUNT}>{tr ? "Hesap yok" : "No account"}</SelectItem>{accounts.map((item) => <SelectItem value={item.id} key={item.id}>{t(item.name)}</SelectItem>)}</SelectContent>
+            <SelectTrigger aria-invalid={!!form.formState.errors.account}><SelectValue placeholder={tr ? "Hesap seç" : localized("Select account")} /></SelectTrigger>
+            <SelectContent><SelectItem value={NO_ACCOUNT}>{tr ? "Hesap yok" : localized("No account")}</SelectItem>{accounts.map((item) => <SelectItem value={item.id} key={item.id}>{t(item.name)}</SelectItem>)}</SelectContent>
           </Select>
           {form.formState.errors.account && <small className="field-error">{form.formState.errors.account.message}</small>}
         </label>
       </div>
       <label>
-        <span className="field-label">{tr ? "Tarih" : "Date"}<RequiredMark /></span>
+        <span className="field-label">{tr ? "Tarih" : localized("Date")}<RequiredMark /></span>
         <Input type="date" {...form.register("date")} aria-invalid={!!form.formState.errors.date} />
         {form.formState.errors.date && <small className="field-error">{form.formState.errors.date.message}</small>}
       </label>
       <label>
-        {tr ? "Not" : "Note"} <small>{tr ? "İsteğe bağlı" : "Optional"}</small>
-        <Input placeholder={tr ? "İsteğe bağlı not" : "Optional note"} {...form.register("note")} />
+        {tr ? "Not" : localized("Note")} <small>{tr ? "İsteğe bağlı" : localized("Optional")}</small>
+        <Input placeholder={tr ? "İsteğe bağlı not" : localized("Optional note")} {...form.register("note")} />
         {form.formState.errors.note && <small className="field-error">{form.formState.errors.note.message}</small>}
       </label>
       {optionsError && <p className="field-error" role="alert">{optionsError}</p>}
       <Button disabled={isSubmitting} type="submit">
-        {isSubmitting ? (tr ? "Kaydediliyor…" : "Saving…") : transaction ? (tr ? "Değişiklikleri kaydet" : "Save changes") : type === "expense" ? (tr ? "− Gider ekle" : "− Add expense") : (tr ? "+ Gelir ekle" : "+ Add income")}
+        {isSubmitting ? (tr ? "Kaydediliyor…" : localized("Saving…")) : transaction ? (tr ? "Değişiklikleri kaydet" : localized("Save changes")) : type === "expense" ? (tr ? "− Gider ekle" : localized("− Add expense")) : (tr ? "+ Gelir ekle" : localized("+ Add income"))}
       </Button>
     </form>
   );

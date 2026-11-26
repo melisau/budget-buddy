@@ -115,7 +115,7 @@ export async function POST(request: Request) {
     if (historyResult.error) throw new Error(`Unable to load conversation context: ${historyResult.error.message}`);
     // Only an anonymous aggregate leaves the server: no titles, notes or accounts.
     const summary = buildAssistantSummary(data.transactions);
-    const selectedLanguageName = selectedLanguage === "tr" ? "Turkish" : "English";
+    const selectedLanguageName = language === "tr" ? "Turkish" : language === "de" ? "German" : "English";
     const { apiKey, model } = getGroqConfiguration();
     if (!apiKey) {
       return NextResponse.json({

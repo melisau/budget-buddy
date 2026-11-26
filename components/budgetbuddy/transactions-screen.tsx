@@ -21,6 +21,7 @@ import type { StoredTransaction, TransactionOption, TransactionType } from "@/ty
 import { formatNumber } from "@/lib/finance/currency";
 import { CategoryRulesDialog } from "@/components/budgetbuddy/category-rules-dialog";
 import { parseTransactionCsv, type CsvParseResult } from "@/lib/finance/csv-import";
+import { localized, germanOr } from "@/lib/i18n/localized";
 
 type TransactionData = {
   transactions: StoredTransaction[];
@@ -56,7 +57,7 @@ export function TransactionsScreen() {
       if (!response.ok) throw new Error(payload.error);
       setData(payload);
     } catch (error) {
-      setLoadError(error instanceof Error && error.message ? error.message : (language === "tr" ? "İşlemler yüklenemedi." : "Unable to load transactions."));
+      setLoadError(error instanceof Error && error.message ? error.message : (language === "tr" ? "İşlemler yüklenemedi." : localized("Unable to load transactions.")));
     } finally {
       setIsLoading(false);
     }
@@ -69,7 +70,7 @@ export function TransactionsScreen() {
   }, [dataVersion, loadTransactions]);
 
   const filteredTransactions = useMemo(() => {
-    const locale = language === "tr" ? "tr-TR" : "en-US";
+    const locale = language === "tr" ? "tr-TR" : localized("en-US");
     const normalizedQuery = query.trim().toLocaleLowerCase(locale);
     return data.transactions.filter((transaction) => {
       const matchesSearch = !normalizedQuery || [transaction.title, transaction.category, transaction.accountName]
@@ -96,27 +97,27 @@ export function TransactionsScreen() {
 
   return <section className="transactions-page" aria-labelledby="transactions-heading">
     <div className="transactions-heading">
-      <div><h2 id="transactions-heading">{t("Transactions")}</h2><p>{language === "tr" ? "Gelir ve giderlerin tek yerde" : "Your income and expenses in one place"}</p></div>
+      <div><h2 id="transactions-heading">{t("Transactions")}</h2><p>{language === "tr" ? "Gelir ve giderlerin tek yerde" : localized("Your income and expenses in one place")}</p></div>
       <Popover open={toolsOpen} onOpenChange={setToolsOpen}>
-        <PopoverTrigger asChild><Button variant="outline" size="icon" aria-label={language === "tr" ? "CSV işlemleri" : "CSV tools"}><MoreHorizontal /></Button></PopoverTrigger>
-        <PopoverContent align="end" className="transaction-csv-tools" aria-label={language === "tr" ? "CSV işlemleri" : "CSV tools"}>
-          <h3>{language === "tr" ? "CSV işlemleri" : "CSV tools"}</h3>
-          <label htmlFor="transaction-export-scope">{language === "tr" ? "Dışa aktarma kapsamı" : "Export scope"}</label>
-          <Select value={exportScope} onValueChange={(value) => setExportScope(value as "personal" | "family")}><SelectTrigger id="transaction-export-scope"><SelectValue /></SelectTrigger><SelectContent><SelectGroup><SelectItem value="personal">{language === "tr" ? "Kişisel" : "Personal"}</SelectItem><SelectItem value="family">{language === "tr" ? "Aile" : "Family"}</SelectItem></SelectGroup></SelectContent></Select>
+        <PopoverTrigger asChild><Button variant="outline" size="icon" aria-label={language === "tr" ? "CSV işlemleri" : localized("CSV tools")}><MoreHorizontal /></Button></PopoverTrigger>
+        <PopoverContent align="end" className="transaction-csv-tools" aria-label={language === "tr" ? "CSV işlemleri" : localized("CSV tools")}>
+          <h3>{language === "tr" ? "CSV işlemleri" : localized("CSV tools")}</h3>
+          <label htmlFor="transaction-export-scope">{language === "tr" ? "Dışa aktarma kapsamı" : localized("Export scope")}</label>
+          <Select value={exportScope} onValueChange={(value) => setExportScope(value as "personal" | "family")}><SelectTrigger id="transaction-export-scope"><SelectValue /></SelectTrigger><SelectContent><SelectGroup><SelectItem value="personal">{language === "tr" ? "Kişisel" : localized("Personal")}</SelectItem><SelectItem value="family">{language === "tr" ? "Aile" : localized("Family")}</SelectItem></SelectGroup></SelectContent></Select>
           <CsvExport scope={exportScope} />
           <Button variant="outline" onClick={() => { setToolsOpen(false); setImportOpen(true); }}><Upload data-icon="inline-start" />{t("Import CSV")}</Button>
-          <Button variant="outline" onClick={() => { setToolsOpen(false); setRulesOpen(true); }}><Wand2 data-icon="inline-start" />{language === "tr" ? "Kategori kuralları" : "Category rules"}</Button>
+          <Button variant="outline" onClick={() => { setToolsOpen(false); setRulesOpen(true); }}><Wand2 data-icon="inline-start" />{language === "tr" ? "Kategori kuralları" : localized("Category rules")}</Button>
         </PopoverContent>
       </Popover>
     </div>
     <CsvImport open={importOpen} onOpenChange={setImportOpen} />
     <CategoryRulesDialog open={rulesOpen} onOpenChange={setRulesOpen} />
     <div className="transactions-searchbar">
-      <div className="transactions-search"><Search aria-hidden="true" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("Search transactions")} aria-label={t("Search transactions")} />{query && <Button variant="ghost" size="icon" onClick={() => setQuery("")} aria-label={language === "tr" ? "Aramayı temizle" : "Clear search"}><X /></Button>}</div>
+      <div className="transactions-search"><Search aria-hidden="true" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("Search transactions")} aria-label={t("Search transactions")} />{query && <Button variant="ghost" size="icon" onClick={() => setQuery("")} aria-label={language === "tr" ? "Aramayı temizle" : localized("Clear search")}><X /></Button>}</div>
       <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
-        <SheetTrigger asChild><Button variant="outline" className="transactions-filter-button"><SlidersHorizontal data-icon="inline-start" />{language === "tr" ? "Filtreler" : "Filters"}{filterCount > 0 && <Badge>{filterCount}</Badge>}</Button></SheetTrigger>
+        <SheetTrigger asChild><Button variant="outline" className="transactions-filter-button"><SlidersHorizontal data-icon="inline-start" />{language === "tr" ? "Filtreler" : localized("Filters")}{filterCount > 0 && <Badge>{filterCount}</Badge>}</Button></SheetTrigger>
         <SheetContent side="bottom" className="transaction-filters">
-          <SheetHeader><SheetTitle>{language === "tr" ? "İşlemleri filtrele" : "Filter transactions"}</SheetTitle><SheetDescription>{language === "tr" ? "Görmek istediğin işlemleri seç." : "Choose the transactions you want to see."}</SheetDescription></SheetHeader>
+          <SheetHeader><SheetTitle>{language === "tr" ? "İşlemleri filtrele" : localized("Filter transactions")}</SheetTitle><SheetDescription>{language === "tr" ? "Görmek istediğin işlemleri seç." : localized("Choose the transactions you want to see.")}</SheetDescription></SheetHeader>
           <div className="transaction-filter-fields">
             <div><label htmlFor="transaction-type">{t("Transaction type")}</label><Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as "all" | TransactionType)}><SelectTrigger id="transaction-type"><SelectValue /></SelectTrigger><SelectContent><SelectGroup><SelectItem value="all">{t("All types")}</SelectItem><SelectItem value="expense">{t("Expense")}</SelectItem><SelectItem value="income">{t("Income")}</SelectItem></SelectGroup></SelectContent></Select></div>
             <div><label htmlFor="transaction-account">{t("Account")}</label><Select value={accountFilter} onValueChange={setAccountFilter}><SelectTrigger id="transaction-account"><SelectValue /></SelectTrigger><SelectContent><SelectGroup><SelectItem value="all">{t("All accounts")}</SelectItem>{data.accounts.map((account) => <SelectItem value={account.id} key={account.id}>{t(account.name)}</SelectItem>)}</SelectGroup></SelectContent></Select></div>
@@ -124,11 +125,11 @@ export function TransactionsScreen() {
             <div><label htmlFor="transaction-from">{t("From date")}</label><Input id="transaction-from" type="date" value={fromDate} max={toDate || undefined} onChange={(event) => setFromDate(event.target.value)} /></div>
             <div><label htmlFor="transaction-to">{t("To date")}</label><Input id="transaction-to" type="date" value={toDate} min={fromDate || undefined} onChange={(event) => setToDate(event.target.value)} /></div>
           </div>
-          <SheetFooter className="transaction-filter-footer"><Button variant="outline" onClick={clearFilters} disabled={!filterCount}>{language === "tr" ? "Filtreleri temizle" : "Clear filters"}</Button><Button onClick={() => setFiltersOpen(false)}>{language === "tr" ? "Sonuçları göster" : "Show results"}{!isLoading && !loadError && ` (${filteredTransactions.length})`}</Button></SheetFooter>
+          <SheetFooter className="transaction-filter-footer"><Button variant="outline" onClick={clearFilters} disabled={!filterCount}>{language === "tr" ? "Filtreleri temizle" : localized("Clear filters")}</Button><Button onClick={() => setFiltersOpen(false)}>{language === "tr" ? "Sonuçları göster" : localized("Show results")}{!isLoading && !loadError && ` (${filteredTransactions.length})`}</Button></SheetFooter>
         </SheetContent>
       </Sheet>
     </div>
-    {filterCount > 0 && <div className="transaction-filter-summary"><span role="status">{language === "tr" ? `${filterCount} filtre etkin` : `${filterCount} active filters`}</span><Button variant="ghost" size="sm" onClick={clearFilters}>{language === "tr" ? "Temizle" : "Clear"}<X data-icon="inline-end" /></Button></div>}
+    {filterCount > 0 && <div className="transaction-filter-summary"><span role="status">{language === "tr" ? `${filterCount} filtre etkin` : germanOr(`${filterCount} aktive Filter`, `${filterCount} active filters`)}</span><Button variant="ghost" size="sm" onClick={clearFilters}>{language === "tr" ? "Temizle" : localized("Clear")}<X data-icon="inline-end" /></Button></div>}
     {loadError && <div className="panel empty-state"><p role="alert">{loadError}</p><Button onClick={() => void loadTransactions()}>{t("Try again")}</Button></div>}
     {isLoading && <div className="panel empty-state" role="status" aria-live="polite"><p>{t("Loading transactions…")}</p></div>}
     {!isLoading && !loadError && filteredTransactions.length ? <article className="panel tx-table" role="table" aria-label={t("Transactions")}>
@@ -160,9 +161,9 @@ function CsvExport({ scope }: { scope: "personal" | "family" }) {
       const response = await fetch(`/api/transactions/export?scope=${scope}`);
       if (!response.ok) { const payload = await response.json().catch(() => ({})) as { error?: string }; throw new Error(payload.error); }
       const blob = await response.blob(); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `budgetbuddy-${scope}-transactions.csv`; link.click(); URL.revokeObjectURL(url);
-    } catch (error) { toast.error(error instanceof Error && error.message ? error.message : (language === "tr" ? "CSV dışa aktarılamadı." : "Unable to export CSV.")); } finally { setIsDownloading(false); }
+    } catch (error) { toast.error(error instanceof Error && error.message ? error.message : (language === "tr" ? "CSV dışa aktarılamadı." : localized("Unable to export CSV."))); } finally { setIsDownloading(false); }
   };
-  return <div className="csv-export"><Button variant="outline" disabled={isDownloading} onClick={() => void download()}><Download />{language === "tr" ? "CSV dışa aktar" : "Export CSV"}</Button></div>;
+  return <div className="csv-export"><Button variant="outline" disabled={isDownloading} onClick={() => void download()}><Download />{language === "tr" ? "CSV dışa aktar" : localized("Export CSV")}</Button></div>;
 }
 
 function TransactionActions({ transaction }: { transaction: StoredTransaction }) {
@@ -180,10 +181,10 @@ function TransactionActions({ transaction }: { transaction: StoredTransaction })
         const payload = await response.json().catch(() => ({})) as { error?: string };
         throw new Error(payload.error);
       }
-      toast.success(language === "tr" ? "İşlem silindi." : "Transaction deleted.");
+      toast.success(language === "tr" ? "İşlem silindi." : localized("Transaction deleted."));
       notifyFinanceDataChanged();
     } catch (error) {
-      toast.error(error instanceof Error && error.message ? error.message : (language === "tr" ? "İşlem silinemedi." : "Unable to delete the transaction."));
+      toast.error(error instanceof Error && error.message ? error.message : (language === "tr" ? "İşlem silinemedi." : localized("Unable to delete the transaction.")));
     } finally {
       setIsDeleting(false);
     }
@@ -200,7 +201,7 @@ function TransactionActions({ transaction }: { transaction: StoredTransaction })
   </div>;
 }
 
-function ReceiptLink({ transactionId, language }: { transactionId: string; language: "tr" | "en" }) {
+function ReceiptLink({ transactionId, language }: { transactionId: string; language: "en" | "tr" | "de" }) {
   const [isOpening, setIsOpening] = useState(false);
   const openReceipt = async () => {
     setIsOpening(true);
@@ -210,14 +211,14 @@ function ReceiptLink({ transactionId, language }: { transactionId: string; langu
       if (!response.ok || !payload.url) throw new Error(payload.error);
       window.open(payload.url, "_blank", "noopener,noreferrer");
     } catch (error) {
-      toast.error(error instanceof Error && error.message ? error.message : (language === "tr" ? "Fiş görseli açılamadı." : "Unable to open receipt image."));
+      toast.error(error instanceof Error && error.message ? error.message : (language === "tr" ? "Fiş görseli açılamadı." : localized("Unable to open receipt image.")));
     } finally { setIsOpening(false); }
   };
-  return <DropdownMenuItem disabled={isOpening} onSelect={() => void openReceipt()}><ReceiptText />{language === "tr" ? "Fiş" : "Receipt"}</DropdownMenuItem>;
+  return <DropdownMenuItem disabled={isOpening} onSelect={() => void openReceipt()}><ReceiptText />{language === "tr" ? "Fiş" : localized("Receipt")}</DropdownMenuItem>;
 }
 
-function formatTransactionDate(value: string, language: "en" | "tr") {
-  return new Intl.DateTimeFormat(language === "tr" ? "tr-TR" : "en-US", { day: "numeric", month: "short", year: "numeric" }).format(new Date(`${value}T00:00:00Z`));
+function formatTransactionDate(value: string, language: "en" | "tr" | "de") {
+  return new Intl.DateTimeFormat(language === "tr" ? "tr-TR" : localized("en-US"), { day: "numeric", month: "short", year: "numeric" }).format(new Date(`${value}T00:00:00Z`));
 }
 
 function CsvImport({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
@@ -283,7 +284,7 @@ function CsvImport({ open, onOpenChange }: { open: boolean; onOpenChange: (open:
       <div className="steps">{["Upload", "Map columns", "Review"].map((label, index) => <span className={step > index ? "on" : ""} key={label}><b>{step > index + 1 ? <Check /> : index + 1}</b>{t(label)}</span>)}</div>
       {step === 1 && <div className="drop"><Upload /><h3>{t("Drop your CSV here")}</h3><p>{t("date, description and amount required")}</p><Input ref={fileInput} type="file" accept=".csv,text/csv" onChange={handleFileChange} aria-label={t("Choose CSV")} />{fileError && <p role="alert" className="text-destructive">{fileError}</p>}</div>}
       {step === 2 && parseResult && <div className="mapping"><div className="flex items-center gap-2"><FileSpreadsheet /><p>{fileName} · {parseResult.delimiter === ";" ? "semicolon" : "comma"} separated</p></div>{mappingRows.map((row) => <p key={row}>{row}<Check /></p>)}<Button onClick={() => setStep(3)}>{t("Continue to review")}</Button></div>}
-      {step === 3 && parseResult && <div className="review"><Check /><h3>{parseResult.transactions.length} {t("rows ready")}</h3><p>{parseResult.issues.length ? `${parseResult.issues.length} ${t("rows need attention before import.")}` : t("All rows passed validation.")}</p>{parseResult.issues.length ? <p className="text-destructive">{t("Fix invalid rows in the CSV and upload it again.")}</p> : <Button disabled={isImporting} onClick={() => void saveImport()}>{isImporting ? (language === "tr" ? "Aktarılıyor…" : "Importing…") : (language === "tr" ? "İşlemleri aktar" : "Import transactions")}</Button>}{fileError && <p className="text-destructive" role="alert">{fileError}</p>}</div>}
+      {step === 3 && parseResult && <div className="review"><Check /><h3>{parseResult.transactions.length} {t("rows ready")}</h3><p>{parseResult.issues.length ? `${parseResult.issues.length} ${t("rows need attention before import.")}` : t("All rows passed validation.")}</p>{parseResult.issues.length ? <p className="text-destructive">{t("Fix invalid rows in the CSV and upload it again.")}</p> : <Button disabled={isImporting} onClick={() => void saveImport()}>{isImporting ? (language === "tr" ? "Aktarılıyor…" : localized("Importing…")) : (language === "tr" ? "İşlemleri aktar" : localized("Import transactions"))}</Button>}{fileError && <p className="text-destructive" role="alert">{fileError}</p>}</div>}
     </DialogContent>
   </Dialog>;
 }

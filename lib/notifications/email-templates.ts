@@ -19,16 +19,19 @@ type StoredNotification = { kind: NotificationKind; data: NotificationData };
 /** One e-mail per user per run, listing every new budget and goal notification. */
 export function digestEmail(items: StoredNotification[], language: Language, siteUrl: string): EmailContent {
   const tr = language === "tr";
+  const L = (trText: string, en: string, de: string) => (tr ? trText : language === "de" ? de : en);
   const rendered: RenderedNotification[] = items.map((item) => renderNotification(item.kind, item.data, language));
-  const subject = rendered.length === 1 ? rendered[0].title : tr ? `BudgetBuddy: ${rendered.length} yeni bildirim` : `BudgetBuddy: ${rendered.length} new notifications`;
+  const subject = rendered.length === 1 ? rendered[0].title : L(`BudgetBuddy: ${rendered.length} yeni bildirim`, `BudgetBuddy: ${rendered.length} new notifications`, `BudgetBuddy: ${rendered.length} neue Benachrichtigungen`);
   const settingsUrl = `${siteUrl}/settings`;
-  const footerText = tr
-    ? `Bu e-postaları almak istemiyorsan Ayarlar sayfasından kapatabilirsin: ${settingsUrl}`
-    : `You can turn these e-mails off in Settings: ${settingsUrl}`;
+  const footerText = L(
+    `Bu e-postaları almak istemiyorsan Ayarlar sayfasından kapatabilirsin: ${settingsUrl}`,
+    `You can turn these e-mails off in Settings: ${settingsUrl}`,
+    `Du kannst diese E-Mails in den Einstellungen abschalten: ${settingsUrl}`,
+  );
   const text = `${rendered.map((item) => `${item.title}\n${item.body}\n${siteUrl}${item.href}`).join("\n\n")}\n\n${footerText}\n`;
   const html = wrap(
-    rendered.map((item) => `<p style="margin:0 0 20px"><strong>${escapeHtml(item.title)}</strong><br>${escapeHtml(item.body)}<br><a href="${escapeHtml(siteUrl + item.href)}" style="color:#4258d5">${tr ? "Aç" : "Open"}</a></p>`).join(""),
-    `${tr ? "Bu e-postaları almak istemiyorsan" : "You can turn these e-mails off in"} <a href="${escapeHtml(settingsUrl)}" style="color:#4258d5">${tr ? "Ayarlar sayfasından kapatabilirsin" : "Settings"}</a>.`,
+    rendered.map((item) => `<p style="margin:0 0 20px"><strong>${escapeHtml(item.title)}</strong><br>${escapeHtml(item.body)}<br><a href="${escapeHtml(siteUrl + item.href)}" style="color:#4258d5">${L("Aç", "Open", "Öffnen")}</a></p>`).join(""),
+    `${L("Bu e-postaları almak istemiyorsan", "You can turn these e-mails off in", "Du kannst diese E-Mails abschalten in den")} <a href="${escapeHtml(settingsUrl)}" style="color:#4258d5">${L("Ayarlar sayfasından kapatabilirsin", "Settings", "Einstellungen")}</a>.`,
   );
   return { subject, text, html };
 }

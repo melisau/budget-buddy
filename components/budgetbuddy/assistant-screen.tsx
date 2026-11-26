@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TransactionForm } from "@/components/transactions/transaction-form";
+import { localized } from "@/lib/i18n/localized";
 
 type Message = readonly ["ai" | "user", string];
 type AssistantSession = { id: string; conversation_id: string; question: string; response: string; created_at: string };
@@ -36,7 +37,7 @@ declare global {
   }
 }
 
-function initialMessages(turkish: boolean): Message[] { return [["ai", turkish ? "Merhaba — yetkili finans verilerini inceleyerek nasıl yardımcı olabilirim?" : "Hi — how can I help you understand your authorized financial data?"]]; }
+function initialMessages(turkish: boolean): Message[] { return [["ai", turkish ? "Merhaba — yetkili finans verilerini inceleyerek nasıl yardımcı olabilirim?" : localized("Hi — how can I help you understand your authorized financial data?")]]; }
 
 function conversationMessages(sessions: AssistantSession[], id: string): Message[] {
   return sessions.filter((item) => item.conversation_id === id)
@@ -45,7 +46,7 @@ function conversationMessages(sessions: AssistantSession[], id: string): Message
 }
 
 function transactionDraftFromSpeech(transcript: string, turkish: boolean): VoiceTransactionDraft | null {
-  const normalized = transcript.toLocaleLowerCase(turkish ? "tr-TR" : "en-US");
+  const normalized = transcript.toLocaleLowerCase(turkish ? "tr-TR" : localized("en-US"));
   const draftIntent = turkish
     ? /işlem taslağı|harcama ekle|gider ekle|gelir ekle/.test(normalized)
     : /transaction draft|add expense|add income/.test(normalized);
@@ -60,7 +61,7 @@ function transactionDraftFromSpeech(transcript: string, turkish: boolean): Voice
     .replace(turkish ? /işlem taslağı|harcama ekle|gider ekle|gelir ekle/gi : /transaction draft|add expense|add income/gi, "")
     .replace(amountMatch[0], "")
     .replace(/\b(₺|tl|try|lira|eur|euro|usd|dolar)\b/gi, "")
-    .trim() || (turkish ? "Sesli işlem" : "Voice transaction");
+    .trim() || (turkish ? "Sesli işlem" : localized("Voice transaction"));
 
   return { type: turkish && /gelir/.test(normalized) || !turkish && /income/.test(normalized) ? "income" : "expense", amount, title, date: new Date().toISOString().slice(0, 10) };
 }
@@ -147,7 +148,7 @@ export function AssistantScreen() {
     const activeId = conversationId || crypto.randomUUID();
     if (!conversationId) { setConversationId(activeId); window.localStorage.setItem("budgetbuddy:active-ai-conversation", activeId); }
     setMessages((current) => [...current, ["user", normalizedQuestion]]); setValue(""); setIsSending(true);
-    try { const response = await fetch("/api/assistant", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: normalizedQuestion, language, conversationId: activeId }) }); const payload = await response.json() as { answer?: string; error?: string; session?: AssistantSession }; if (!response.ok || !payload.answer) throw new Error(payload.error); setMessages((current) => [...current, ["ai", payload.answer!]]); if (payload.session) setSessions((current) => [payload.session!, ...current]); } catch (error) { setMessages((current) => [...current, ["ai", error instanceof Error && error.message ? error.message : (turkish ? "Yanıt alınamadı." : "Unable to get an answer.")]]); } finally { setIsSending(false); }
+    try { const response = await fetch("/api/assistant", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: normalizedQuestion, language, conversationId: activeId }) }); const payload = await response.json() as { answer?: string; error?: string; session?: AssistantSession }; if (!response.ok || !payload.answer) throw new Error(payload.error); setMessages((current) => [...current, ["ai", payload.answer!]]); if (payload.session) setSessions((current) => [payload.session!, ...current]); } catch (error) { setMessages((current) => [...current, ["ai", error instanceof Error && error.message ? error.message : (turkish ? "Yanıt alınamadı." : localized("Unable to get an answer."))]]); } finally { setIsSending(false); }
   };
 
   const toggleListening = () => {
@@ -158,13 +159,13 @@ export function AssistantScreen() {
 
     const Recognition = window.SpeechRecognition ?? window.webkitSpeechRecognition;
     if (!Recognition) {
-      setMessages((current) => [...current, ["ai", turkish ? "Bu tarayıcı konuşmayı metne çevirme özelliğini desteklemiyor. Chrome veya Safari kullanmayı dene." : "This browser does not support speech-to-text. Try Chrome or Safari."]]);
+      setMessages((current) => [...current, ["ai", turkish ? "Bu tarayıcı konuşmayı metne çevirme özelliğini desteklemiyor. Chrome veya Safari kullanmayı dene." : localized("This browser does not support speech-to-text. Try Chrome or Safari.")]]);
       return;
     }
 
     const recognition = new Recognition();
     let finalTranscript = "";
-    recognition.lang = turkish ? "tr-TR" : "en-US";
+    recognition.lang = turkish ? "tr-TR" : localized("en-US");
     recognition.interimResults = true;
     recognition.continuous = false;
     recognition.onresult = (event) => {
@@ -175,7 +176,7 @@ export function AssistantScreen() {
     recognition.onerror = (event) => {
       setListening(false);
       if (event.error !== "aborted") {
-        setMessages((current) => [...current, ["ai", turkish ? "Mikrofona erişilemedi. Tarayıcı ayarlarından mikrofon iznini kontrol et." : "The microphone could not be accessed. Check the browser microphone permission."]]);
+        setMessages((current) => [...current, ["ai", turkish ? "Mikrofona erişilemedi. Tarayıcı ayarlarından mikrofon iznini kontrol et." : localized("The microphone could not be accessed. Check the browser microphone permission.")]]);
       }
     };
     recognition.onend = () => {
@@ -197,9 +198,9 @@ export function AssistantScreen() {
   return <div className="assistant">
     <aside>
       <Button onClick={startConversation}><Plus />{t("New conversation")}</Button>
-      <div className="assistant-history-head"><h3>{t("Recent")}</h3><button type="button" aria-label={historyVisible ? (turkish ? "Konuşma geçmişini gizle" : "Hide conversation history") : (turkish ? "Konuşma geçmişini göster" : "Show conversation history")} onClick={() => setHistoryVisibility(!historyVisible)}>{historyVisible ? <EyeOff /> : <Eye />}</button></div>
-      {historyVisible && [...new Map([...sessions].reverse().map((session) => [session.conversation_id, session])).values()].reverse().slice(0, 5).map((session) => <div className={`assistant-history-item ${conversationId === session.conversation_id ? "active" : ""}`} key={session.conversation_id}><button type="button" onClick={() => openConversation(session.conversation_id)}><Sparkles />{session.question}</button><button type="button" aria-label={turkish ? "Sohbeti sil" : "Delete conversation"} onClick={() => void deleteConversation(session.conversation_id)}><Trash2 /></button></div>)}
-      {historyVisible && sessions.length === 0 && <p className="assistant-history-empty">{turkish ? "Henüz konuşma yok." : "No conversations yet."}</p>}
+      <div className="assistant-history-head"><h3>{t("Recent")}</h3><button type="button" aria-label={historyVisible ? (turkish ? "Konuşma geçmişini gizle" : localized("Hide conversation history")) : (turkish ? "Konuşma geçmişini göster" : localized("Show conversation history"))} onClick={() => setHistoryVisibility(!historyVisible)}>{historyVisible ? <EyeOff /> : <Eye />}</button></div>
+      {historyVisible && [...new Map([...sessions].reverse().map((session) => [session.conversation_id, session])).values()].reverse().slice(0, 5).map((session) => <div className={`assistant-history-item ${conversationId === session.conversation_id ? "active" : ""}`} key={session.conversation_id}><button type="button" onClick={() => openConversation(session.conversation_id)}><Sparkles />{session.question}</button><button type="button" aria-label={turkish ? "Sohbeti sil" : localized("Delete conversation")} onClick={() => void deleteConversation(session.conversation_id)}><Trash2 /></button></div>)}
+      {historyVisible && sessions.length === 0 && <p className="assistant-history-empty">{turkish ? "Henüz konuşma yok." : localized("No conversations yet.")}</p>}
       <small>{t("AI explains your tracked data. It is not investment advice.")}</small>
     </aside>
     <section>
@@ -213,7 +214,7 @@ export function AssistantScreen() {
       </div>
       <Dialog open={Boolean(voiceDraft)} onOpenChange={(open) => { if (!open) setVoiceDraft(null); }}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{turkish ? "Sesli işlem taslağı" : "Voice transaction draft"}</DialogTitle><DialogDescription>{turkish ? "Taslak henüz kaydedilmedi. Hesap ve kategoriyi seçip işlemi açıkça onaylayın." : "This draft has not been saved. Choose an account and category, then explicitly confirm the transaction."}</DialogDescription></DialogHeader>
+          <DialogHeader><DialogTitle>{turkish ? "Sesli işlem taslağı" : localized("Voice transaction draft")}</DialogTitle><DialogDescription>{turkish ? "Taslak henüz kaydedilmedi. Hesap ve kategoriyi seçip işlemi açıkça onaylayın." : localized("This draft has not been saved. Choose an account and category, then explicitly confirm the transaction.")}</DialogDescription></DialogHeader>
           {voiceDraft && <TransactionForm initialDraft={voiceDraft} onSuccess={() => setVoiceDraft(null)} />}
         </DialogContent>
       </Dialog>

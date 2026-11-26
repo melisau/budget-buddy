@@ -1,3 +1,5 @@
+import { localized, type Language } from "@/lib/i18n/localized";
+
 // Turkish names of the default categories. Categories are stored with their
 // English names, so anything that shows one outside the main UI (notifications,
 // e-mail) translates it here. The main UI has the same names in its
@@ -11,6 +13,6 @@ export const defaultCategoryNamesTr: Record<string, string> = {
   "Gifts": "Hediyeler", "Other expenses": "Diğer giderler",
 };
 
-export function categoryDisplayName(name: string, language: "tr" | "en"): string {
-  return language === "tr" ? defaultCategoryNamesTr[name] ?? name : name;
+export function categoryDisplayName(name: string, language: Language): string {
+  return language === "tr" ? defaultCategoryNamesTr[name] ?? name : localized(name, language);
 }

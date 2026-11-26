@@ -8,6 +8,7 @@ import { avatarIcons, type AvatarIcon, type ProfileAvatarData } from "@/lib/prof
 import { notifyFinanceDataChanged } from "@/lib/finance/data-events";
 import { LanguageContext } from "@/components/providers/language-provider";
 import { Button } from "@/components/ui/button";
+import { localized } from "@/lib/i18n/localized";
 
 async function preparePhoto(file: File) {
   if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 5 * 1024 * 1024) throw new Error();
@@ -60,15 +61,15 @@ export function AvatarPicker({ name }: { name: string }) {
       if (!response.ok) throw new Error();
       window.dispatchEvent(new Event("budgetbuddy:avatar-updated"));
       notifyFinanceDataChanged();
-      toast.success(tr ? "Profil görselin güncellendi." : "Profile picture updated.");
-    } catch { toast.error(tr ? "Görsel kaydedilemedi. JPG, PNG veya WebP (en fazla 5 MB) seçip tekrar dene." : "Unable to save. Choose a JPG, PNG or WebP up to 5 MB and retry."); }
+      toast.success(tr ? "Profil görselin güncellendi." : localized("Profile picture updated."));
+    } catch { toast.error(tr ? "Görsel kaydedilemedi. JPG, PNG veya WebP (en fazla 5 MB) seçip tekrar dene." : localized("Unable to save. Choose a JPG, PNG or WebP up to 5 MB and retry.")); }
     finally { setBusy(false); if (input.current) input.current.value = ""; }
   }
 
   return <div className="avatar-picker" aria-busy={busy}>
-    <div className="avatar-picker-preview"><ProfileAvatar name={name} avatar={avatar} /><div><b>{tr ? "Profil görselin" : "Your profile picture"}</b><p>{tr ? "Bir fotoğraf yükle veya simge seç." : "Upload a photo or choose an icon."}</p><Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => input.current?.click()}><Camera data-icon="inline-start" />{tr ? "Fotoğraf yükle" : "Upload photo"}</Button></div></div>
-    <input ref={input} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" aria-label={tr ? "Profil fotoğrafı" : "Profile photo"} disabled={busy} onChange={(event) => { const file = event.target.files?.[0]; if (file) void save(file); }} />
-    <div className="avatar-icon-options" role="group" aria-label={tr ? "Hazır profil simgeleri" : "Default profile icons"}>{avatarIcons.map((icon, index) => <button type="button" key={icon} disabled={busy} aria-label={labels[index]} aria-pressed={avatar?.icon === icon && !avatar.url} onClick={() => void save(icon)}><ProfileAvatar name={name} avatar={{ icon, url: null }} />{avatar?.icon === icon && !avatar.url && <Check className="avatar-selected-check" aria-hidden="true" />}</button>)}</div>
-    {busy && <small role="status">{tr ? "Kaydediliyor…" : "Saving…"}</small>}
+    <div className="avatar-picker-preview"><ProfileAvatar name={name} avatar={avatar} /><div><b>{tr ? "Profil görselin" : localized("Your profile picture")}</b><p>{tr ? "Bir fotoğraf yükle veya simge seç." : localized("Upload a photo or choose an icon.")}</p><Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => input.current?.click()}><Camera data-icon="inline-start" />{tr ? "Fotoğraf yükle" : localized("Upload photo")}</Button></div></div>
+    <input ref={input} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" aria-label={tr ? "Profil fotoğrafı" : localized("Profile photo")} disabled={busy} onChange={(event) => { const file = event.target.files?.[0]; if (file) void save(file); }} />
+    <div className="avatar-icon-options" role="group" aria-label={tr ? "Hazır profil simgeleri" : localized("Default profile icons")}>{avatarIcons.map((icon, index) => <button type="button" key={icon} disabled={busy} aria-label={labels[index]} aria-pressed={avatar?.icon === icon && !avatar.url} onClick={() => void save(icon)}><ProfileAvatar name={name} avatar={{ icon, url: null }} />{avatar?.icon === icon && !avatar.url && <Check className="avatar-selected-check" aria-hidden="true" />}</button>)}</div>
+    {busy && <small role="status">{tr ? "Kaydediliyor…" : localized("Saving…")}</small>}
   </div>;
 }

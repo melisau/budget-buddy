@@ -1,10 +1,11 @@
-import type { Language } from "@/components/providers/language-provider";
+/** Landing pages exist in Turkish (/) and English (/en) only. */
+export type Language = "tr" | "en";
 
 /** Turkish is the primary market, so it lives at the root URL. */
 export const DEFAULT_LANGUAGE: Language = "tr";
 
-export function landingPath(language: Language): "/" | "/en" {
-  return language === "en" ? "/en" : "/";
+export function landingPath(language: string): "/" | "/en" {
+  return language === "tr" ? "/" : "/en";
 }
 
 /** Request header the proxy sets on landing pages; the root layout reads it for <html lang>. */

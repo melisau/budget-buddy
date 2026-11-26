@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Users } from "lucide-react";
 import { LanguageContext } from "@/components/providers/language-provider";
+import { localized, germanOr } from "@/lib/i18n/localized";
 
 type Invitation = { id: string; groupName: string };
 
@@ -31,13 +32,13 @@ export function FamilyInviteBanner() {
   if (pathname === "/family" || invitations.length === 0) return null;
   const name = invitations[0].groupName;
   const text = invitations.length > 1
-    ? (tr ? `${invitations.length} aile grubu davetin var.` : `You have ${invitations.length} family group invitations.`)
-    : (tr ? `“${name}” aile grubuna davet edildin.` : `You were invited to the family group “${name}”.`);
+    ? (tr ? `${invitations.length} aile grubu davetin var.` : germanOr(`Du hast ${invitations.length} Einladungen in Familiengruppen.`, `You have ${invitations.length} family group invitations.`))
+    : (tr ? `“${name}” aile grubuna davet edildin.` : germanOr(`Du wurdest in die Familiengruppe „${name}“ eingeladen.`, `You were invited to the family group “${name}”.`));
   return (
     <div className="family-invite-banner" role="status">
       <Users aria-hidden="true" />
       <span>{text}</span>
-      <Link href="/family">{tr ? "Daveti gör" : "View invitation"}</Link>
+      <Link href="/family">{tr ? "Daveti gör" : localized("View invitation")}</Link>
     </div>
   );
 }

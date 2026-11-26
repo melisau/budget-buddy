@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { AvatarPicker } from "@/components/profile/avatar-picker";
 import { LanguageContext } from "@/components/providers/language-provider";
+import { localized } from "@/lib/i18n/localized";
 
 export function ProfileEditor({ showAccountActions = true }: { showAccountActions?: boolean }) {
   const { language } = useContext(LanguageContext);
@@ -23,13 +24,13 @@ export function ProfileEditor({ showAccountActions = true }: { showAccountAction
       if (error) throw error;
       // Server layout syncs only display metadata, never authorization metadata.
       window.location.reload();
-    } catch { toast.error(tr ? "Profil güncellenemedi." : "Unable to update profile."); setBusy(false); }
+    } catch { toast.error(tr ? "Profil güncellenemedi." : localized("Unable to update profile.")); setBusy(false); }
   }}>
     <AvatarPicker name={typeof user?.user_metadata.full_name === "string" ? user.user_metadata.full_name : user?.email ?? ""} />
-    <label className="block">{tr ? "Ad soyad" : "Full name"}<Input key={user?.updated_at} name="name" defaultValue={typeof user?.user_metadata.full_name === "string" ? user.user_metadata.full_name : ""} maxLength={100} required disabled={loading || busy} /></label>
-    <label className="block">{tr ? "E-posta" : "Email"}<Input value={user?.email ?? ""} readOnly /></label>
-    <Button type="submit" disabled={loading || busy}>{tr ? "Profili kaydet" : "Save profile"}</Button>
-    {showAccountActions && <><Link href="/update-password" className="block underline">{tr ? "Şifreyi değiştir" : "Change password"}</Link>
-    <Button type="button" variant="outline" disabled={busy} onClick={() => { setBusy(true); void signOut().catch(() => { toast.error("Çıkış yapılamadı."); setBusy(false); }); }}>{tr ? "Çıkış yap" : "Sign out"}</Button></>}
+    <label className="block">{tr ? "Ad soyad" : localized("Full name")}<Input key={user?.updated_at} name="name" defaultValue={typeof user?.user_metadata.full_name === "string" ? user.user_metadata.full_name : ""} maxLength={100} required disabled={loading || busy} /></label>
+    <label className="block">{tr ? "E-posta" : localized("Email")}<Input value={user?.email ?? ""} readOnly /></label>
+    <Button type="submit" disabled={loading || busy}>{tr ? "Profili kaydet" : localized("Save profile")}</Button>
+    {showAccountActions && <><Link href="/update-password" className="block underline">{tr ? "Şifreyi değiştir" : localized("Change password")}</Link>
+    <Button type="button" variant="outline" disabled={busy} onClick={() => { setBusy(true); void signOut().catch(() => { toast.error("Çıkış yapılamadı."); setBusy(false); }); }}>{tr ? "Çıkış yap" : localized("Sign out")}</Button></>}
   </form>;
 }
