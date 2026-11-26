@@ -6,10 +6,10 @@ import { LandingScreen } from "@/components/budgetbuddy/landing-screen";
 import { VIEW_PATHS } from "@/components/budgetbuddy/view-paths";
 import type { View } from "@/components/budgetbuddy/view-types";
 import { hasSavedLanguage, LanguageContext, readLanguage, setLanguage as setGlobalLanguage, type Language } from "@/components/providers/language-provider";
-import { landingPath } from "@/lib/seo/i18n";
+import { LANDING_LANGUAGE_COOKIE, landingPath } from "@/lib/seo/i18n";
 
 /**
- * The landing page language comes from the URL ("/" Turkish, "/en" English),
+ * The landing page language comes from the URL ("/" Turkish, "/en" English, "/de" German),
  * not from browser storage, so search engines index each language at its own
  * address. Switching language navigates to the other URL.
  */
@@ -18,6 +18,8 @@ export function LandingPage({ language }: { language: Language }) {
   const go = useCallback((view: View) => router.push(VIEW_PATHS[view]), [router]);
   const switchLanguage = useCallback((next: Language) => {
     setGlobalLanguage(next);
+    // A language picked by hand wins over the browser's: "/" stops redirecting.
+    try { document.cookie = `${LANDING_LANGUAGE_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`; } catch { /* cookies may be blocked */ }
     if (next !== language) router.push(landingPath(next));
   }, [language, router]);
 

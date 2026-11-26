@@ -7,9 +7,10 @@ export const OG_SIZE = { width: 1200, height: 630 };
 const COPY = {
   tr: { headline: "Karmaşık tablolar olmadan paranın kontrolünü eline al.", features: "Bütçe · Birikim hedefleri · Aile bütçesi · Yapay zekâ", badges: ["Lansmanda ücretsiz", "Türkçe & English"] },
   en: { headline: "Take control of your money without complicated spreadsheets.", features: "Budgets · Savings goals · Family finances · AI insights", badges: ["Free during launch", "Türkçe & English"] },
+  de: { headline: "Behalte dein Geld im Griff – ganz ohne komplizierte Tabellen.", features: "Budgets · Sparziele · Familienfinanzen · KI-Tipps", badges: ["Kostenlos zum Start", "Deutsch · Türkçe · English"] },
 } as const;
 
-export function renderOpenGraphImage(language: "tr" | "en") {
+export function renderOpenGraphImage(language: "tr" | "en" | "de") {
   const copy = COPY[language];
   return new ImageResponse(
     (

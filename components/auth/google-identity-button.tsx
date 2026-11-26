@@ -13,7 +13,11 @@ declare global {
 }
 
 const SCRIPT_SRC = "https://accounts.google.com/gsi/client";
-const FAILED = "Google ile giriş tamamlanamadı. Lütfen tekrar deneyin.";
+/** The failure text in the page language (read from <html lang> inside the Google callback). */
+function failedText() {
+  const lang = typeof document === "undefined" ? "tr" : document.documentElement.lang;
+  return lang === "en" ? "Google sign-in could not be completed. Please try again." : lang === "de" ? "Die Anmeldung mit Google konnte nicht abgeschlossen werden. Bitte versuche es erneut." : "Google ile giriş tamamlanamadı. Lütfen tekrar deneyin.";
+}
 
 function loadScript(): Promise<void> {
   if (window.google?.accounts?.id) return Promise.resolve();
@@ -55,9 +59,9 @@ export function GoogleIdentityButton({ redirectTo, mode, onUnavailable, onError 
           client_id: clientId,
           nonce: hashed,
           callback: async ({ credential }: { credential?: string }) => {
-            if (!credential) { callbacks.current.onError(FAILED); return; }
+            if (!credential) { callbacks.current.onError(failedText()); return; }
             const { error } = await getSupabaseBrowserClient().auth.signInWithIdToken({ provider: "google", token: credential, nonce: raw });
-            if (error) { callbacks.current.onError(FAILED); return; }
+            if (error) { callbacks.current.onError(failedText()); return; }
             window.location.assign(redirectTo);
           },
         });
