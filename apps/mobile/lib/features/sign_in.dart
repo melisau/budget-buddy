@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/config.dart';
@@ -140,9 +141,24 @@ class _SignInScreenState extends State<SignInScreen> {
                     validator: (v) =>
                         (v ?? '').isEmpty ? t('Şifrenizi girin.') : null,
                   ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: _busy
+                          ? null
+                          : () => context.go('/forgot-password'),
+                      child: Text(
+                        tx(
+                          'Şifremi unuttum',
+                          'Forgot password',
+                          'Passwort vergessen',
+                        ),
+                      ),
+                    ),
+                  ),
                   if (_error != null)
                     Padding(
-                      padding: const EdgeInsets.only(top: 12),
+                      padding: const EdgeInsets.only(top: 4),
                       child: Text(_error!, style: TextStyle(color: expense)),
                     ),
                   const SizedBox(height: 20),
@@ -166,6 +182,17 @@ class _SignInScreenState extends State<SignInScreen> {
                       label: Text(t('Google ile giriş yap')),
                     ),
                   ],
+                  const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: _busy ? null : () => context.go('/sign-up'),
+                    child: Text(
+                      tx(
+                        'Henüz hesabın yok mu? Kayıt ol',
+                        "Don't have an account yet? Sign up",
+                        'Noch kein Konto? Registrieren',
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
