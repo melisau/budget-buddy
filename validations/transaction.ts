@@ -11,6 +11,8 @@ export const transactionSchema = z.object({
 });
 
 export type TransactionInput = z.infer<typeof transactionSchema>;
+/** What the form holds before validation (zod 4 types a coerced field's input as unknown). */
+export type TransactionFormValues = z.input<typeof transactionSchema>;
 
 export const transactionRequestSchema = transactionSchema.extend({
   account: z.union([z.literal(""), z.string().uuid("Choose a valid account.")]).optional().transform((value) => value || undefined),
