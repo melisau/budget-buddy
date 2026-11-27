@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { RequiredMark } from "@/components/ui/required-mark";
 import { Minus, Plus, ReceiptText, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { transactionSchema, type TransactionInput } from "@/validations/transaction";
+import { transactionSchema, type TransactionFormValues, type TransactionInput } from "@/validations/transaction";
 import { LanguageContext, useT } from "@/components/providers/language-provider";
 import { matchCategoryRule, type CategoryRule } from "@/lib/finance/category-rules";
 import type { StoredTransaction, TransactionOption } from "@/types/finance";
@@ -47,7 +47,7 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
   const [isRemovingReceipt, setIsRemovingReceipt] = useState(false);
   // Kept until a create succeeds, so a retry after a lost response is not stored twice.
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
-  const form = useForm<TransactionInput>({
+  const form = useForm<TransactionFormValues, unknown, TransactionInput>({
     resolver: zodResolver(transactionSchema),
     defaultValues: {
       type: transaction?.type ?? initialDraft?.type ?? "expense",
