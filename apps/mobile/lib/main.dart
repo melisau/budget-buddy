@@ -18,6 +18,7 @@ import 'core/theme.dart';
 import 'core/theme_mode.dart';
 import 'features/app_navigation.dart';
 import 'features/assistant.dart';
+import 'features/auth_screens.dart';
 import 'features/allowance.dart';
 import 'features/category_rules.dart';
 import 'features/finance_screens.dart';
@@ -79,7 +80,8 @@ class _AuthRefresh extends ChangeNotifier {
     ) {
       // No cached financial data survives a sign-out on a shared phone.
       if (state.event == AuthChangeEvent.signedOut) DashboardCache.clear();
-      if (state.event == AuthChangeEvent.signedIn) {
+      if (state.event == AuthChangeEvent.signedIn ||
+          state.event == AuthChangeEvent.mfaChallengeVerified) {
         unawaited(_applyOnboardingChoice());
       }
       notifyListeners();
@@ -97,6 +99,9 @@ class _AuthRefresh extends ChangeNotifier {
 
 /// Sends the language and currency picked on the welcome screens to the account, once.
 Future<void> _applyOnboardingChoice() async {
+  // The API refuses a session that still owes its authenticator code; wait
+  // for the verified event instead of losing the choice.
+  if (needsSecondStep()) return;
   final choice = await Onboarding.takePending();
   if (choice == null) return;
   try {
@@ -111,16 +116,29 @@ GoRouter _buildRouter() => GoRouter(
   refreshListenable: _AuthRefresh(),
   redirect: (_, state) {
     final signedIn = Supabase.instance.client.auth.currentSession != null;
-    final atSignIn = state.matchedLocation == '/sign-in';
-    final atWelcome = state.matchedLocation == '/welcome';
+    final location = state.matchedLocation;
+    const signedOutPages = {'/sign-in', '/sign-up', '/forgot-password'};
+    final atWelcome = location == '/welcome';
     if (!signedIn && !Onboarding.done) return atWelcome ? null : '/welcome';
-    if (!signedIn) return atSignIn ? null : '/sign-in';
-    if (atWelcome) return '/overview';
-    return atSignIn ? '/overview' : null;
+    if (!signedIn) return signedOutPages.contains(location) ? null : '/sign-in';
+    // Signed in with password but the authenticator code is still missing.
+    if (needsSecondStep()) return location == '/two-step' ? null : '/two-step';
+    if (atWelcome ||
+        location == '/two-step' ||
+        signedOutPages.contains(location)) {
+      return '/overview';
+    }
+    return null;
   },
   routes: [
-    GoRoute(path: '/welcome', builder: (_, _) => OnboardingScreen()),
-    GoRoute(path: '/sign-in', builder: (_, _) => SignInScreen()),
+    GoRoute(path: '/welcome', builder: (_, _) => const OnboardingScreen()),
+    GoRoute(path: '/sign-in', builder: (_, _) => const SignInScreen()),
+    GoRoute(path: '/sign-up', builder: (_, _) => const SignUpScreen()),
+    GoRoute(
+      path: '/forgot-password',
+      builder: (_, _) => const ForgotPasswordScreen(),
+    ),
+    GoRoute(path: '/two-step', builder: (_, _) => const TwoStepScreen()),
     StatefulShellRoute.indexedStack(
       builder: (_, _, shell) => _Shell(shell),
       branches: [
