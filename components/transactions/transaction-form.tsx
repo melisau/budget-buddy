@@ -17,7 +17,7 @@ import type { StoredTransaction, TransactionOption } from "@/types/finance";
 import { localized } from "@/lib/i18n/localized";
 
 const NO_ACCOUNT = "none";
-/** Default category names shown as chips, most used first. */
+/** Default category names shown first in the horizontal category rail. */
 const QUICK_CATEGORIES = {
   expense: ["Groceries", "Dining", "Transport", "Utilities", "Entertainment", "Shopping"],
   income: ["Salary", "Freelance income", "Other income"],
@@ -149,6 +149,7 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
   const quickCategories = QUICK_CATEGORIES[type]
     .map((name) => availableCategories.find((item) => item.name === name))
     .filter((item): item is (typeof availableCategories)[number] => Boolean(item));
+  const categoryOptions = [...quickCategories, ...availableCategories.filter((item) => !quickCategories.some((quickCategory) => quickCategory.id === item.id))];
   const removeStoredReceipt = async () => {
     if (!transaction) return;
     setIsRemovingReceipt(true);
@@ -200,28 +201,25 @@ export function TransactionForm({ transaction, onSuccess, familyGroupId, initial
       {hasStoredReceipt && <div className="receipt-field">
         <p className="receipt-visibility"><ReceiptText />{tr ? "Bu işlemde kayıtlı bir fiş görseli var." : localized("This transaction already has a saved receipt image.")}<button type="button" disabled={isRemovingReceipt} onClick={() => void removeStoredReceipt()}><Trash2 />{isRemovingReceipt ? (tr ? "Kaldırılıyor…" : localized("Removing…")) : (tr ? "Kaldır" : localized("Remove"))}</button></p>
       </div>}
-      {quickCategories.length > 0 && <div className="category-chips" role="group" aria-label={tr ? "Sık kullanılan kategoriler" : localized("Common categories")}>
-        {quickCategories.map((item) => <button type="button" key={item.id} aria-pressed={category === item.id} className={category === item.id ? "active" : ""} onClick={() => { setCategory(item.id); setPickedByRule(false); form.setValue("category", item.id, { shouldValidate: true }); }}>{t(item.name)}</button>)}
-      </div>}
-      <div className="form-grid tx-pair">
-        <label>
+      {categoryOptions.length > 0 && <section className="category-shortcuts" aria-label={tr ? "Kategori seçimi" : localized("Category selection")}>
+        <div className="category-shortcuts-heading">
           <span className="field-label">{tr ? "Kategori" : localized("Category")}<RequiredMark /></span>
-          <Select onValueChange={(value) => { setCategory(value); setPickedByRule(false); form.setValue("category", value, { shouldValidate: true }); }} value={category}>
-            <SelectTrigger aria-invalid={!!form.formState.errors.category}><SelectValue placeholder={tr ? "Kategori seç" : localized("Select category")} /></SelectTrigger>
-            <SelectContent>{availableCategories.map((item) => <SelectItem value={item.id} key={item.id}>{t(item.name)}</SelectItem>)}</SelectContent>
-          </Select>
-          {pickedByRule && <small>{tr ? "Kategori kurallarına göre seçildi." : localized("Picked from your category rules.")}</small>}
-          {form.formState.errors.category && <small className="field-error">{form.formState.errors.category.message}</small>}
-        </label>
-        <label>
+          <small>{tr ? "Kaydırarak tümünü gör" : localized("Scroll to see all")}</small>
+        </div>
+        <div className="category-chips" role="radiogroup" aria-label={tr ? "Kategori" : localized("Category")}>
+          {categoryOptions.map((item) => <button type="button" role="radio" key={item.id} aria-checked={category === item.id} className={category === item.id ? "active" : ""} onClick={() => { setCategory(item.id); setPickedByRule(false); form.setValue("category", item.id, { shouldValidate: true }); }}>{t(item.name)}</button>)}
+        </div>
+        {pickedByRule && <small>{tr ? "Kategori kurallarına göre seçildi." : localized("Picked from your category rules.")}</small>}
+        {form.formState.errors.category && <small className="field-error">{form.formState.errors.category.message}</small>}
+      </section>}
+      <label>
           {tr ? "Hesap (isteğe bağlı)" : localized("Account (optional)")}
           <Select onValueChange={(value) => { const next = value === NO_ACCOUNT ? "" : value; setAccount(next); form.setValue("account", next, { shouldValidate: true }); }} value={account || NO_ACCOUNT}>
             <SelectTrigger aria-invalid={!!form.formState.errors.account}><SelectValue placeholder={tr ? "Hesap seç" : localized("Select account")} /></SelectTrigger>
             <SelectContent><SelectItem value={NO_ACCOUNT}>{tr ? "Hesap yok" : localized("No account")}</SelectItem>{accounts.map((item) => <SelectItem value={item.id} key={item.id}>{t(item.name)}</SelectItem>)}</SelectContent>
           </Select>
           {form.formState.errors.account && <small className="field-error">{form.formState.errors.account.message}</small>}
-        </label>
-      </div>
+      </label>
       <label>
         <span className="field-label">{tr ? "Tarih" : localized("Date")}<RequiredMark /></span>
         <Input type="date" {...form.register("date")} aria-invalid={!!form.formState.errors.date} />
